@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: shelem-server
+    runtime: node
+    plan: starter
+    branch: main
+    buildCommand: npm install && npm run build --workspace=packages/shared && npm run build --workspace=packages/server
+    startCommand: npm run start --workspace=packages/server
+    envVars:
+      - key: NODE_VERSION
+        value: 20
