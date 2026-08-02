@@ -22,7 +22,12 @@ Single repository containing both the frontend and backend as workspaces/package
 
 ## Hosting
 
-No hard hosting requirement was identified for reaching players in Iran specifically — network accessibility from Iran shifts over time by provider, and the product owner doesn't have a fixed constraint here. Default assumption: pick a solid mainstream host suited to a Node/Colyseus (persistent WebSocket connections) + React app, and assume players will use a VPN if needed, same as they already do for other services. Specific provider to be chosen at implementation time.
+No hard hosting requirement was identified for reaching players in Iran specifically — network accessibility from Iran shifts over time by provider, and the product owner doesn't have a fixed constraint here. Default assumption: assume players will use a VPN if needed, same as they already do for other services.
+
+- **Backend (Colyseus server): [Render](https://render.com/)**, self-hosted (Render runs the container; Colyseus itself stays open-source/self-managed rather than using paid Colyseus Cloud hosting). Starter plan, ~$7/month flat for an always-on instance with persistent WebSocket support. Render's free tier was ruled out — it spins down after 15 minutes of inactivity, which would break an in-progress or waiting-for-players game.
+- **Frontend (React static build): [Cloudflare Pages](https://pages.cloudflare.com/)**. Free — static asset serving is free and unlimited even on their free plan.
+
+**Why Render over Fly.io:** Fly.io was the initial default, but a reliability check turned up a real, sustained pattern of complaints from primary sources — a third-party monitor (IsDown) logging 609 outages since June 2022, a Fly.io community forum thread titled "Reliability: It's Not Great," and multiple Hacker News threads reporting flaky deploys and recurring infra incidents through 2025–2026 (Fly.io is commendably transparent about these via their public `fly.io/infra-log`, but the incident frequency itself is the concern). This matters more for this project than most: a disconnected player just makes the game "pause" with no auto-kick, so a host-side outage would directly stall a live 4-player match. Render is reported as the more production-stable choice for long-lived WebSocket workloads specifically — that comparison itself leans on weaker (SEO-comparison-site) sources, so it's held with moderate confidence, but the negative signal on Fly.io is solid enough to move off it. Cost is roughly a wash either way (~$7/mo).
 
 ## Anti-cheat
 
