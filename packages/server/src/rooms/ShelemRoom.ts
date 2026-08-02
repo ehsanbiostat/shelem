@@ -100,6 +100,12 @@ export class ShelemRoom extends Room<GameState> {
       // reconnect into their seat; the game simply pauses on their turn until then.
       await this.allowReconnection(client, 24 * 60 * 60);
       player.connected = true;
+      // The synced schema state resends itself automatically on reconnect, but a
+      // player's own hand is deliberately kept out of that (see the comment on
+      // `hands`) and only ever pushed via a one-off message — which reconnecting
+      // does NOT replay on its own, so without this the client comes back with an
+      // empty hand until their next server-initiated update.
+      this.sendHand(seat);
     } catch {
       // Reconnection window expired without anyone reclaiming the seat. The room is
       // left as-is (v1 has no bot fill-in or seat-vacating flow) — a future version

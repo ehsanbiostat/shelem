@@ -16,10 +16,21 @@ function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
 }
 
+/** Colyseus keeps a seat reserved for 24h after a drop (see ShelemRoom.onLeave) so
+ * a mid-match refresh doesn't have to mean losing your spot — but only if the
+ * client actually asks to reconnect with this token instead of joining fresh.
+ * Without it, a refresh just opens a brand new join attempt against a room that's
+ * still locked (full), which is rejected outright. Cleared only when a reconnect
+ * attempt itself comes back invalid (expired/room gone) — never on a plain
+ * onLeave, since that also fires for the disconnect a refresh causes on its way
+ * out, which is exactly the case this needs to survive. */
+const RECONNECT_STORAGE_KEY = 'shelem:reconnectionToken';
+
 export default function App() {
   const [name, setName] = useState('');
   const [roomIdInput, setRoomIdInput] = useState('');
   const [room, setRoom] = useState<Room | null>(null);
+  const [reconnecting, setReconnecting] = useState(() => !!localStorage.getItem(RECONNECT_STORAGE_KEY));
   const [state, setState] = useState<GameStateJSON | null>(null);
   const [rawHand, setRawHand] = useState<CardModel[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +49,16 @@ export default function App() {
   useEffect(() => {
     if (state?.phase !== 'widow') setWidowSelection([]);
   }, [state?.phase]);
+
+  useEffect(() => {
+    const token = localStorage.getItem(RECONNECT_STORAGE_KEY);
+    if (!token) return;
+    colyseusClient
+      .reconnect(token)
+      .then((joined) => attachRoom(joined))
+      .catch(() => localStorage.removeItem(RECONNECT_STORAGE_KEY))
+      .finally(() => setReconnecting(false));
+  }, []);
 
   async function createTable() {
     try {
@@ -60,6 +81,7 @@ export default function App() {
   function attachRoom(joined: Room) {
     setRoom(joined);
     setError(null);
+    localStorage.setItem(RECONNECT_STORAGE_KEY, joined.reconnectionToken);
     joined.onStateChange((s: unknown) => setState((s as { toJSON: () => GameStateJSON }).toJSON()));
     joined.onMessage('hand', (cards: CardModel[]) => {
       setRawHand((prev) => {
@@ -69,6 +91,10 @@ export default function App() {
       });
     });
     joined.onMessage('actionRejected', (payload: { reason?: string }) => setError(payload?.reason ?? 'Action rejected'));
+  }
+
+  if (reconnecting) {
+    return <div className={styles.lobbyWaiting}>Reconnecting…</div>;
   }
 
   if (!room || !state) {
