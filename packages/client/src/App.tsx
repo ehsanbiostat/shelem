@@ -93,6 +93,25 @@ export default function App() {
     joined.onMessage('actionRejected', (payload: { reason?: string }) => setError(payload?.reason ?? 'Action rejected'));
   }
 
+  /** A consented leave — the seat isn't coming back for this room (unlike a
+   * dropped connection, which the reconnect flow above is for), so there's no
+   * reason to hold onto the reconnection token or any in-room state. Reusing the
+   * same table isn't supported server-side (no seat-vacating / reset), so the way
+   * to "start over with the same players" is everyone leaving and one of them
+   * creating a fresh table — hence dropping back to the create/join screen rather
+   * than trying to reset in place. */
+  function leaveTable() {
+    room?.leave();
+    localStorage.removeItem(RECONNECT_STORAGE_KEY);
+    setRoom(null);
+    setState(null);
+    setRawHand([]);
+    setSelectedCard(null);
+    setWidowSelection([]);
+    setRoomIdInput('');
+    setError(null);
+  }
+
   if (reconnecting) {
     return <div className={styles.lobbyWaiting}>Reconnecting…</div>;
   }
@@ -208,7 +227,12 @@ export default function App() {
     <div className={styles.gameShell}>
       <div className={styles.header}>
         <strong>Shelem</strong>
-        <span className={styles.roomCode}>Table code: {room.roomId}</span>
+        <div className={styles.headerRight}>
+          <span className={styles.roomCode}>Table code: {room.roomId}</span>
+          <button type="button" className={styles.leaveBtn} onClick={leaveTable}>
+            Leave table
+          </button>
+        </div>
       </div>
 
       {state.phase === 'matchComplete' && (

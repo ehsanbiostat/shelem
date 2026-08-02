@@ -117,9 +117,31 @@
   flex: none;
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .roomCode {
   font-size: 12px;
   opacity: 0.7;
+}
+
+.leaveBtn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: var(--color-ivory-100);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.leaveBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .lobbyWaiting {
