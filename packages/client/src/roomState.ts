@@ -40,6 +40,8 @@ export interface GameStateJSON {
   team0Score: number;
   team1Score: number;
   matchTargetScore: number;
+  declarerPointsCollected: number;
+  defenderPointsCollected: number;
   pendingSeatSwap?: SeatSwapRequestJSON;
   handNumber: number;
 }

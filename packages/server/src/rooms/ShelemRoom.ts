@@ -38,9 +38,10 @@ export class ShelemRoom extends Room<GameState> {
   private bidEvents: BidEvent[] = [];
   private currentHighestBid: Bid | null = null;
   private passedSeats = new Set<Seat>();
-  private declarerPointsCollected = 0;
-  private defenderPointsCollected = 0;
   private seatBySessionId = new Map<string, Seat>();
+  // True for the brief pause after a trick's 4th card is played, while it's still
+  // shown on screen — blocks the next trick's lead until resolveTrick() runs.
+  private resolvingTrick = false;
 
   onCreate(options: JoinOptions) {
     const state = new GameState();
@@ -54,6 +55,7 @@ export class ShelemRoom extends Room<GameState> {
     }
     this.state = state;
 
+    this.onMessage('startGame', (client) => this.handleStartGame(client));
     this.onMessage('bid', (client, message) => this.handleBid(client, message));
     this.onMessage('discardWidow', (client, message) => this.handleDiscardWidow(client, message));
     this.onMessage('playCard', (client, message) => this.handlePlayCard(client, message));
@@ -72,11 +74,18 @@ export class ShelemRoom extends Room<GameState> {
     player.name = options.name?.trim() || `Player ${seat + 1}`;
     player.connected = true;
     this.seatBySessionId.set(client.sessionId, seat as Seat);
+  }
 
+  /** Filling the last seat only makes the table ready — it doesn't deal. Any seated
+   * player can then kick off the first hand once everyone's actually ready to play,
+   * rather than the room dealing out from under a player who just joined. */
+  private handleStartGame(client: Client) {
+    if (this.state.phase !== 'lobby') return;
+    if (!this.seatBySessionId.has(client.sessionId)) return;
     const allSeated = this.state.players.every((p) => p.sessionId !== '');
-    if (allSeated && this.state.phase === 'lobby') {
-      this.startHand();
-    }
+    if (!allSeated) return;
+
+    this.startHand();
   }
 
   async onLeave(client: Client) {
@@ -199,7 +208,7 @@ export class ShelemRoom extends Room<GameState> {
     }
 
     this.hands[seat] = hand;
-    this.declarerPointsCollected += trickPoints(discarded);
+    this.state.declarerPointsCollected += trickPoints(discarded);
 
     this.state.phase = 'playing';
     this.state.currentTurnSeat = seat;
@@ -210,6 +219,7 @@ export class ShelemRoom extends Room<GameState> {
 
   private handlePlayCard(client: Client, message: { suit?: Suit; rank?: Rank }) {
     if (this.state.phase !== 'playing') return;
+    if (this.resolvingTrick) return;
     const seat = this.seatBySessionId.get(client.sessionId);
     if (seat === undefined || seat !== this.state.currentTurnSeat) return;
     if (!message.suit || !message.rank) return;
@@ -252,7 +262,15 @@ export class ShelemRoom extends Room<GameState> {
       return;
     }
 
-    this.resolveTrick();
+    // Hold the completed trick on everyone's screen for a beat before clearing it —
+    // otherwise the 4th card's own broadcast already carries the cleared trick, and
+    // the last play never visibly appears. `resolvingTrick` blocks new plays (turn
+    // hasn't advanced yet) until the pause completes.
+    this.resolvingTrick = true;
+    this.clock.setTimeout(() => {
+      this.resolvingTrick = false;
+      this.resolveTrick();
+    }, 1500);
   }
 
   private resolveTrick() {
@@ -264,9 +282,9 @@ export class ShelemRoom extends Room<GameState> {
     const points = trickPoints(plays.map((p) => p.card));
 
     if (teamForSeat(winnerSeat) === teamForSeat(this.state.declarerSeat as Seat)) {
-      this.declarerPointsCollected += points;
+      this.state.declarerPointsCollected += points;
     } else {
-      this.defenderPointsCollected += points;
+      this.state.defenderPointsCollected += points;
     }
 
     this.state.tricksPlayedThisHand += 1;
@@ -286,8 +304,8 @@ export class ShelemRoom extends Room<GameState> {
 
     const { declarerDelta, defenderDelta } = resolveHandScore(
       bid,
-      this.declarerPointsCollected,
-      this.defenderPointsCollected,
+      this.state.declarerPointsCollected,
+      this.state.defenderPointsCollected,
     );
 
     const declarerTeam = teamForSeat(this.state.declarerSeat as Seat);
@@ -359,8 +377,9 @@ export class ShelemRoom extends Room<GameState> {
     this.bidEvents = [];
     this.currentHighestBid = null;
     this.passedSeats = new Set();
-    this.declarerPointsCollected = 0;
-    this.defenderPointsCollected = 0;
+    this.resolvingTrick = false;
+    this.state.declarerPointsCollected = 0;
+    this.state.defenderPointsCollected = 0;
 
     this.state.phase = 'bidding';
     this.state.declarerSeat = -1;

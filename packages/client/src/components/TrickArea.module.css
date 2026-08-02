@@ -6,37 +6,35 @@
 
 .slot {
   position: absolute;
+  margin-top: -48px;
+  margin-left: -34px;
+}
+
+.top {
+  top: calc(50% - 38px);
+  left: 50%;
 }
 
 .bottom {
-  bottom: 4%;
+  top: calc(50% + 38px);
   left: 50%;
-  transform: translate(-50%, 0);
 }
 
 .left {
   top: 50%;
-  left: 6%;
-  transform: translate(0, -50%);
-}
-
-.top {
-  top: 4%;
-  left: 50%;
-  transform: translate(-50%, 0);
+  left: calc(50% - 38px);
 }
 
 .right {
   top: 50%;
-  right: 6%;
-  transform: translate(0, -50%);
+  left: calc(50% + 38px);
 }
 
 .trumpBadge {
   position: absolute;
-  top: -6px;
+  top: 0;
   left: 50%;
-  transform: translate(-50%, -100%);
+  transform: translate(-50%, -50%);
   background: var(--color-gold-500);
   color: var(--color-ink-900);
   font-size: 11px;

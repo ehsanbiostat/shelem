@@ -1,42 +1,45 @@
+import * as standardDeck from '@letele/playing-cards';
 import type { Card as CardModel, Suit } from '@shelem/shared';
 import styles from './Card.module.css';
 import { CardBackMotif } from './CardBackMotif.js';
 
-const SUIT_GLYPH: Record<Suit, string> = {
-  spades: '♠',
-  hearts: '♥',
-  diamonds: '♦',
-  clubs: '♣',
+const SUIT_LETTER: Record<Suit, string> = {
+  spades: 'S',
+  hearts: 'H',
+  diamonds: 'D',
+  clubs: 'C',
 };
 
-const RED_SUITS = new Set<Suit>(['hearts', 'diamonds']);
+/** The deck's export names pair a suit letter with the rank, lowercased for the
+ * three letter ranks and the ace (`Sk`, `Hq`, `Ca`...) but left as the plain digit
+ * string for number cards (`S10`, `H9`...). */
+const RANK_LETTER: Partial<Record<CardModel['rank'], string>> = { A: 'a', J: 'j', Q: 'q', K: 'k' };
 
-export interface CardProps {
-  card: CardModel;
-  size?: 'sm' | 'md' | 'lg';
-  faceDown?: boolean;
-  selected?: boolean;
-  playable?: boolean;
-  onClick?: () => void;
+function standardDeckKey(card: CardModel): string {
+  return `${SUIT_LETTER[card.suit]}${RANK_LETTER[card.rank] ?? card.rank}`;
 }
 
-function CardFace({ card, size }: { card: CardModel; size: 'sm' | 'md' | 'lg' }) {
-  const colorClass = RED_SUITS.has(card.suit) ? styles.red : styles.black;
-  const glyph = SUIT_GLYPH[card.suit];
+/** Full-face SVGs from Adrian Kennard's public-domain print-ready deck (via
+ * @letele/playing-cards) — the standard rank/suit layout, corner indices, and
+ * face-card portraits players expect, instead of a hand-rolled approximation. */
+function CardFace({
+  card,
+  size,
+  trump,
+  highlighted,
+}: {
+  card: CardModel;
+  size: 'sm' | 'md' | 'lg';
+  trump?: boolean;
+  highlighted?: boolean;
+}) {
+  const Face = standardDeck[standardDeckKey(card)];
 
   return (
     <div className={`${styles.card} ${styles[size]}`}>
-      <div className={`${styles.face} ${colorClass}`}>
-        <span className={styles.corner}>
-          {card.rank}
-          <span className={styles.suitGlyph}>{glyph}</span>
-        </span>
-        <span className={`${styles.corner} ${styles.bottom}`}>
-          {card.rank}
-          <span className={styles.suitGlyph}>{glyph}</span>
-        </span>
+      <div className={`${styles.face} ${trump ? styles.trump : ''} ${highlighted ? styles.highlighted : ''}`}>
+        <Face className={styles.faceArt} />
       </div>
-      <span className={`${styles.centerSuit} ${colorClass}`}>{glyph}</span>
     </div>
   );
 }
@@ -51,19 +54,46 @@ function CardBack({ size }: { size: 'sm' | 'md' | 'lg' }) {
   );
 }
 
+export interface CardProps {
+  card: CardModel;
+  size?: 'sm' | 'md' | 'lg';
+  faceDown?: boolean;
+  selected?: boolean;
+  playable?: boolean;
+  /** Card's suit is the current trump — draws a subtle ring so it stands out in hand. */
+  trump?: boolean;
+  /** Draws attention to the card — e.g. one of the widow cards just added to hand. */
+  highlighted?: boolean;
+  /** Overrides the default (`!playable`) disabled state — for modes like widow
+   * discard where every card is clickable but none should show the "legal" ring. */
+  disabled?: boolean;
+  onClick?: () => void;
+}
+
 /** Renders a playing card. Purely presentational unless `onClick` is given, in which
  * case it renders as a button (used for the local player's playable hand). */
-export function Card({ card, size = 'md', faceDown = false, selected = false, playable = false, onClick }: CardProps) {
-  const content = faceDown ? <CardBack size={size} /> : <CardFace card={card} size={size} />;
+export function Card({
+  card,
+  size = 'md',
+  faceDown = false,
+  selected = false,
+  playable = false,
+  trump = false,
+  highlighted = false,
+  disabled,
+  onClick,
+}: CardProps) {
+  const content = faceDown ? <CardBack size={size} /> : <CardFace card={card} size={size} trump={trump} highlighted={highlighted} />;
 
   if (!onClick) return content;
 
-  const classes = [styles.button, playable && styles.playable, selected && styles.selected, !playable && styles.disabled]
+  const isDisabled = disabled ?? !playable;
+  const classes = [styles.button, playable && styles.playable, selected && styles.selected, isDisabled && styles.disabled]
     .filter(Boolean)
     .join(' ');
 
   return (
-    <button type="button" className={classes} onClick={onClick} disabled={!playable} aria-label={`${card.rank} of ${card.suit}`}>
+    <button type="button" className={classes} onClick={onClick} disabled={isDisabled} aria-label={`${card.rank} of ${card.suit}`}>
       {content}
     </button>
   );

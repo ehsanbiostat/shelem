@@ -1,50 +1,31 @@
 .seat {
   display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--color-ivory-100);
+}
+
+.top,
+.bottom {
+  flex-direction: column;
+}
+
+.left,
+.right {
+  flex-direction: row;
+}
+
+.identity {
+  display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  color: var(--color-ivory-100);
-  min-width: 96px;
+  gap: 4px;
+  min-width: 84px;
 }
 
-.avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: var(--color-emerald-500);
-  border: 2px solid var(--color-gold-500);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 18px;
-  position: relative;
-}
-
-.avatar.turn {
-  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.5);
-}
-
-.avatar.empty {
-  opacity: 0.35;
-  border-style: dashed;
-}
-
-.dealerChip {
-  position: absolute;
-  bottom: -6px;
-  right: -6px;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--color-gold-500);
-  color: var(--color-ink-900);
-  font-size: 10px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--color-emerald-900);
+.activeTurn .name {
+  color: var(--color-gold-300);
+  text-shadow: 0 0 8px rgba(224, 197, 105, 0.7);
 }
 
 .name {
@@ -53,6 +34,17 @@
   display: flex;
   align-items: center;
   gap: 5px;
+  white-space: nowrap;
+}
+
+/* Every piece of a side seat's identity (name, dealer tag, bid badges, declarer
+ * tag) reads in the same direction, bottom-to-top on both sides — not just the
+ * name — so nothing looks rotated a different way from its neighbor. */
+.left .identity > *,
+.right .identity > * {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
 }
 
 .connectedDot {
@@ -66,21 +58,92 @@
   background: #b3261e;
 }
 
-.team {
-  font-size: 11px;
-  opacity: 0.75;
+.dealerTag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gold-300);
+  opacity: 0.9;
 }
 
-.handFan {
-  display: flex;
+/* Every card sits at the exact same anchor (centered, flush to the row's own top)
+ * — the fan comes entirely from each one's `rotate` (set in Seat.tsx, from the
+ * shared `fanAngles`) around a shared distant transform-origin, same technique as
+ * the local player's own hand (see Hand.module.css). That's what guarantees even
+ * spacing regardless of how many cards there are. */
+/* Height is trimmed to the fan's actual rendered reach (the widest card, at the
+ * spread's outer edge, is ~71px tall — see the shared-pivot math above) rather
+ * than a round number, so the name sits right under the cards instead of leaving
+ * dead space below them inside this box. */
+.fanRow {
+  position: relative;
+  width: 170px;
+  height: 76px;
+  pointer-events: none;
 }
 
-.handFan > * {
+.fanCard {
+  position: absolute;
+  left: 50%;
+  top: 0;
   margin-left: -22px;
 }
 
-.handFan > *:first-child {
-  margin-left: 0;
+/* The row above has a fixed width×height footprint; rotated 90° for a side seat,
+ * its on-screen footprint is that box with width/height swapped. This wrapper
+ * reserves that swapped footprint in the seat's layout, and centers + rotates the
+ * (still normally-sized) row inside it — so the rotation is purely visual and
+ * never fights the flex layout around it. */
+.fanWrap {
+  position: relative;
+  width: 76px;
+  height: 170px;
+  pointer-events: none;
+}
+
+.fanWrap .fanRow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+
+.fanWrap.left .fanRow {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.fanWrap.right .fanRow {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.biddingBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-900);
+  background: var(--color-gold-500);
+  padding: 2px 9px;
+  border-radius: 999px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.bidLabelBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-900);
+  background: var(--color-ivory-100);
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+.bidLabelPass {
+  color: var(--color-ivory-100);
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 600;
 }
 
 .declarerBadge {
@@ -88,4 +151,22 @@
   color: var(--color-gold-300);
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+/* Keep pace with Table.module.css's matching breakpoint: trim the opponent
+   footprint so it still fits the narrower center clearance on small screens. */
+@media (max-width: 700px) {
+  .dealerTag,
+  .declarerBadge {
+    display: none;
+  }
+
+  .fanCard:nth-child(n + 5) {
+    display: none;
+  }
+
+  .fanWrap {
+    width: 50px;
+    height: 110px;
+  }
 }

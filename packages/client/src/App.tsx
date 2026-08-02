@@ -1,25 +1,43 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Room } from 'colyseus.js';
-import type { Bid, Card as CardModel, Seat as SeatIndex } from '@shelem/shared';
-import { legalCards } from '@shelem/shared';
+import type { Bid, Card as CardModel, Seat as SeatIndex, Team } from '@shelem/shared';
+import { legalCards, teamForSeat } from '@shelem/shared';
 import styles from './App.module.css';
 import { colyseusClient } from './colyseusClient';
+import { sortHand } from './cardSort';
 import { seatOf, toCard, winningBidFrom, type GameStateJSON } from './roomState';
 import { Table } from './components/Table.js';
 import { TrickArea } from './components/TrickArea.js';
 import { ScoreBar } from './components/ScoreBar.js';
 import { BiddingPanel } from './components/BiddingPanel.js';
-import { WidowDiscard } from './components/WidowDiscard.js';
 import { Hand } from './components/Hand.js';
+
+function cardsEqual(a: CardModel, b: CardModel): boolean {
+  return a.suit === b.suit && a.rank === b.rank;
+}
 
 export default function App() {
   const [name, setName] = useState('');
   const [roomIdInput, setRoomIdInput] = useState('');
   const [room, setRoom] = useState<Room | null>(null);
   const [state, setState] = useState<GameStateJSON | null>(null);
-  const [hand, setHand] = useState<CardModel[]>([]);
+  const [rawHand, setRawHand] = useState<CardModel[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<CardModel | null>(null);
+  const [widowSelection, setWidowSelection] = useState<CardModel[]>([]);
+  // The 4 cards the widow pickup just added to the declarer's hand, computed as a
+  // diff the moment the 16-card hand arrives — used to highlight them in place
+  // rather than opening a separate picker for the discard.
+  const widowAddedRef = useRef<CardModel[]>([]);
+
+  // Trump is unknown (and every suit-color-alternating order is equivalent) until the
+  // declarer's opening lead sets it — re-sort whenever that changes, not just on deal.
+  const trumpSuit: CardModel['suit'] | null = state?.trumpSuit ? (state.trumpSuit as CardModel['suit']) : null;
+  const hand = useMemo(() => sortHand(rawHand, trumpSuit), [rawHand, trumpSuit]);
+
+  useEffect(() => {
+    if (state?.phase !== 'widow') setWidowSelection([]);
+  }, [state?.phase]);
 
   async function createTable() {
     try {
@@ -43,7 +61,13 @@ export default function App() {
     setRoom(joined);
     setError(null);
     joined.onStateChange((s: unknown) => setState((s as { toJSON: () => GameStateJSON }).toJSON()));
-    joined.onMessage('hand', (cards: CardModel[]) => setHand(cards));
+    joined.onMessage('hand', (cards: CardModel[]) => {
+      setRawHand((prev) => {
+        widowAddedRef.current =
+          cards.length === 16 && prev.length === 12 ? cards.filter((c) => !prev.some((p) => cardsEqual(p, c))) : [];
+        return cards;
+      });
+    });
     joined.onMessage('actionRejected', (payload: { reason?: string }) => setError(payload?.reason ?? 'Action rejected'));
   }
 
@@ -87,9 +111,40 @@ export default function App() {
     return <div className={styles.lobbyWaiting}>Connecting…</div>;
   }
 
+  const bidLabelBySeat: Record<number, string> = {};
+  state.bidHistory.forEach((b) => {
+    bidLabelBySeat[b.seat] =
+      b.bidType === 'numeric' ? String(b.amount) : b.bidType === 'shelem' ? 'Shelem' : b.bidType === 'sarShelem' ? 'Sar-Shelem' : 'Pass';
+  });
+
   const tablePlayers = state.players
     .filter((p) => p.sessionId !== '')
-    .map((p) => ({ seat: p.seat as SeatIndex, name: p.name, connected: p.connected, handSize: p.handSize }));
+    .map((p) => ({
+      seat: p.seat as SeatIndex,
+      name: p.name,
+      connected: p.connected,
+      handSize: p.handSize,
+      // Bid history is only meaningful while bidding is actually happening — once the
+      // round moves on, a lingering "Pass" badge next to someone's name is stale info.
+      bidLabel: state.phase === 'bidding' ? bidLabelBySeat[p.seat] : undefined,
+    }));
+
+  // Teams aren't named "A"/"B" anywhere but the scoreboard — they're identified by
+  // their two members' names there, and not labeled on the table at all.
+  function teamName(team: Team): string {
+    const members = tablePlayers.filter((p) => teamForSeat(p.seat) === team).map((p) => p.name);
+    return members.length > 0 ? members.join(' - ') : team === 0 ? 'Team A' : 'Team B';
+  }
+  const team0Name = teamName(0);
+  const team1Name = teamName(1);
+
+  // Live per-hand progress (declarer vs. defenders) mapped onto team 0/1, mirroring
+  // how the match score itself is split once the hand completes.
+  const declarerTeam = state.declarerSeat >= 0 ? teamForSeat(state.declarerSeat as SeatIndex) : null;
+  const team0HandPoints =
+    declarerTeam === 0 ? state.declarerPointsCollected : declarerTeam === 1 ? state.defenderPointsCollected : 0;
+  const team1HandPoints =
+    declarerTeam === 1 ? state.declarerPointsCollected : declarerTeam === 0 ? state.defenderPointsCollected : 0;
 
   function sendBid(bid: Bid) {
     if (bid.type === 'numeric') room?.send('bid', { bidType: 'numeric', amount: bid.amount });
@@ -101,12 +156,20 @@ export default function App() {
     room?.send('playCard', { suit: card.suit, rank: card.rank });
   }
 
-  function discardWidow(cards: CardModel[]) {
-    room?.send('discardWidow', { cards });
+  function toggleWidowCard(card: CardModel) {
+    setWidowSelection((prev) => {
+      if (prev.some((c) => cardsEqual(c, card))) return prev.filter((c) => !cardsEqual(c, card));
+      if (prev.length >= 4) return prev;
+      return [...prev, card];
+    });
+  }
+
+  function confirmWidowDiscard() {
+    room?.send('discardWidow', { cards: widowSelection });
+    setWidowSelection([]);
   }
 
   const winningBid = winningBidFrom(state);
-  const trumpSuit = state.trumpSuit ? (state.trumpSuit as CardModel['suit']) : null;
   const currentTrickPlays = state.currentTrick.map((p) => ({ seat: p.seat as SeatIndex, card: toCard(p) }));
   const leadSuit = currentTrickPlays.length > 0 ? currentTrickPlays[0].card.suit : null;
   const isMyTurn = state.currentTurnSeat === mySeat;
@@ -122,18 +185,9 @@ export default function App() {
         <span className={styles.roomCode}>Table code: {room.roomId}</span>
       </div>
 
-      {state.phase !== 'lobby' && (
-        <ScoreBar
-          team0Score={state.team0Score}
-          team1Score={state.team1Score}
-          matchTargetScore={state.matchTargetScore}
-          handNumber={state.handNumber}
-        />
-      )}
-
       {state.phase === 'matchComplete' && (
         <div className={styles.matchComplete}>
-          {state.team0Score >= state.matchTargetScore ? 'Team A wins the match!' : 'Team B wins the match!'}
+          {state.team0Score >= state.matchTargetScore ? `${team0Name} wins the match!` : `${team1Name} wins the match!`}
         </div>
       )}
 
@@ -155,15 +209,71 @@ export default function App() {
         dealerSeat={state.dealerSeat as SeatIndex}
         currentTurnSeat={state.currentTurnSeat as SeatIndex}
         declarerSeat={state.declarerSeat as SeatIndex | -1}
+        biddingInProgress={state.phase === 'bidding'}
+        cornerPanel={
+          state.phase !== 'lobby' ? (
+            <ScoreBar
+              team0Name={team0Name}
+              team1Name={team1Name}
+              team0Score={state.team0Score}
+              team1Score={state.team1Score}
+              team0HandPoints={team0HandPoints}
+              team1HandPoints={team1HandPoints}
+              matchTargetScore={state.matchTargetScore}
+              handNumber={state.handNumber}
+            />
+          ) : null
+        }
         center={
           state.phase === 'lobby' ? (
-            <div className={styles.lobbyWaiting}>
-              <div className={styles.big}>Waiting for players…</div>
-              <div>{tablePlayers.length} / 4 seated</div>
-            </div>
+            tablePlayers.length === 4 ? (
+              <div className={styles.lobbyWaiting}>
+                <div className={styles.big}>All 4 players are seated</div>
+                <button className={styles.startGameBtn} onClick={() => room?.send('startGame')}>
+                  Start Game
+                </button>
+              </div>
+            ) : (
+              <div className={styles.lobbyWaiting}>
+                <div className={styles.big}>Waiting for players…</div>
+                <div>{tablePlayers.length} / 4 seated</div>
+              </div>
+            )
+          ) : state.phase === 'bidding' ? (
+            <BiddingPanel
+              bidHistory={state.bidHistory.map((b) => ({ seat: b.seat as SeatIndex, bidType: b.bidType, amount: b.amount }))}
+              mySeat={mySeat}
+              currentTurnSeat={state.currentTurnSeat as SeatIndex}
+              playerNames={playerNames}
+              onBid={sendBid}
+            />
           ) : (
             <TrickArea mySeat={mySeat} plays={currentTrickPlays} trumpSuit={trumpSuit} />
           )
+        }
+        bottomOverlay={
+          state.phase === 'widow' && state.declarerSeat === mySeat ? (
+            <Hand
+              cards={hand}
+              legalCards={hand}
+              isMyTurn
+              onPlay={() => {}}
+              selectedCard={null}
+              highlightedCards={widowAddedRef.current}
+              discardSelection={widowSelection}
+              onToggleDiscard={toggleWidowCard}
+              onConfirmDiscard={confirmWidowDiscard}
+            />
+          ) : hand.length > 0 && state.phase !== 'widow' ? (
+            <Hand
+              cards={hand}
+              legalCards={state.phase === 'playing' ? legal : []}
+              isMyTurn={state.phase === 'playing' && isMyTurn}
+              onPlay={playCard}
+              selectedCard={selectedCard}
+              trumpSuit={trumpSuit}
+            />
+          ) : null
         }
       />
 
@@ -187,31 +297,7 @@ export default function App() {
         </div>
       )}
 
-      {state.phase === 'bidding' && (
-        <BiddingPanel
-          bidHistory={state.bidHistory.map((b) => ({ seat: b.seat as SeatIndex, bidType: b.bidType, amount: b.amount }))}
-          mySeat={mySeat}
-          currentTurnSeat={state.currentTurnSeat as SeatIndex}
-          playerNames={playerNames}
-          onBid={sendBid}
-        />
-      )}
-
-      {state.phase === 'widow' && state.declarerSeat === mySeat && (
-        <WidowDiscard cards={hand} onDiscard={discardWidow} />
-      )}
-
       {error && <p className={styles.error}>{error}</p>}
-
-      {hand.length > 0 && state.phase !== 'widow' && (
-        <Hand
-          cards={hand}
-          legalCards={state.phase === 'playing' ? legal : []}
-          isMyTurn={state.phase === 'playing' && isMyTurn}
-          onPlay={playCard}
-          selectedCard={selectedCard}
-        />
-      )}
     </div>
   );
 }
