@@ -1,0 +1,16 @@
+.hand {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  min-height: 128px;
+  padding: 8px 0 4px;
+}
+
+.cardSlot {
+  margin-left: -30px;
+  transform-origin: bottom center;
+}
+
+.cardSlot:first-child {
+  margin-left: 0;
+}

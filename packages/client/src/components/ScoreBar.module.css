@@ -1,0 +1,47 @@
+.bar {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  align-items: center;
+  color: var(--color-ivory-100);
+  font-size: 14px;
+  padding: 10px 0;
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.dotA {
+  background: var(--color-sapphire-500);
+}
+
+.dotB {
+  background: var(--color-ruby-500);
+}
+
+.score {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.target {
+  opacity: 0.7;
+  font-size: 12px;
+}
+
+.hand {
+  opacity: 0.7;
+  font-size: 12px;
+}

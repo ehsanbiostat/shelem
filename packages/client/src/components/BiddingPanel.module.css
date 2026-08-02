@@ -1,0 +1,95 @@
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-gold-500);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  padding: 16px 20px;
+  max-width: 420px;
+  margin: 12px auto 0;
+  text-align: center;
+}
+
+.status {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin-bottom: 10px;
+}
+
+.highest {
+  font-weight: 700;
+  color: var(--color-emerald-700);
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.select {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #d7c99a;
+  font-family: inherit;
+  font-size: 14px;
+}
+
+.btn {
+  padding: 9px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: filter 120ms ease;
+}
+
+.btn:hover {
+  filter: brightness(1.08);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  filter: none;
+}
+
+.btnBid {
+  background: var(--color-emerald-700);
+  color: white;
+}
+
+.btnShelem {
+  background: var(--color-sapphire-700);
+  color: white;
+}
+
+.btnSarShelem {
+  background: var(--color-ruby-700);
+  color: white;
+}
+
+.btnPass {
+  background: transparent;
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+}
+
+.history {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.historyItem {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-ivory-200);
+}

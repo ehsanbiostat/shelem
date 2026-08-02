@@ -1,0 +1,62 @@
+.tableWrap {
+  position: relative;
+  width: min(92vw, 780px);
+  aspect-ratio: 16 / 10;
+  margin: 0 auto;
+}
+
+.felt {
+  position: absolute;
+  inset: 0;
+  border-radius: 50% / 45%;
+  background: radial-gradient(ellipse at center, var(--color-emerald-500) 0%, var(--color-emerald-700) 65%, var(--color-emerald-900) 100%);
+  border: 6px solid var(--color-table-border);
+  box-shadow: var(--shadow-panel), inset 0 0 60px rgba(0, 0, 0, 0.35);
+}
+
+.feltPattern {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.seatSlot {
+  position: absolute;
+  z-index: 2;
+}
+
+.top {
+  top: 4%;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.left {
+  top: 50%;
+  left: 3%;
+  transform: translate(0, -50%);
+}
+
+.right {
+  top: 50%;
+  right: 3%;
+  transform: translate(0, -50%);
+}
+
+.bottom {
+  bottom: 4%;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 55%;
+  height: 55%;
+  z-index: 1;
+}

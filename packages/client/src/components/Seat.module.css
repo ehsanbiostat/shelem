@@ -1,0 +1,91 @@
+.seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ivory-100);
+  min-width: 96px;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-emerald-500);
+  border: 2px solid var(--color-gold-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  position: relative;
+}
+
+.avatar.turn {
+  box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.5);
+}
+
+.avatar.empty {
+  opacity: 0.35;
+  border-style: dashed;
+}
+
+.dealerChip {
+  position: absolute;
+  bottom: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-gold-500);
+  color: var(--color-ink-900);
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--color-emerald-900);
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.connectedDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4caf7d;
+}
+
+.connectedDot.offline {
+  background: #b3261e;
+}
+
+.team {
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.handFan {
+  display: flex;
+}
+
+.handFan > * {
+  margin-left: -22px;
+}
+
+.handFan > *:first-child {
+  margin-left: 0;
+}
+
+.declarerBadge {
+  font-size: 11px;
+  color: var(--color-gold-300);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
