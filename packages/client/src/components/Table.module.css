@@ -1,0 +1,88 @@
+.tableWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.felt {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, var(--color-emerald-500) 0%, var(--color-emerald-700) 60%, var(--color-emerald-900) 100%);
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.45);
+}
+
+.feltPattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.seatSlot {
+  position: absolute;
+  z-index: 2;
+}
+
+/* Every seat hugs the true edge of the window, matching a table that fills the
+   whole viewport rather than a card floating with margins around it. */
+.top {
+  top: 6px;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.left {
+  top: 50%;
+  left: 6px;
+  transform: translate(0, -50%);
+}
+
+.right {
+  top: 50%;
+  right: 6px;
+  transform: translate(0, -50%);
+}
+
+.bottom {
+  bottom: 150px;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.center {
+  position: absolute;
+  top: 160px;
+  bottom: 190px;
+  left: 165px;
+  right: 165px;
+  z-index: 1;
+}
+
+/* Below this width the fixed-size opponent fans/badges no longer leave enough
+   room for the center content at a 165px clearance — Seat.module.css trims the
+   same seats' footprint at this breakpoint so the two stay in sync. */
+@media (max-width: 700px) {
+  .center {
+    left: 105px;
+    right: 105px;
+  }
+}
+
+.bottomOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+}
+
+/* Bottom-left corner, clear of the bottom-center hand — see ScoreBar.module.css
+   for why it's a small translucent square rather than a full-width bar. */
+.cornerPanel {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 2;
+}

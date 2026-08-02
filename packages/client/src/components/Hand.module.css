@@ -1,0 +1,52 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.discardBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-ivory-100);
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 999px;
+  padding: 6px 8px 6px 16px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.discardBtn {
+  padding: 7px 16px;
+  border-radius: 999px;
+  border: none;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--color-sapphire-500);
+  color: white;
+}
+
+.discardBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.hand {
+  position: relative;
+  width: 100%;
+  height: 148px;
+  margin-top: 8px;
+}
+
+/* Every card sits on the exact same spot (centered, flush with the bottom of the
+ * strip) — the fan comes entirely from each one's `rotate` (set in Hand.tsx) around
+ * the shared distant transform-origin, which is what makes the arc's spacing even. */
+.cardSlot {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  margin-left: -42px;
+}
