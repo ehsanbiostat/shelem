@@ -32,3 +32,5 @@ No hard hosting requirement was identified for reaching players in Iran specific
 ## Anti-cheat
 
 Server is the single source of truth for game state. Each client only ever receives the subset of state it's allowed to see (own hand, public trick state, revealed trump) — never other players' hands or the buried widow/discard cards before they're legitimately revealed. This is the primary reason a purely client-side or peer-to-peer architecture was ruled out.
+
+The deck carried over between hands (see [deliberately light shuffling](game-rules.md#shuffling--deliberately-light)) is likewise server-only. Its card order is never synced — at a physical table the trick piles are visible to everyone, but exposing that order here would just hand clients a head start on the next deal's structure.
