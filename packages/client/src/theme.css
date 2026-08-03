@@ -49,9 +49,10 @@
    * rather than independent fixed pixel values, so the entire table scales as
    * one consistent system on any screen (a phone in portrait, a wide desktop
    * monitor) instead of each piece being clipped or oversized independently.
-   * Based on `1vmin` (the smaller of 1% viewport width/height) so the table
-   * scales against whichever dimension is tighter; clamped so it never gets
-   * illegibly small or comically large at extreme window sizes. */
+   * This top-level value (viewport-based) is only a fallback for anything
+   * rendered outside the table — Table.module.css's `.tableWrap` redefines it
+   * off *container* query units instead, which is what everything on the table
+   * actually inherits; see the comment there for why that distinction matters. */
   --u: clamp(3px, 1vmin, 8px);
 }
 

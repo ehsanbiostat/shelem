@@ -1,4 +1,16 @@
+/* `--u` (the shared scale unit every card/fan/clearance is a multiple of — see
+ * theme.css) is redefined here off *container* query units (cqmin) instead of
+ * the `:root` default's viewport units (vmin). The table never actually gets
+ * the full browser viewport — App.module.css's header, and phase banners like
+ * the "X's team bid Y" strip, sit above it — so sizing off raw vmin overshoots
+ * by however much that chrome takes, and overflow: hidden below quietly clips
+ * whatever doesn't fit. `container-type: size` makes this element itself the
+ * reference box for cqmin, so `--u` tracks the table's real, already-shrunk
+ * footprint instead of a viewport size the table doesn't actually get. */
 .tableWrap {
+  container-type: size;
+  container-name: table;
+  --u: clamp(3px, 1cqmin, 8px);
   position: relative;
   flex: 1;
   min-height: 0;
