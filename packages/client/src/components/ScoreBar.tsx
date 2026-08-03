@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import styles from './ScoreBar.module.css';
 
 export interface ScoreBarProps {
@@ -11,9 +12,11 @@ export interface ScoreBarProps {
   handNumber: number;
 }
 
-/** A small translucent square pinned to the table's bottom-left corner (see
- * Table's `cornerPanel`) rather than a full-width bar above the felt — keeps the
- * score visible without competing with the felt or the hand for space. */
+/** Pinned to the table's bottom-left corner (see Table's `cornerPanel`). Starts
+ * as a small tap target showing just the running score — full team names, hand
+ * points, and target/hand number are a tap away instead of sitting open on the
+ * felt all the time, since that's real space taken from a board that's already
+ * tight on mobile. Tapping either state toggles to the other. */
 export function ScoreBar({
   team0Name,
   team1Name,
@@ -24,8 +27,22 @@ export function ScoreBar({
   matchTargetScore,
   handNumber,
 }: ScoreBarProps) {
+  const [open, setOpen] = useState(false);
+
+  if (!open) {
+    return (
+      <button type="button" className={styles.trigger} onClick={() => setOpen(true)} aria-label="Show scores">
+        <span className={`${styles.dot} ${styles.dotA}`} />
+        <span className={styles.triggerScore}>{team0Score}</span>
+        <span className={styles.triggerSep}>–</span>
+        <span className={styles.triggerScore}>{team1Score}</span>
+        <span className={`${styles.dot} ${styles.dotB}`} />
+      </button>
+    );
+  }
+
   return (
-    <div className={styles.panel}>
+    <button type="button" className={styles.panel} onClick={() => setOpen(false)} aria-label="Hide scores">
       <div className={styles.team}>
         <span className={`${styles.dot} ${styles.dotA}`} />
         <span className={styles.name}>{team0Name}</span>
@@ -44,6 +61,6 @@ export function ScoreBar({
         <span>Target {matchTargetScore}</span>
         <span>Hand {handNumber}</span>
       </div>
-    </div>
+    </button>
   );
 }
