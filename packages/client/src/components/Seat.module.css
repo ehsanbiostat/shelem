@@ -67,38 +67,44 @@
   opacity: 0.9;
 }
 
-/* Every card sits at the exact same anchor (centered, flush to the row's own top)
- * — the fan comes entirely from each one's `rotate` (set in Seat.tsx, from the
- * shared `fanAngles`) around a shared distant transform-origin, same technique as
- * the local player's own hand (see Hand.module.css). That's what guarantees even
- * spacing regardless of how many cards there are. */
-/* Height is trimmed to the fan's actual rendered reach (the widest card, at the
- * spread's outer edge, is ~71px tall — see the shared-pivot math above) rather
- * than a round number, so the name sits right under the cards instead of leaving
- * dead space below them inside this box. */
+/* Every card sits at the exact same anchor (centered, flush to the row's own
+ * bottom) — the fan comes entirely from each one's `rotate` (set in Seat.tsx,
+ * from the shared `fanAngles`) around a shared distant transform-origin, same
+ * technique as the local player's own hand (see Hand.module.css). That's what
+ * guarantees even spacing regardless of how many cards there are. */
+/* The row is only as tall as the sliver of each card we mean to reveal — a full
+ * card (96px at `md`) would be as tall as the opponent's own name label; anchoring
+ * each card to the row's bottom and clipping the row (`overflow: hidden`) crops
+ * the rest off instead, à la Trickster Cards, where an opponent's cards read as
+ * just poking into view from off-table rather than being shown in full. Width
+ * scales with the viewport so the arc actually fills the edge it hugs, not just a
+ * fixed-size box in the middle of it. */
 .fanRow {
   position: relative;
-  width: 170px;
-  height: 76px;
+  width: min(62vw, 640px);
+  height: 58px;
+  overflow: hidden;
   pointer-events: none;
 }
 
 .fanCard {
   position: absolute;
   left: 50%;
-  top: 0;
-  margin-left: -22px;
+  bottom: 0;
+  margin-left: -34px;
 }
 
 /* The row above has a fixed width×height footprint; rotated 90° for a side seat,
  * its on-screen footprint is that box with width/height swapped. This wrapper
  * reserves that swapped footprint in the seat's layout, and centers + rotates the
  * (still normally-sized) row inside it — so the rotation is purely visual and
- * never fights the flex layout around it. */
+ * never fights the flex layout around it. The row itself is re-sized (below) to
+ * the swapped dimensions so its "fill the edge" side tracks viewport height
+ * instead of width once it's on its side. */
 .fanWrap {
   position: relative;
-  width: 76px;
-  height: 170px;
+  width: 58px;
+  height: min(58vh, 560px);
   pointer-events: none;
 }
 
@@ -106,6 +112,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
+  width: min(58vh, 560px);
+  height: 58px;
 }
 
 .fanWrap.left .fanRow {
@@ -154,19 +162,28 @@
 }
 
 /* Keep pace with Table.module.css's matching breakpoint: trim the opponent
-   footprint so it still fits the narrower center clearance on small screens. */
+   footprint so it still fits the narrower center clearance on small screens.
+   The row/wrap pair must keep matching (swapped) dimensions here too — see the
+   comment above .fanWrap — so both sides of the swap are redeclared together
+   rather than just shrinking one and leaving the other's arc oversized. */
 @media (max-width: 700px) {
   .dealerTag,
   .declarerBadge {
     display: none;
   }
 
-  .fanCard:nth-child(n + 5) {
-    display: none;
+  .fanRow {
+    width: min(78vw, 320px);
+    height: 46px;
   }
 
   .fanWrap {
-    width: 50px;
-    height: 110px;
+    width: 46px;
+    height: min(44vh, 260px);
+  }
+
+  .fanWrap .fanRow {
+    width: min(44vh, 260px);
+    height: 46px;
   }
 }
