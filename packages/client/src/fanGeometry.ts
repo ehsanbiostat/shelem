@@ -37,3 +37,17 @@ export function fanOffsets(count: number, spacing: number): number[] {
   const center = (count - 1) / 2;
   return Array.from({ length: count }, (_, i) => (i - center) * spacing);
 }
+
+/** Perpendicular (depth) offset per card, in the same local "negative = further
+ * into the table" direction as the crop reveal (Seat.module.css's
+ * .fanCardCrop pins each card to its own bottom, i.e. local-negative-Y is
+ * where the visible slice sits) — a parabola that's 0 at the two outermost
+ * cards and `-curveAmount` (further into the table) at dead center, so the
+ * fan reads as a shallow dome bulging toward the table rather than a flat row
+ * or, worse, a bowl sagging away from it. Purely cosmetic, layered on top of
+ * `fanOffsets` — has no bearing on whether the fan fits. */
+export function fanCurve(offsets: number[], curveAmount: number): number[] {
+  const maxAbs = offsets.reduce((m, o) => Math.max(m, Math.abs(o)), 0);
+  if (maxAbs <= 0 || curveAmount <= 0) return offsets.map(() => 0);
+  return offsets.map((o) => -curveAmount * (1 - (o / maxAbs) ** 2));
+}
