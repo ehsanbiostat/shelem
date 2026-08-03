@@ -8,6 +8,7 @@ import {
   type Suit,
   createDeck,
   shuffle,
+  tableShuffle,
   deal,
   isValidBid,
   resolveBidding,
@@ -41,6 +42,13 @@ export class ShelemRoom extends Room<GameState> {
   private declarerPointsCollected = 0;
   private defenderPointsCollected = 0;
   private seatBySessionId = new Map<string, Seat>();
+  // Each team stacks the tricks it wins, in the order it won them, cards in play order —
+  // exactly as the cards end up piled on the table. Combined at the end of the hand into
+  // `collectedDeck`, which is then lightly shuffled and dealt again. This is what carries
+  // suit grouping from one hand into the next; see `tableShuffle`.
+  private teamPiles: [Card[], Card[]] = [[], []];
+  // The previous hand's cards, awaiting the next deal. Null before the first hand.
+  private collectedDeck: Card[] | null = null;
 
   onCreate(options: JoinOptions) {
     const state = new GameState();
@@ -133,6 +141,9 @@ export class ShelemRoom extends Room<GameState> {
     }
 
     if (resolution.redeal) {
+      // Nobody took the bid, so the cards get gathered back up and dealt again rather
+      // than a fresh deck appearing from nowhere.
+      this.collectedDeck = [...this.hands.flat(), ...this.widow];
       this.startHand();
       return;
     }
@@ -200,6 +211,8 @@ export class ShelemRoom extends Room<GameState> {
 
     this.hands[seat] = hand;
     this.declarerPointsCollected += trickPoints(discarded);
+    // The buried cards sit under the declarer team's pile, where they were set aside.
+    this.teamPiles[teamForSeat(seat)].push(...discarded);
 
     this.state.phase = 'playing';
     this.state.currentTurnSeat = seat;
@@ -269,6 +282,10 @@ export class ShelemRoom extends Room<GameState> {
       this.defenderPointsCollected += points;
     }
 
+    // The winner scoops the trick face-down onto their team's pile, cards still in the
+    // order they were played — led suit first, which is what keeps suits grouped.
+    this.teamPiles[teamForSeat(winnerSeat)].push(...plays.map((p) => p.card));
+
     this.state.tricksPlayedThisHand += 1;
     this.state.currentTrick.clear();
     this.state.currentTurnSeat = winnerSeat;
@@ -300,6 +317,11 @@ export class ShelemRoom extends Room<GameState> {
       this.state.team1Score += declarerTeamDelta;
       this.state.team0Score += defenderTeamDelta;
     }
+
+    // The two piles get squared together into one deck for the next deal. Which team's
+    // pile ends up on top isn't fixed at a real table, so don't fix it here either.
+    const [pile0, pile1] = this.teamPiles;
+    this.collectedDeck = Math.random() < 0.5 ? pile0.concat(pile1) : pile1.concat(pile0);
 
     if (isMatchComplete({ team0: this.state.team0Score, team1: this.state.team1Score }, this.state.matchTargetScore)) {
       this.state.phase = 'matchComplete';
@@ -351,11 +373,26 @@ export class ShelemRoom extends Room<GameState> {
 
   // ---- Hand lifecycle ----
 
+  /**
+   * The deck for the next deal. Normally last hand's cards given a light shuffle, which
+   * is what carries suit grouping forward. Only the very first hand of a match starts
+   * from a fresh, fully randomised deck — there's no previous hand to inherit from.
+   */
+  private nextDeck(): Card[] {
+    const collected = this.collectedDeck;
+    this.collectedDeck = null;
+    if (collected && collected.length === 52) {
+      return tableShuffle(collected);
+    }
+    return shuffle(createDeck());
+  }
+
   private startHand() {
-    const deck = shuffle(createDeck());
-    const { hands, widow } = deal(deck);
+    const deck = this.nextDeck();
+    const { hands, widow } = deal(deck, this.state.dealerSeat as Seat);
     this.hands = hands;
     this.widow = widow;
+    this.teamPiles = [[], []];
     this.bidEvents = [];
     this.currentHighestBid = null;
     this.passedSeats = new Set();

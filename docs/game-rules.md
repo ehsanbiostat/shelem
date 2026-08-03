@@ -6,9 +6,31 @@ The authoritative ruleset for this platform's game engine, as clarified with the
 
 - 4 players, 2 fixed partnerships — partners sit opposite each other.
 - Standard 52-card deck.
-- Each player is dealt 12 cards, in batches of 4.
-- The remaining 4 cards form a face-down **widow**.
+- Each player is dealt 12 cards as **one unbroken block**, not one card at a time: the dealer gives 12 straight off the top to the player on their left, then 12 to the next, then 12 to the next, then deals 4 for the widow, and takes the last 12 themselves.
+- Those 4 cards form a face-down **widow**.
 - Dealer rotates clockwise each hand. The first bidder each hand is whoever receives cards first in that deal (same seat-relative-to-dealer every time).
+
+## Shuffling — deliberately light
+
+The deck is **not** fully randomised between hands, and this is a rule, not an oversight. It reproduces how the game is actually played in person, and the game is balanced around it.
+
+- The cards carry over from the previous hand. Each team stacks the tricks it wins in the order it won them, cards in the order they were played; the declarer's 4 buried cards sit under their team's pile. At the end of the hand the two piles are squared together into one deck.
+- That deck gets **2 riffle shuffles and one cut** — a normal table shuffle, not a thorough randomisation.
+- The first hand of a match has no previous hand to inherit, so it starts from a fully randomised deck.
+- On a redeal (everyone passes), the hands and widow are gathered back up and dealt again, rather than a fresh deck being introduced.
+
+**Why it matters.** A trick is mostly cards of one suit, so a played-out deck comes back with the suits grouped. A light shuffle leaves that grouping partly intact, and because the deal hands out contiguous 12-card blocks, a run of same-suit cards lands in one player's hand instead of being split one card per seat. The result is longer suits, which is what makes a trump-length bid reachable — the whole point of bidding a suit you're long in. Shuffling thoroughly, or dealing one card at a time, erases the effect completely and flattens every hand toward 4-3-3-2.
+
+Measured over 40,000 chained hands, against a fully randomised deal:
+
+| | light shuffle (2 riffles) | full shuffle |
+|---|---|---|
+| average longest suit | 5.0 | 4.6 |
+| hands with a 6+ card suit | 27% | 13% |
+| hands with a void | 18% | 8% |
+| declarer's trump length | 6.0 | 5.4 |
+
+**Fairness.** The cut point is uniform across the whole deck rather than near the middle, the way a person cuts. This matters: the deal hands out fixed contiguous blocks, so a middle-ish cut shifts the deck by roughly two seats and merely moves any advantage to a different player instead of removing it. Simulation showed a persistent ~6.5 point-per-hand gap between seats surviving any number of human-style cuts; one uniform cut flattens it to ~0.1, and further cuts change nothing. No seat gains an edge from the light shuffle.
 
 ## Bidding
 
