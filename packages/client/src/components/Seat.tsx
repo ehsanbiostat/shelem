@@ -39,7 +39,12 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
     <div className={styles.fanRow}>
       {angles.map((angle, i) => (
         <div key={i} className={styles.fanCard} style={{ transform: `rotate(${angle}deg)` }}>
-          <Card card={{ suit: 'spades', rank: '2' }} size="md" faceDown />
+          {/* The crop lives in here, one level inside the rotated+positioned
+           * .fanCard, not on the shared row — see the comment on .fanCardCrop
+           * in Seat.module.css for why cropping the row itself doesn't work. */}
+          <div className={styles.fanCardCrop}>
+            <Card card={{ suit: 'spades', rank: '2' }} size="md" faceDown />
+          </div>
         </div>
       ))}
     </div>
