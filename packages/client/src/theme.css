@@ -32,6 +32,10 @@
   --color-table-border: var(--color-gold-500);
   --color-surface: var(--color-ivory-100);
   --color-surface-raised: #ffffff;
+  /* Face-down card backs. Deliberately not --color-team-a's blue despite sharing
+   * the sapphire ramp — a card back is never a team signal, and every seat's
+   * backs look identical. */
+  --color-card-back: var(--color-sapphire-700);
   --color-text: var(--color-ink-900);
   --color-text-muted: var(--color-ink-600);
 
