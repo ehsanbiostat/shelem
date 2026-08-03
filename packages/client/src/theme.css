@@ -49,10 +49,12 @@
    * rather than independent fixed pixel values, so the entire table scales as
    * one consistent system on any screen (a phone in portrait, a wide desktop
    * monitor) instead of each piece being clipped or oversized independently.
-   * This top-level value (viewport-based) is only a fallback for anything
-   * rendered outside the table — Table.module.css's `.tableWrap` redefines it
-   * off *container* query units instead, which is what everything on the table
-   * actually inherits; see the comment there for why that distinction matters. */
+   * This top-level value (viewport-based) is only a fallback for the first
+   * paint and anything rendered outside the table — Table.tsx measures its own
+   * rendered box with ResizeObserver (see useTableScaleUnit) and sets the real
+   * value as an inline style on `.tableWrap`, which is what everything on the
+   * table actually ends up inheriting; see the comment on `.tableWrap` in
+   * Table.module.css for why that measurement isn't just a CSS rule. */
   --u: clamp(3px, 1vmin, 8px);
 }
 

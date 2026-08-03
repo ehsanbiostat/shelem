@@ -1,8 +1,9 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { Seat as SeatIndex } from '@shelem/shared';
 import styles from './Table.module.css';
 import { Seat } from './Seat.js';
 import { TableFeltMotif } from './TableFeltMotif.js';
+import { useTableScaleUnit } from '../useTableScaleUnit.js';
 
 export interface TablePlayer {
   seat: SeatIndex;
@@ -50,9 +51,10 @@ export function Table({
   cornerPanel,
 }: TableProps) {
   const bySeat = new Map(players.map((p) => [p.seat, p]));
+  const { ref: tableRef, u } = useTableScaleUnit<HTMLDivElement>();
 
   return (
-    <div className={styles.tableWrap}>
+    <div ref={tableRef} className={styles.tableWrap} style={{ '--u': `${u}px` } as CSSProperties}>
       <div className={styles.felt}>
         <div className={styles.feltPattern}>
           <TableFeltMotif />
