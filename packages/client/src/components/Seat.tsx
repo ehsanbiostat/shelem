@@ -49,7 +49,13 @@ export interface SeatProps {
 function CardFan({ handSize, orientation }: { handSize: number; orientation: 'top' | 'left' | 'right' }) {
   const { width, height, u } = useTableMetrics();
   const count = Math.min(handSize, 12);
-  const angles = fanAngles(count, FAN_DEGREES_PER_CARD, FAN_MAX_SPREAD);
+  // Negated because an opponent's fan is our own fan seen from the other side of
+  // the table — i.e. rotated 180°. That rotation flips both halves of the arc:
+  // the bulge (handled by negating `curve` below) *and* the direction each card
+  // tilts. Only the curve used to be flipped, which left every opponent's cards
+  // tilting the way a near-side hand tilts while the arc they sat on bulged the
+  // opposite way — tilt and arc disagreeing is what read as a reversed arc.
+  const angles = fanAngles(count, FAN_DEGREES_PER_CARD, FAN_MAX_SPREAD).map((a) => -a);
 
   // The fan spreads along the table's width for the top seat, and along its
   // height for a side seat (before that whole row gets rotated 90° — see
