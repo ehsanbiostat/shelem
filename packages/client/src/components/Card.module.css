@@ -1,6 +1,9 @@
+/* Every size below is a multiple of the shared `--u` scale unit (see theme.css)
+ * instead of a fixed pixel value, so cards shrink and grow with the table as a
+ * whole rather than staying a fixed size while everything around them scales. */
 .card {
-  --card-w: 68px;
-  --card-h: 96px;
+  --card-w: calc(var(--u) * 9.7);
+  --card-h: calc(var(--u) * 13.7);
   width: var(--card-w);
   height: var(--card-h);
   border-radius: var(--radius-sm);
@@ -11,13 +14,13 @@
 }
 
 .card.sm {
-  --card-w: 44px;
-  --card-h: 62px;
+  --card-w: calc(var(--u) * 6.3);
+  --card-h: calc(var(--u) * 8.9);
 }
 
 .card.lg {
-  --card-w: 84px;
-  --card-h: 118px;
+  --card-w: calc(var(--u) * 12);
+  --card-h: calc(var(--u) * 16.9);
 }
 
 .face {

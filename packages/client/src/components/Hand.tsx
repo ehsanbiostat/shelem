@@ -4,6 +4,7 @@ import { fanAngles } from '@shelem/shared';
 import styles from './Hand.module.css';
 import { Card } from './Card.js';
 import { cardKey } from '../cardKey.js';
+import { useScaleUnit } from '../useScaleUnit.js';
 
 export interface HandProps {
   cards: CardModel[];
@@ -32,11 +33,18 @@ const DISCARD_REQUIRED = 4;
  * fixed offset doesn't account for how much a rotated card's edge shifts sideways).
  * Distance is measured from the card's own bottom edge. The angles themselves come
  * from `fanAngles` (shared package, unit-tested) — the same function used for
- * opponents' fans, so every seat's hand reads as the same shape. */
-const PIVOT_DISTANCE_BELOW_CARD = 480;
-/** Must match the 'lg' card height in Card.module.css — transform-origin's Y is an
- * offset from the card's own top edge, so this converts "below the bottom" to that. */
-const CARD_LG_HEIGHT = 118;
+ * opponents' fans, so every seat's hand reads as the same shape.
+ *
+ * Both constants are multiples of the shared `--u` scale unit (see theme.css),
+ * read live via `useScaleUnit` — not plain CSS, because Framer Motion overwrites
+ * a literal `transform-origin` from its own `originX`/`originY` style props on
+ * every render (see the `motion.div` below), so the pivot has to be computed in
+ * JS instead of left to a CSS `calc()` the way Seat.module.css does it. */
+const PIVOT_DISTANCE_BELOW_CARD_U = 68;
+/** Must match the 'lg' card height multiplier in Card.module.css — transform-
+ * origin's Y is an offset from the card's own top edge, so this converts
+ * "below the bottom" to that. */
+const CARD_LG_HEIGHT_U = 16.9;
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -60,6 +68,8 @@ export function Hand({
   const total = cards.length;
   const isDiscardMode = discardSelection !== undefined;
   const angles = fanAngles(total);
+  const u = useScaleUnit();
+  const originYPx = (CARD_LG_HEIGHT_U + PIVOT_DISTANCE_BELOW_CARD_U) * u;
 
   return (
     <div className={styles.wrap}>
@@ -95,7 +105,7 @@ export function Hand({
                 // style keys every render and overwrites a plain `style.transformOrigin`
                 // string with the CSS default (50% 50% 0) — so the far pivot has to be set
                 // through those keys, not as a literal transform-origin value.
-                style={{ originX: '50%', originY: `${CARD_LG_HEIGHT + PIVOT_DISTANCE_BELOW_CARD}px` }}
+                style={{ originX: '50%', originY: `${originYPx}px` }}
                 initial={{ opacity: 0, y: 40, rotate: angle }}
                 animate={{ opacity: 1, y: 0, rotate: angle }}
                 exit={{ opacity: 0 }}
