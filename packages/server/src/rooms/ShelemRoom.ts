@@ -39,9 +39,10 @@ export class ShelemRoom extends Room<GameState> {
   private bidEvents: BidEvent[] = [];
   private currentHighestBid: Bid | null = null;
   private passedSeats = new Set<Seat>();
-  private declarerPointsCollected = 0;
-  private defenderPointsCollected = 0;
   private seatBySessionId = new Map<string, Seat>();
+  // True for the brief pause after a trick's 4th card is played, while it's still
+  // shown on screen — blocks the next trick's lead until resolveTrick() runs.
+  private resolvingTrick = false;
   // Each team stacks the tricks it wins, in the order it won them, cards in play order —
   // exactly as the cards end up piled on the table. Combined at the end of the hand into
   // `collectedDeck`, which is then lightly shuffled and dealt again. This is what carries
@@ -62,6 +63,7 @@ export class ShelemRoom extends Room<GameState> {
     }
     this.state = state;
 
+    this.onMessage('startGame', (client) => this.handleStartGame(client));
     this.onMessage('bid', (client, message) => this.handleBid(client, message));
     this.onMessage('discardWidow', (client, message) => this.handleDiscardWidow(client, message));
     this.onMessage('playCard', (client, message) => this.handlePlayCard(client, message));
@@ -80,11 +82,18 @@ export class ShelemRoom extends Room<GameState> {
     player.name = options.name?.trim() || `Player ${seat + 1}`;
     player.connected = true;
     this.seatBySessionId.set(client.sessionId, seat as Seat);
+  }
 
+  /** Filling the last seat only makes the table ready — it doesn't deal. Any seated
+   * player can then kick off the first hand once everyone's actually ready to play,
+   * rather than the room dealing out from under a player who just joined. */
+  private handleStartGame(client: Client) {
+    if (this.state.phase !== 'lobby') return;
+    if (!this.seatBySessionId.has(client.sessionId)) return;
     const allSeated = this.state.players.every((p) => p.sessionId !== '');
-    if (allSeated && this.state.phase === 'lobby') {
-      this.startHand();
-    }
+    if (!allSeated) return;
+
+    this.startHand();
   }
 
   async onLeave(client: Client) {
@@ -99,6 +108,12 @@ export class ShelemRoom extends Room<GameState> {
       // reconnect into their seat; the game simply pauses on their turn until then.
       await this.allowReconnection(client, 24 * 60 * 60);
       player.connected = true;
+      // The synced schema state resends itself automatically on reconnect, but a
+      // player's own hand is deliberately kept out of that (see the comment on
+      // `hands`) and only ever pushed via a one-off message — which reconnecting
+      // does NOT replay on its own, so without this the client comes back with an
+      // empty hand until their next server-initiated update.
+      this.sendHand(seat);
     } catch {
       // Reconnection window expired without anyone reclaiming the seat. The room is
       // left as-is (v1 has no bot fill-in or seat-vacating flow) — a future version
@@ -210,7 +225,7 @@ export class ShelemRoom extends Room<GameState> {
     }
 
     this.hands[seat] = hand;
-    this.declarerPointsCollected += trickPoints(discarded);
+    this.state.declarerPointsCollected += trickPoints(discarded);
     // The buried cards sit under the declarer team's pile, where they were set aside.
     this.teamPiles[teamForSeat(seat)].push(...discarded);
 
@@ -223,6 +238,7 @@ export class ShelemRoom extends Room<GameState> {
 
   private handlePlayCard(client: Client, message: { suit?: Suit; rank?: Rank }) {
     if (this.state.phase !== 'playing') return;
+    if (this.resolvingTrick) return;
     const seat = this.seatBySessionId.get(client.sessionId);
     if (seat === undefined || seat !== this.state.currentTurnSeat) return;
     if (!message.suit || !message.rank) return;
@@ -265,7 +281,15 @@ export class ShelemRoom extends Room<GameState> {
       return;
     }
 
-    this.resolveTrick();
+    // Hold the completed trick on everyone's screen for a beat before clearing it —
+    // otherwise the 4th card's own broadcast already carries the cleared trick, and
+    // the last play never visibly appears. `resolvingTrick` blocks new plays (turn
+    // hasn't advanced yet) until the pause completes.
+    this.resolvingTrick = true;
+    this.clock.setTimeout(() => {
+      this.resolvingTrick = false;
+      this.resolveTrick();
+    }, 1500);
   }
 
   private resolveTrick() {
@@ -277,9 +301,9 @@ export class ShelemRoom extends Room<GameState> {
     const points = trickPoints(plays.map((p) => p.card));
 
     if (teamForSeat(winnerSeat) === teamForSeat(this.state.declarerSeat as Seat)) {
-      this.declarerPointsCollected += points;
+      this.state.declarerPointsCollected += points;
     } else {
-      this.defenderPointsCollected += points;
+      this.state.defenderPointsCollected += points;
     }
 
     // The winner scoops the trick face-down onto their team's pile, cards still in the
@@ -303,8 +327,8 @@ export class ShelemRoom extends Room<GameState> {
 
     const { declarerDelta, defenderDelta } = resolveHandScore(
       bid,
-      this.declarerPointsCollected,
-      this.defenderPointsCollected,
+      this.state.declarerPointsCollected,
+      this.state.defenderPointsCollected,
     );
 
     const declarerTeam = teamForSeat(this.state.declarerSeat as Seat);
@@ -396,8 +420,9 @@ export class ShelemRoom extends Room<GameState> {
     this.bidEvents = [];
     this.currentHighestBid = null;
     this.passedSeats = new Set();
-    this.declarerPointsCollected = 0;
-    this.defenderPointsCollected = 0;
+    this.resolvingTrick = false;
+    this.state.declarerPointsCollected = 0;
+    this.state.defenderPointsCollected = 0;
 
     this.state.phase = 'bidding';
     this.state.declarerSeat = -1;

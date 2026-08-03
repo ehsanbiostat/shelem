@@ -1,0 +1,123 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+}
+
+.status {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-ivory-100);
+  text-align: center;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+}
+
+.statusSub {
+  margin-top: -6px;
+  font-size: 12px;
+  color: rgba(250, 246, 236, 0.8);
+  text-align: center;
+}
+
+.highest {
+  font-weight: 700;
+  color: var(--color-gold-300);
+}
+
+.grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  max-width: 300px;
+}
+
+.amountBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-ivory-100);
+  color: var(--color-ink-900);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.amountBtn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.amountBtn:disabled {
+  background: rgba(255, 255, 255, 0.22);
+  color: rgba(32, 26, 16, 0.45);
+  cursor: default;
+}
+
+.specials {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: filter 120ms ease;
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(1.12);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+  filter: none;
+}
+
+.btnShelem {
+  background: var(--color-sapphire-700);
+  color: white;
+}
+
+.btnSarShelem {
+  background: var(--color-ruby-700);
+  color: white;
+}
+
+.btnPass {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: var(--color-ivory-100);
+}
+
+.history {
+  margin-top: 4px;
+  font-size: 11px;
+  color: rgba(250, 246, 236, 0.75);
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 300px;
+}
+
+.historyItem {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}

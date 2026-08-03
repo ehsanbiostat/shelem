@@ -64,14 +64,14 @@ describe('legalCards', () => {
     ]);
   });
 
-  it('must play trump if void in the led suit and holding trump', () => {
+  it('any card is legal if void in the led suit, even holding trump', () => {
     const hand = [
       { suit: 'spades', rank: '2' },
       { suit: 'clubs', rank: 'K' }, // trump
       { suit: 'diamonds', rank: 'A' },
     ] as const;
     const legal = legalCards([...hand], 'hearts', 'clubs');
-    expect(legal).toEqual([{ suit: 'clubs', rank: 'K' }]);
+    expect(legal).toHaveLength(3);
   });
 
   it('any card is legal if void in both the led suit and trump', () => {

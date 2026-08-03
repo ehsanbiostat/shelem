@@ -47,6 +47,12 @@ export class GameState extends Schema {
   @type('number') team1Score = 0;
   @type('number') matchTargetScore = 1650;
 
+  /** Running point totals for the hand in progress — lets players track live
+   * progress toward the bid instead of only seeing the match score update at
+   * hand-end. Reset to 0 at the start of each hand. */
+  @type('number') declarerPointsCollected = 0;
+  @type('number') defenderPointsCollected = 0;
+
   @type(SeatSwapRequest) pendingSeatSwap: SeatSwapRequest | undefined = undefined;
 
   @type('number') handNumber = 0;

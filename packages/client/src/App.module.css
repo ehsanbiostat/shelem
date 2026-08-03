@@ -1,0 +1,202 @@
+.lobby {
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.lobbyCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-gold-500);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  padding: 32px 36px;
+  max-width: 380px;
+  width: 100%;
+}
+
+.wordmark {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--color-emerald-700);
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.tagline {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0 0 24px;
+}
+
+.field {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+}
+
+.input {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #d7c99a;
+  font-family: inherit;
+  font-size: 15px;
+}
+
+.primaryBtn {
+  width: 100%;
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-emerald-700);
+  color: white;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.secondaryBtn {
+  width: 100%;
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-emerald-700);
+  background: transparent;
+  color: var(--color-emerald-700);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.secondaryBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.divider {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  margin: 20px 0;
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 13px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.gameShell {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 16px 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--color-ivory-100);
+  margin-bottom: 4px;
+  flex: none;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.roomCode {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.leaveBtn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: var(--color-ivory-100);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.leaveBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.lobbyWaiting {
+  text-align: center;
+  color: var(--color-ivory-100);
+}
+
+.lobbyWaiting .big {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.startGameBtn {
+  margin-top: 14px;
+  padding: 11px 32px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-emerald-700);
+  color: white;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.startGameBtn:hover {
+  background: var(--color-emerald-500);
+}
+
+.swapRequest {
+  margin: 8px auto 0;
+  max-width: 420px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  color: var(--color-ivory-100);
+}
+
+.swapRequest button {
+  margin: 0 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.matchComplete {
+  text-align: center;
+  color: var(--color-gold-300);
+  font-size: 20px;
+  font-weight: 700;
+  margin: 8px 0;
+}

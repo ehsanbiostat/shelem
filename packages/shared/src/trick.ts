@@ -30,17 +30,14 @@ export function determineTrickWinner(plays: TrickCardPlay[], trumpSuit: Suit): S
 
 /**
  * Which cards in `hand` are legal to play, given the suit led this trick (null if
- * this player is leading) and the trump suit. Must follow suit if able; if void in
- * the led suit, must play trump if holding one; otherwise any card is legal.
+ * this player is leading). Must follow suit if able; if void in the led suit, any
+ * card is legal — trump included, but not mandatory.
  */
-export function legalCards(hand: Card[], leadSuit: Suit | null, trumpSuit: Suit): Card[] {
+export function legalCards(hand: Card[], leadSuit: Suit | null, _trumpSuit: Suit): Card[] {
   if (leadSuit === null) return hand.slice();
 
   const followSuit = hand.filter((c) => c.suit === leadSuit);
   if (followSuit.length > 0) return followSuit;
-
-  const trumpCards = hand.filter((c) => c.suit === trumpSuit);
-  if (trumpCards.length > 0) return trumpCards;
 
   return hand.slice();
 }

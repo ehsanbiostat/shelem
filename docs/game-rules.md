@@ -65,7 +65,7 @@ A-K-Q-J-10-9-8-7-6-5-4-3-2 (high to low), standard in every suit including trump
 ## Play
 
 - Standard follow-suit obligation: a player must follow the suit led if able.
-- If void in the led suit, a player must play trump if holding one; otherwise, any card.
+- If void in the led suit, any card is legal — trump included, but not mandatory.
 
 ## Scoring
 

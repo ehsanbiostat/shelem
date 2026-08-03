@@ -1,0 +1,107 @@
+/* `--u` (the shared scale unit every card/fan/clearance is a multiple of — see
+ * theme.css) is set here as an inline style from JS (see Table.tsx and
+ * tableMetrics.ts), not as a CSS rule. Tried as a CSS-only `container-type:
+ * size` + `cqmin` fix first, since the table never actually gets the full
+ * browser viewport — App.module.css's header, and phase banners like the "X's
+ * team bid Y" strip, sit above it, so sizing off `vmin` overshoots by however
+ * much that chrome takes. That worked on desktop but not mobile: this element's
+ * height comes from `flex: 1` inside a `100dvh` flex column, and "a flex item's
+ * size doesn't resolve as definite for dependent calculations" is a known class
+ * of Safari bug (see flexbugs #197) that `container-type: size` containment
+ * depends on being correct. Measuring the actual rendered box with
+ * ResizeObserver sidesteps that whole class of bug instead of depending on a
+ * specific containment code path resolving correctly on every engine. */
+.tableWrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+
+.felt {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, var(--color-emerald-500) 0%, var(--color-emerald-700) 60%, var(--color-emerald-900) 100%);
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.45);
+}
+
+.feltPattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.seatSlot {
+  position: absolute;
+  z-index: 2;
+}
+
+/* Every seat hugs the true edge of the window, matching a table that fills the
+   whole viewport rather than a card floating with margins around it. */
+.top {
+  top: 6px;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.left {
+  top: 50%;
+  left: 6px;
+  transform: translate(0, -50%);
+}
+
+.right {
+  top: 50%;
+  right: 6px;
+  transform: translate(0, -50%);
+}
+
+/* Sits just above the hand — matches Hand.module.css's own `--u`-scaled height
+ * (plus its 8px margin-top) instead of a fixed guess, so the two stay in step
+ * at any window size instead of one being scaled and the other fixed. The
+ * extra `--u * 4` covers Hand.tsx's own curve (FAN_CURVE_U), which pushes
+ * dead-center cards further up toward this label via a transform — same
+ * reasoning as the opponent seats' gap in Seat.module.css. */
+.bottom {
+  bottom: calc(var(--u) * 21 + var(--u) * 4 + 8px);
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+/* Clearance leaves room for each edge's opponent fan + identity label, sized off
+ * the same `--u` scale unit those use (see Seat.module.css, theme.css) plus a
+ * fixed allowance for the identity text itself (which intentionally doesn't
+ * shrink with `--u` — see Seat.module.css). Because it tracks `--u` continuously
+ * rather than snapping at a fixed breakpoint, it stays in proportion at any
+ * window size instead of needing to stay in sync with a separate breakpoint. */
+.center {
+  position: absolute;
+  top: calc(var(--u) * 20 + 100px);
+  bottom: calc(var(--u) * 21 + 40px);
+  left: calc(var(--u) * 20 + 95px);
+  right: calc(var(--u) * 20 + 95px);
+  z-index: 1;
+}
+
+.bottomOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+}
+
+/* Top-left corner — clear of the top seat's fan (which is horizontally
+   centered, not edge-hugging like the side seats) and out of the way of the
+   bottom-center hand entirely, unlike the bottom-left corner this used to sit
+   in. Still stacked above everything else on the felt (z-index) in case a
+   wide top fan ever reaches this far. See ScoreBar.module.css for why it's a
+   small translucent square rather than a full-width bar. */
+.cornerPanel {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 4;
+}

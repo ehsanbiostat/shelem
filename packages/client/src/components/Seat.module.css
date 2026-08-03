@@ -1,0 +1,195 @@
+/* Defined here (not on .fanRow/.fanWrap directly) so both inherit the same
+ * values regardless of which one is the DOM parent — .fanRow is standalone for
+ * the top seat but nested inside .fanWrap for the side seats (see CardFan in
+ * Seat.tsx), and a custom property only cascades down to descendants, never
+ * back up to an ancestor. See the comment above .fanRow for what these mean. */
+.seat {
+  --fan-fill: calc(var(--u) * 110);
+  /* Full 'md' card height (13.7u — Card.module.css) plus headroom for a
+   * rotated card's larger bounding box (up to ±15° tilt) and the curve's own
+   * extra reach (up to 3.5u) — opponent cards are shown in full now, not
+   * cropped to a sliver, so the layout footprint has to actually contain a
+   * whole (tilted, curved) card instead of just a thin reveal strip. */
+  --fan-thickness: calc(var(--u) * 20);
+  display: flex;
+  align-items: center;
+  /* The fan's *layout* footprint is exactly --fan-thickness, but the curve
+   * (Seat.tsx's fanCurve, up to 3.5u) pushes dead-center cards further toward
+   * the identity label than that via a transform — which doesn't affect
+   * layout, so the gap has to cover that extra reach itself or the curve's
+   * peak visually overlaps the name/badges beneath it. */
+  gap: calc(var(--u) * 5);
+  color: var(--color-ivory-100);
+}
+
+.top,
+.bottom {
+  flex-direction: column;
+}
+
+.left,
+.right {
+  flex-direction: row;
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 84px;
+}
+
+.activeTurn .name {
+  color: var(--color-gold-300);
+  text-shadow: 0 0 8px rgba(224, 197, 105, 0.7);
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+/* Every piece of a side seat's identity (name, dealer tag, bid badges, declarer
+ * tag) reads in the same direction, bottom-to-top on both sides — not just the
+ * name — so nothing looks rotated a different way from its neighbor. */
+.left .identity > *,
+.right .identity > * {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
+.connectedDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #4caf7d;
+}
+
+.connectedDot.offline {
+  background: #b3261e;
+}
+
+.dealerTag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gold-300);
+  opacity: 0.9;
+}
+
+/* Every card sits at the exact same anchor (centered, flush to the row's own
+ * bottom), then gets its own horizontal offset (set inline, Seat.tsx) — spacing
+ * between cards, capped to guarantee the fan fits in the table's actual
+ * measured size, is what positions them (see fanGeometry.ts); the `rotate` each
+ * one also gets is purely cosmetic tilt, not part of the positioning.
+ *
+ * `--fan-fill` (the long axis, along the edge the fan hugs) is only a layout
+ * footprint reservation now (how much room the flex layout sets aside before
+ * the identity label) — not a correctness bound, since the actual spread is
+ * capped to fit dynamically. A generous multiple of the shared `--u` scale
+ * unit (see theme.css) covers that footprint at any card count. */
+.fanRow {
+  position: relative;
+  width: var(--fan-fill);
+  height: var(--fan-thickness);
+  pointer-events: none;
+}
+
+/* Positions (via the inline translate, Seat.tsx) and cosmetically tilts each
+ * card. Opponent cards render in full (Seat.tsx just puts a plain <Card>
+ * here) rather than cropped to a sliver — an earlier version cropped each
+ * card to a thin "peeking over the table edge" strip, which read as cards
+ * being cut off rather than a hand of cards. */
+.fanCard {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(var(--u) * 9.7);
+  margin-left: calc(var(--u) * -4.85);
+}
+
+/* The row above has a fixed width×height footprint; rotated 90° for a side seat,
+ * its on-screen footprint is that box with width/height swapped. This wrapper
+ * reserves that swapped footprint in the seat's layout, and centers + rotates the
+ * (still normally-sized) row inside it — so the rotation is purely visual and
+ * never fights the flex layout around it. The row itself is re-sized below to
+ * the swapped dimensions so its long (fill) axis tracks viewport height instead
+ * of width once it's on its side. */
+.fanWrap {
+  position: relative;
+  width: var(--fan-thickness);
+  height: var(--fan-fill);
+  pointer-events: none;
+}
+
+.fanWrap .fanRow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--fan-fill);
+  height: var(--fan-thickness);
+}
+
+.fanWrap.left .fanRow {
+  transform: translate(-50%, -50%) rotate(-90deg);
+}
+
+.fanWrap.right .fanRow {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.biddingBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-900);
+  background: var(--color-gold-500);
+  padding: 2px 9px;
+  border-radius: 999px;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.bidLabelBadge {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-ink-900);
+  background: var(--color-ivory-100);
+  padding: 2px 9px;
+  border-radius: 999px;
+}
+
+.bidLabelPass {
+  color: var(--color-ivory-100);
+  background: rgba(255, 255, 255, 0.12);
+  font-weight: 600;
+}
+
+.declarerBadge {
+  font-size: 11px;
+  color: var(--color-gold-300);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* The fan itself no longer needs a breakpoint override — it's already sized off
+ * `--u`, which scales continuously with the viewport (see theme.css). This only
+ * declutters: text badges intentionally don't shrink with `--u` (they'd become
+ * illegible), so on a narrow screen the least essential ones are dropped
+ * instead. */
+@media (max-width: 700px) {
+  .dealerTag,
+  .declarerBadge {
+    display: none;
+  }
+}

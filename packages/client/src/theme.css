@@ -1,0 +1,80 @@
+/* Persian-inspired palette: jewel tones (emerald, sapphire, ruby) with a saffron-gold
+   accent, on an ivory surface. Vazirmatn is a Persian-designed typeface that also
+   reads cleanly in Latin script — a deliberate nod to Shelem's origin even though the
+   v1 UI is English-only. */
+
+:root {
+  --color-emerald-900: #0a3d31;
+  --color-emerald-700: #0f5c4a;
+  --color-emerald-500: #16805f;
+
+  --color-sapphire-700: #1e4e8c;
+  --color-sapphire-500: #2c68b3;
+
+  --color-ruby-700: #8c1f3f;
+  --color-ruby-500: #a31f4f;
+
+  --color-gold-500: #c9a227;
+  --color-gold-300: #e0c569;
+
+  --color-ivory-100: #faf6ec;
+  --color-ivory-200: #f2ead4;
+
+  --color-ink-900: #201a10;
+  --color-ink-600: #4a3f2c;
+
+  --color-danger: #b3261e;
+
+  --color-team-a: var(--color-sapphire-700);
+  --color-team-b: var(--color-ruby-700);
+
+  --color-table-felt: var(--color-emerald-900);
+  --color-table-border: var(--color-gold-500);
+  --color-surface: var(--color-ivory-100);
+  --color-surface-raised: #ffffff;
+  --color-text: var(--color-ink-900);
+  --color-text-muted: var(--color-ink-600);
+
+  --font-family: 'Vazirmatn', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  --shadow-card: 0 1px 2px rgba(32, 26, 16, 0.25), 0 4px 10px rgba(32, 26, 16, 0.18);
+  --shadow-panel: 0 8px 30px rgba(10, 61, 49, 0.35);
+
+  /* The one shared scale unit the whole table is built from — card sizes, fan
+   * geometry, and table clearances are all expressed as `calc(var(--u) * N)`
+   * rather than independent fixed pixel values, so the entire table scales as
+   * one consistent system on any screen (a phone in portrait, a wide desktop
+   * monitor) instead of each piece being clipped or oversized independently.
+   * This top-level value (viewport-based) is only a fallback for the first
+   * paint and anything rendered outside the table — Table.tsx measures its own
+   * rendered box with ResizeObserver (see useTableScaleUnit) and sets the real
+   * value as an inline style on `.tableWrap`, which is what everything on the
+   * table actually ends up inheriting; see the comment on `.tableWrap` in
+   * Table.module.css for why that measurement isn't just a CSS rule. */
+  --u: clamp(3px, 1vmin, 8px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  color: var(--color-text);
+  background: var(--color-emerald-900);
+}
+
+button {
+  font-family: inherit;
+}
