@@ -1,6 +1,6 @@
 /* `--u` (the shared scale unit every card/fan/clearance is a multiple of — see
- * theme.css) is set here as an inline style from JS (see Table.tsx's
- * useTableScaleUnit), not as a CSS rule. Tried as a CSS-only `container-type:
+ * theme.css) is set here as an inline style from JS (see Table.tsx and
+ * tableMetrics.ts), not as a CSS rule. Tried as a CSS-only `container-type:
  * size` + `cqmin` fix first, since the table never actually gets the full
  * browser viewport — App.module.css's header, and phase banners like the "X's
  * team bid Y" strip, sit above it, so sizing off `vmin` overshoots by however

@@ -75,17 +75,16 @@
 }
 
 /* Every card sits at the exact same anchor (centered, flush to the row's own
- * bottom) — the fan comes entirely from each one's `rotate` (set in Seat.tsx,
- * from the shared `fanAngles`) around a shared distant transform-origin below,
- * same technique as the local player's own hand (see Hand.module.css). That's
- * what guarantees even spacing regardless of how many cards there are.
+ * bottom), then gets its own horizontal offset (set inline, Seat.tsx) — spacing
+ * between cards, capped to guarantee the fan fits in the table's actual
+ * measured size, is what positions them (see fanGeometry.ts); the `rotate` each
+ * one also gets is purely cosmetic tilt, not part of the positioning.
  *
- * `--fan-fill` (the long axis, along the edge the fan hugs) is a multiple of
- * the shared `--u` scale unit (see theme.css). Its 110 comes from the fan's
- * own worst-case geometry: at up to 12 cards and a 150° max spread (Seat.tsx),
- * the outermost card can land `--pivot * sin(75°)` (≈40u × 0.97) from center,
- * so a full span of ~2×39u plus a card's own width needs about 91u — 110u
- * leaves headroom rather than clipping at the edge of that math. */
+ * `--fan-fill` (the long axis, along the edge the fan hugs) is only a layout
+ * footprint reservation now (how much room the flex layout sets aside before
+ * the identity label) — not a correctness bound, since the actual spread is
+ * capped to fit dynamically. A generous multiple of the shared `--u` scale
+ * unit (see theme.css) covers that footprint at any card count. */
 .fanRow {
   position: relative;
   width: var(--fan-fill);
@@ -93,29 +92,24 @@
   pointer-events: none;
 }
 
-/* Positions and rotates each card for the fan spread — but does NOT crop it.
- * Cropping used to live here (an `overflow: hidden` sized to `--fan-reveal`),
- * which seemed simpler but was wrong: rotating a card around a pivot *above*
- * it (the fan-spread technique) doesn't just shift it sideways, it also
- * shifts it perpendicular to that by an amount that grows with the angle — so
- * the more a card is rotated (the further from the middle of the fan), the
- * more that shared, rotation-oblivious crop window missed it entirely, and it
- * silently vanished. Only the handful of cards nearest dead-center stayed
- * inside the window — which is exactly the bug reported ("12 cards, only 6
- * visible"), on every seat, at every screen size; it was never a scaling
- * issue. The crop now lives one level in, on `.fanCardCrop`, which rotates
+/* Positions (via the inline translateX, Seat.tsx) and cosmetically tilts each
+ * card — but does NOT crop it. Cropping used to live here (an `overflow:
+ * hidden` sized to `--fan-reveal`), which seemed simpler but was wrong twice
+ * over: first because rotating a card around a *distant* pivot (an earlier
+ * positioning technique, since replaced — see fanGeometry.ts) shifts it
+ * perpendicular to the spread as well as along it, so a shared crop window
+ * that doesn't know about that shift misses outer cards entirely; a shared
+ * window is fragile even without that wrinkle, since any per-card horizontal
+ * offset at all needs the crop to travel with the card, not stay fixed to the
+ * row. The crop instead lives one level in, on `.fanCardCrop`, which moves
  * *together with* this element — so from each card's own point of view it's
- * always "show my own bottom slice," independent of what angle it (or the
- * whole row, for a side seat — see `.fanWrap` below) ends up rotated to. */
+ * always "show my own bottom slice," independent of where it actually ends up. */
 .fanCard {
   position: absolute;
   left: 50%;
   bottom: 0;
   width: calc(var(--u) * 9.7);
   margin-left: calc(var(--u) * -4.85);
-  /* Distance is measured from the card's own top edge (negative = above it) —
-   * same distant-pivot technique as Hand.module.css's .cardSlot. */
-  transform-origin: 50% calc(var(--u) * -40);
 }
 
 /* The actual crop: a box exactly `--fan-reveal` tall, with the (taller) card
