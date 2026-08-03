@@ -5,7 +5,7 @@ import styles from './Hand.module.css';
 import { Card } from './Card.js';
 import { cardKey } from '../cardKey.js';
 import { useTableMetrics } from '../tableMetrics.js';
-import { fitSpacing, fanOffsets } from '../fanGeometry.js';
+import { fitSpacing, fanOffsets, fanCurve } from '../fanGeometry.js';
 
 export interface HandProps {
   cards: CardModel[];
@@ -41,6 +41,9 @@ const CARD_LG_WIDTH_U = 12;
 /** Fraction of a card's own width used as the (desired, capped-to-fit) gap
  * between adjacent card centers. */
 const FAN_SPACING_RATIO = 0.45;
+/** How far (in `--u`) dead-center pokes further into the table (up, toward the
+ * felt) than the two outermost cards — see fanCurve in fanGeometry.ts. */
+const FAN_CURVE_U = 4;
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -68,6 +71,7 @@ export function Hand({
   const cardWidthPx = CARD_LG_WIDTH_U * u;
   const spacing = fitSpacing(width, cardWidthPx, total, cardWidthPx * FAN_SPACING_RATIO);
   const offsets = fanOffsets(total, spacing);
+  const curve = fanCurve(offsets, FAN_CURVE_U * u);
 
   return (
     <div className={styles.wrap}>
@@ -99,8 +103,8 @@ export function Hand({
                 key={cardKey(card)}
                 layoutId={cardKey(card)}
                 className={styles.cardSlot}
-                initial={{ opacity: 0, x: offsets[i], y: 40, rotate: angle }}
-                animate={{ opacity: 1, x: offsets[i], y: 0, rotate: angle }}
+                initial={{ opacity: 0, x: offsets[i], y: 40 + curve[i], rotate: angle }}
+                animate={{ opacity: 1, x: offsets[i], y: curve[i], rotate: angle }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
               >

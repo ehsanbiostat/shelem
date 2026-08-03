@@ -90,16 +90,15 @@
   z-index: 3;
 }
 
-/* Bottom-left corner. On a wide enough screen this sits clear of the bottom-
-   center hand, but a big hand's outer cards can reach the corner on a narrow
-   one (see Hand.module.css) — stacked above the hand (z-index) so the score
-   stays legible either way, like a HUD element floating over the play area,
-   rather than getting covered by whichever card lands on top of it. See
-   ScoreBar.module.css for why it's a small translucent square rather than a
-   full-width bar. */
+/* Top-left corner — clear of the top seat's fan (which is horizontally
+   centered, not edge-hugging like the side seats) and out of the way of the
+   bottom-center hand entirely, unlike the bottom-left corner this used to sit
+   in. Still stacked above everything else on the felt (z-index) in case a
+   wide top fan ever reaches this far. See ScoreBar.module.css for why it's a
+   small translucent square rather than a full-width bar. */
 .cornerPanel {
   position: absolute;
   left: 10px;
-  bottom: 10px;
+  top: 10px;
   z-index: 4;
 }

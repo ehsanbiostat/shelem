@@ -2,7 +2,7 @@ import { fanAngles } from '@shelem/shared';
 import styles from './Seat.module.css';
 import { Card } from './Card.js';
 import { useTableMetrics } from '../tableMetrics.js';
-import { fitSpacing, fanOffsets } from '../fanGeometry.js';
+import { fitSpacing, fanOffsets, fanCurve } from '../fanGeometry.js';
 
 export type SeatSlot = 'top' | 'bottom' | 'left' | 'right';
 
@@ -16,6 +16,9 @@ const FAN_MAX_SPREAD = 150;
 /** Fraction of a card's own width used as the (desired, capped-to-fit) gap
  * between adjacent card centers — smaller than 1 so cards overlap. */
 const FAN_SPACING_RATIO = 0.4;
+/** How far (in `--u`) dead-center pokes further into the table than the two
+ * outermost cards — see fanCurve in fanGeometry.ts. */
+const FAN_CURVE_U = 3.5;
 
 /** Must match the 'md' card width multiplier in Card.module.css. */
 const CARD_MD_WIDTH_U = 9.7;
@@ -55,11 +58,25 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
   const availableSpace = orientation === 'top' ? width : height;
   const spacing = fitSpacing(availableSpace, cardWidthPx, count, cardWidthPx * FAN_SPACING_RATIO);
   const offsets = fanOffsets(count, spacing);
+  // fanCurve's "negative = further into the table" convention matches Hand.tsx
+  // (cards anchored to the row's bottom, extending up into the table from
+  // there) but is backwards here: .fanCardCrop anchors each card to *its own*
+  // bottom too, but within a short crop window near the row's own bottom edge
+  // — so the row's bottom (larger local Y) is the side that reads *into* the
+  // table (that's the revealed sliver), and its top (smaller local Y, where
+  // the hidden rest of the card extends) is the side toward the true edge.
+  // Negated so dead-center still ends up further into the table, not further
+  // toward the edge.
+  const curve = fanCurve(offsets, FAN_CURVE_U * u).map((v) => -v);
 
   const row = (
     <div className={styles.fanRow}>
       {angles.map((angle, i) => (
-        <div key={i} className={styles.fanCard} style={{ transform: `translateX(${offsets[i]}px) rotate(${angle}deg)` }}>
+        <div
+          key={i}
+          className={styles.fanCard}
+          style={{ transform: `translate(${offsets[i]}px, ${curve[i]}px) rotate(${angle}deg)` }}
+        >
           {/* The crop lives in here, one level inside the positioned+tilted
            * .fanCard, not on the shared row — see the comment on .fanCardCrop
            * in Seat.module.css for why cropping the row itself doesn't work. */}
