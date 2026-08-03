@@ -8,10 +8,17 @@ export type SeatSlot = 'top' | 'bottom' | 'left' | 'right';
  * pivot technique as the local player's own hand (see Hand.tsx), and the same
  * `fanAngles` (shared, unit-tested) for the angles themselves, so every seat's
  * cards read as the same evenly-spaced arc shape. The row always fans "downward"
- * (hanging from its own top edge); for the side seats the whole row is then
- * rotated as one rigid block, which is what makes the arc's own spacing carry
- * over unchanged instead of needing a separate side-specific layout. */
-const PIVOT_DISTANCE_ABOVE_CARD = 260;
+ * (flush to its own bottom edge, so most of each card's height pokes up out of
+ * frame — see .fanRow in Seat.module.css); for the side seats the whole row is
+ * then rotated as one rigid block, which is what makes the arc's own spacing
+ * carry over unchanged instead of needing a separate side-specific layout. */
+const PIVOT_DISTANCE_ABOVE_CARD = 280;
+
+/** Opponent fans spread wider per card than the local hand (see fan.ts) — there's
+ * a whole table edge to fill here (à la Trickster Cards) rather than a compact
+ * hand of clickable cards, so a fuller, more dramatic arc reads better. */
+const FAN_DEGREES_PER_CARD = 10;
+const FAN_MAX_SPREAD = 150;
 
 export interface SeatProps {
   name: string;
@@ -34,8 +41,8 @@ export interface SeatProps {
  * one rigid block so its top edge points the same way that seat's (also rotated)
  * name reads — never a mismatched mix. */
 function CardFan({ handSize, orientation }: { handSize: number; orientation: 'top' | 'left' | 'right' }) {
-  const count = Math.min(handSize, 8);
-  const angles = fanAngles(count);
+  const count = Math.min(handSize, 12);
+  const angles = fanAngles(count, FAN_DEGREES_PER_CARD, FAN_MAX_SPREAD);
 
   const row = (
     <div className={styles.fanRow}>
@@ -45,7 +52,7 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
           className={styles.fanCard}
           style={{ transform: `rotate(${angle}deg)`, transformOrigin: `50% -${PIVOT_DISTANCE_ABOVE_CARD}px` }}
         >
-          <Card card={{ suit: 'spades', rank: '2' }} size="sm" faceDown />
+          <Card card={{ suit: 'spades', rank: '2' }} size="md" faceDown />
         </div>
       ))}
     </div>
