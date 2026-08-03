@@ -4,19 +4,10 @@ import { Card } from './Card.js';
 
 export type SeatSlot = 'top' | 'bottom' | 'left' | 'right';
 
-/** Every card pivots around this same point, above the fan — same distant-shared-
- * pivot technique as the local player's own hand (see Hand.tsx), and the same
- * `fanAngles` (shared, unit-tested) for the angles themselves, so every seat's
- * cards read as the same evenly-spaced arc shape. The row always fans "downward"
- * (flush to its own bottom edge, so most of each card's height pokes up out of
- * frame — see .fanRow in Seat.module.css); for the side seats the whole row is
- * then rotated as one rigid block, which is what makes the arc's own spacing
- * carry over unchanged instead of needing a separate side-specific layout. */
-const PIVOT_DISTANCE_ABOVE_CARD = 280;
-
 /** Opponent fans spread wider per card than the local hand (see fan.ts) — there's
  * a whole table edge to fill here (à la Trickster Cards) rather than a compact
- * hand of clickable cards, so a fuller, more dramatic arc reads better. */
+ * hand of clickable cards, so a fuller, more dramatic arc reads better. Degrees
+ * are unitless (not a `--u`-scaled length), so these stay plain constants. */
 const FAN_DEGREES_PER_CARD = 10;
 const FAN_MAX_SPREAD = 150;
 
@@ -47,11 +38,7 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
   const row = (
     <div className={styles.fanRow}>
       {angles.map((angle, i) => (
-        <div
-          key={i}
-          className={styles.fanCard}
-          style={{ transform: `rotate(${angle}deg)`, transformOrigin: `50% -${PIVOT_DISTANCE_ABOVE_CARD}px` }}
-        >
+        <div key={i} className={styles.fanCard} style={{ transform: `rotate(${angle}deg)` }}>
           <Card card={{ suit: 'spades', rank: '2' }} size="md" faceDown />
         </div>
       ))}

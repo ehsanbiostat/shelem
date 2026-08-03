@@ -43,6 +43,16 @@
 
   --shadow-card: 0 1px 2px rgba(32, 26, 16, 0.25), 0 4px 10px rgba(32, 26, 16, 0.18);
   --shadow-panel: 0 8px 30px rgba(10, 61, 49, 0.35);
+
+  /* The one shared scale unit the whole table is built from — card sizes, fan
+   * geometry, and table clearances are all expressed as `calc(var(--u) * N)`
+   * rather than independent fixed pixel values, so the entire table scales as
+   * one consistent system on any screen (a phone in portrait, a wide desktop
+   * monitor) instead of each piece being clipped or oversized independently.
+   * Based on `1vmin` (the smaller of 1% viewport width/height) so the table
+   * scales against whichever dimension is tighter; clamped so it never gets
+   * illegibly small or comically large at extreme window sizes. */
+  --u: clamp(3px, 1vmin, 8px);
 }
 
 * {

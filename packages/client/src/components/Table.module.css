@@ -45,29 +45,28 @@
   transform: translate(0, -50%);
 }
 
+/* Sits just above the hand — matches Hand.module.css's own `--u`-scaled height
+ * (plus its 8px margin-top) instead of a fixed guess, so the two stay in step
+ * at any window size instead of one being scaled and the other fixed. */
 .bottom {
-  bottom: 150px;
+  bottom: calc(var(--u) * 21 + 8px);
   left: 50%;
   transform: translate(-50%, 0);
 }
 
+/* Clearance leaves room for each edge's opponent fan + identity label, sized off
+ * the same `--u` scale unit those use (see Seat.module.css, theme.css) plus a
+ * fixed allowance for the identity text itself (which intentionally doesn't
+ * shrink with `--u` — see Seat.module.css). Because it tracks `--u` continuously
+ * rather than snapping at a fixed breakpoint, it stays in proportion at any
+ * window size instead of needing to stay in sync with a separate breakpoint. */
 .center {
   position: absolute;
-  top: 160px;
-  bottom: 190px;
-  left: 165px;
-  right: 165px;
+  top: calc(var(--u) * 7 + 100px);
+  bottom: calc(var(--u) * 21 + 40px);
+  left: calc(var(--u) * 7 + 95px);
+  right: calc(var(--u) * 7 + 95px);
   z-index: 1;
-}
-
-/* Below this width the fixed-size opponent fans/badges no longer leave enough
-   room for the center content at a 165px clearance — Seat.module.css trims the
-   same seats' footprint at this breakpoint so the two stay in sync. */
-@media (max-width: 700px) {
-  .center {
-    left: 105px;
-    right: 105px;
-  }
 }
 
 .bottomOverlay {
@@ -78,11 +77,16 @@
   z-index: 3;
 }
 
-/* Bottom-left corner, clear of the bottom-center hand — see ScoreBar.module.css
-   for why it's a small translucent square rather than a full-width bar. */
+/* Bottom-left corner. On a wide enough screen this sits clear of the bottom-
+   center hand, but a big hand's outer cards can reach the corner on a narrow
+   one (see Hand.module.css) — stacked above the hand (z-index) so the score
+   stays legible either way, like a HUD element floating over the play area,
+   rather than getting covered by whichever card lands on top of it. See
+   ScoreBar.module.css for why it's a small translucent square rather than a
+   full-width bar. */
 .cornerPanel {
   position: absolute;
   left: 10px;
   bottom: 10px;
-  z-index: 2;
+  z-index: 4;
 }

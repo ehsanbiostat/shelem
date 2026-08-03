@@ -1,4 +1,11 @@
+/* Defined here (not on .fanRow/.fanWrap directly) so both inherit the same
+ * values regardless of which one is the DOM parent — .fanRow is standalone for
+ * the top seat but nested inside .fanWrap for the side seats (see CardFan in
+ * Seat.tsx), and a custom property only cascades down to descendants, never
+ * back up to an ancestor. See the comment above .fanRow for what these mean. */
 .seat {
+  --fan-fill: calc(var(--u) * 110);
+  --fan-reveal: calc(var(--u) * 7);
   display: flex;
   align-items: center;
   gap: 2px;
@@ -69,20 +76,26 @@
 
 /* Every card sits at the exact same anchor (centered, flush to the row's own
  * bottom) — the fan comes entirely from each one's `rotate` (set in Seat.tsx,
- * from the shared `fanAngles`) around a shared distant transform-origin, same
- * technique as the local player's own hand (see Hand.module.css). That's what
- * guarantees even spacing regardless of how many cards there are. */
-/* The row is only as tall as the sliver of each card we mean to reveal — a full
- * card (96px at `md`) would be as tall as the opponent's own name label; anchoring
- * each card to the row's bottom and clipping the row (`overflow: hidden`) crops
- * the rest off instead, à la Trickster Cards, where an opponent's cards read as
- * just poking into view from off-table rather than being shown in full. Width
- * scales with the viewport so the arc actually fills the edge it hugs, not just a
- * fixed-size box in the middle of it. */
+ * from the shared `fanAngles`) around a shared distant transform-origin below,
+ * same technique as the local player's own hand (see Hand.module.css). That's
+ * what guarantees even spacing regardless of how many cards there are.
+ *
+ * `--fan-fill` (the long axis, along the edge the fan hugs) and `--fan-reveal`
+ * (the short axis, how much of each card's height pokes into view) are both
+ * expressed as multiples of the shared `--u` scale unit (see theme.css) rather
+ * than independent fixed or viewport-relative numbers — the two go out of sync
+ * only if their multiples are wrong, never because one was tuned against `vw`
+ * and the other against raw pixels. `--fan-fill`'s 110 specifically comes from
+ * the fan's own worst-case geometry: at up to 12 cards and a 150° max spread
+ * (Seat.tsx), the outermost card can land `--pivot * sin(75°)` (≈40u × 0.97)
+ * from center, so a full span of ~2×39u plus a card's own width needs about
+ * 91u — 110u leaves headroom rather than clipping at the edge of that math.
+ * `overflow: hidden` therefore only ever crops the short (reveal) axis in
+ * practice, never the long one, however many cards are actually dealt. */
 .fanRow {
   position: relative;
-  width: min(62vw, 640px);
-  height: 58px;
+  width: var(--fan-fill);
+  height: var(--fan-reveal);
   overflow: hidden;
   pointer-events: none;
 }
@@ -91,20 +104,23 @@
   position: absolute;
   left: 50%;
   bottom: 0;
-  margin-left: -34px;
+  margin-left: calc(var(--u) * -4.85);
+  /* Distance is measured from the card's own top edge (negative = above it) —
+   * same distant-pivot technique as Hand.module.css's .cardSlot. */
+  transform-origin: 50% calc(var(--u) * -40);
 }
 
 /* The row above has a fixed width×height footprint; rotated 90° for a side seat,
  * its on-screen footprint is that box with width/height swapped. This wrapper
  * reserves that swapped footprint in the seat's layout, and centers + rotates the
  * (still normally-sized) row inside it — so the rotation is purely visual and
- * never fights the flex layout around it. The row itself is re-sized (below) to
- * the swapped dimensions so its "fill the edge" side tracks viewport height
- * instead of width once it's on its side. */
+ * never fights the flex layout around it. The row itself is re-sized below to
+ * the swapped dimensions so its long (fill) axis tracks viewport height instead
+ * of width once it's on its side. */
 .fanWrap {
   position: relative;
-  width: 58px;
-  height: min(58vh, 560px);
+  width: var(--fan-reveal);
+  height: var(--fan-fill);
   pointer-events: none;
 }
 
@@ -112,8 +128,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(58vh, 560px);
-  height: 58px;
+  width: var(--fan-fill);
+  height: var(--fan-reveal);
 }
 
 .fanWrap.left .fanRow {
@@ -161,29 +177,14 @@
   letter-spacing: 0.02em;
 }
 
-/* Keep pace with Table.module.css's matching breakpoint: trim the opponent
-   footprint so it still fits the narrower center clearance on small screens.
-   The row/wrap pair must keep matching (swapped) dimensions here too — see the
-   comment above .fanWrap — so both sides of the swap are redeclared together
-   rather than just shrinking one and leaving the other's arc oversized. */
+/* The fan itself no longer needs a breakpoint override — it's already sized off
+ * `--u`, which scales continuously with the viewport (see theme.css). This only
+ * declutters: text badges intentionally don't shrink with `--u` (they'd become
+ * illegible), so on a narrow screen the least essential ones are dropped
+ * instead. */
 @media (max-width: 700px) {
   .dealerTag,
   .declarerBadge {
     display: none;
-  }
-
-  .fanRow {
-    width: min(78vw, 320px);
-    height: 46px;
-  }
-
-  .fanWrap {
-    width: 46px;
-    height: min(44vh, 260px);
-  }
-
-  .fanWrap .fanRow {
-    width: min(44vh, 260px);
-    height: 46px;
   }
 }
