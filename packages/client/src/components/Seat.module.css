@@ -5,10 +5,15 @@
  * back up to an ancestor. See the comment above .fanRow for what these mean. */
 .seat {
   --fan-fill: calc(var(--u) * 110);
-  --fan-reveal: calc(var(--u) * 7);
+  /* Full 'md' card height (13.7u — Card.module.css) plus headroom for a
+   * rotated card's larger bounding box (up to ±15° tilt) and the curve's own
+   * extra reach (up to 3.5u) — opponent cards are shown in full now, not
+   * cropped to a sliver, so the layout footprint has to actually contain a
+   * whole (tilted, curved) card instead of just a thin reveal strip. */
+  --fan-thickness: calc(var(--u) * 20);
   display: flex;
   align-items: center;
-  /* The fan's *layout* footprint is exactly --fan-reveal, but the curve
+  /* The fan's *layout* footprint is exactly --fan-thickness, but the curve
    * (Seat.tsx's fanCurve, up to 3.5u) pushes dead-center cards further toward
    * the identity label than that via a transform — which doesn't affect
    * layout, so the gap has to cover that extra reach itself or the curve's
@@ -93,41 +98,21 @@
 .fanRow {
   position: relative;
   width: var(--fan-fill);
-  height: var(--fan-reveal);
+  height: var(--fan-thickness);
   pointer-events: none;
 }
 
-/* Positions (via the inline translateX, Seat.tsx) and cosmetically tilts each
- * card — but does NOT crop it. Cropping used to live here (an `overflow:
- * hidden` sized to `--fan-reveal`), which seemed simpler but was wrong twice
- * over: first because rotating a card around a *distant* pivot (an earlier
- * positioning technique, since replaced — see fanGeometry.ts) shifts it
- * perpendicular to the spread as well as along it, so a shared crop window
- * that doesn't know about that shift misses outer cards entirely; a shared
- * window is fragile even without that wrinkle, since any per-card horizontal
- * offset at all needs the crop to travel with the card, not stay fixed to the
- * row. The crop instead lives one level in, on `.fanCardCrop`, which moves
- * *together with* this element — so from each card's own point of view it's
- * always "show my own bottom slice," independent of where it actually ends up. */
+/* Positions (via the inline translate, Seat.tsx) and cosmetically tilts each
+ * card. Opponent cards render in full (Seat.tsx just puts a plain <Card>
+ * here) rather than cropped to a sliver — an earlier version cropped each
+ * card to a thin "peeking over the table edge" strip, which read as cards
+ * being cut off rather than a hand of cards. */
 .fanCard {
   position: absolute;
   left: 50%;
   bottom: 0;
   width: calc(var(--u) * 9.7);
   margin-left: calc(var(--u) * -4.85);
-}
-
-/* The actual crop: a box exactly `--fan-reveal` tall, with the (taller) card
- * pinned to its bottom so the rest overflows above it and gets clipped —
- * rotation-independent, since this whole box rotates as a rigid unit along
- * with its parent `.fanCard` instead of being clipped against a separate,
- * unrotated reference frame. */
-.fanCardCrop {
-  height: var(--fan-reveal);
-  overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
 }
 
 /* The row above has a fixed width×height footprint; rotated 90° for a side seat,
@@ -139,7 +124,7 @@
  * of width once it's on its side. */
 .fanWrap {
   position: relative;
-  width: var(--fan-reveal);
+  width: var(--fan-thickness);
   height: var(--fan-fill);
   pointer-events: none;
 }
@@ -149,7 +134,7 @@
   top: 50%;
   left: 50%;
   width: var(--fan-fill);
-  height: var(--fan-reveal);
+  height: var(--fan-thickness);
 }
 
 .fanWrap.left .fanRow {

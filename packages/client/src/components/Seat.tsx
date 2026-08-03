@@ -62,14 +62,12 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
   const spacing = fitSpacing(availableSpace, cardWidthPx, count, cardWidthPx * FAN_SPACING_RATIO);
   const offsets = fanOffsets(count, spacing);
   // fanCurve's "negative = further into the table" convention matches Hand.tsx
-  // (cards anchored to the row's bottom, extending up into the table from
-  // there) but is backwards here: .fanCardCrop anchors each card to *its own*
-  // bottom too, but within a short crop window near the row's own bottom edge
-  // — so the row's bottom (larger local Y) is the side that reads *into* the
-  // table (that's the revealed sliver), and its top (smaller local Y, where
-  // the hidden rest of the card extends) is the side toward the true edge.
-  // Negated so dead-center still ends up further into the table, not further
-  // toward the edge.
+  // directly (its row sits at the *bottom* of the screen, so "extends toward
+  // smaller local Y" — up and away from its own bottom anchor — means "toward
+  // the table"). Every opponent seat's row sits at the *opposite* screen edge
+  // from Hand's, so the exact same "extends toward smaller local Y" instead
+  // means "toward the true edge, away from the table" — negated here so dead
+  // center still ends up further into the table, not further toward the edge.
   const curve = fanCurve(offsets, FAN_CURVE_U * u).map((v) => -v);
 
   const row = (
@@ -90,12 +88,7 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
             zIndex: Math.round(1000 - Math.abs(offsets[i])),
           }}
         >
-          {/* The crop lives in here, one level inside the positioned+tilted
-           * .fanCard, not on the shared row — see the comment on .fanCardCrop
-           * in Seat.module.css for why cropping the row itself doesn't work. */}
-          <div className={styles.fanCardCrop}>
-            <Card card={{ suit: 'spades', rank: '2' }} size="md" faceDown />
-          </div>
+          <Card card={{ suit: 'spades', rank: '2' }} size="md" faceDown />
         </div>
       ))}
     </div>
