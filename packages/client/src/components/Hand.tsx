@@ -4,7 +4,8 @@ import { fanAngles } from '@shelem/shared';
 import styles from './Hand.module.css';
 import { Card } from './Card.js';
 import { cardKey } from '../cardKey.js';
-import { useScaleUnit } from '../useScaleUnit.js';
+import { useTableMetrics } from '../tableMetrics.js';
+import { fitSpacing, fanOffsets } from '../fanGeometry.js';
 
 export interface HandProps {
   cards: CardModel[];
@@ -26,25 +27,20 @@ export interface HandProps {
 
 const DISCARD_REQUIRED = 4;
 
-/** Every card pivots around this same point, far below the fan — the standard
- * technique for an even circular arc: equal angle steps around a shared distant
- * origin land equal arc-length apart by construction, unlike overlapping cards a
- * fixed pixel amount and rotating each independently (which drifts uneven, since a
- * fixed offset doesn't account for how much a rotated card's edge shifts sideways).
- * Distance is measured from the card's own bottom edge. The angles themselves come
- * from `fanAngles` (shared package, unit-tested) — the same function used for
- * opponents' fans, so every seat's hand reads as the same shape.
- *
- * Both constants are multiples of the shared `--u` scale unit (see theme.css),
- * read live via `useScaleUnit` — not plain CSS, because Framer Motion overwrites
- * a literal `transform-origin` from its own `originX`/`originY` style props on
- * every render (see the `motion.div` below), so the pivot has to be computed in
- * JS instead of left to a CSS `calc()` the way Seat.module.css does it. */
-const PIVOT_DISTANCE_BELOW_CARD_U = 68;
-/** Must match the 'lg' card height multiplier in Card.module.css — transform-
- * origin's Y is an offset from the card's own top edge, so this converts
- * "below the bottom" to that. */
-const CARD_LG_HEIGHT_U = 16.9;
+/** Each card gets its own horizontal offset (spacing capped to guarantee the
+ * whole hand fits within the table's actual measured width, for however many
+ * cards are actually in it — up to 16, during the declarer's widow discard —
+ * see fanGeometry.ts) plus a small cosmetic tilt from the shared `fanAngles`
+ * (same function used for opponents' fans, so every seat's hand reads as the
+ * same shape). An earlier version derived position from rotating each card
+ * around a distant pivot instead, which has an unavoidable side effect
+ * (fanGeometry.ts has the full explanation) — position and rotation are
+ * decoupled here specifically to avoid that. */
+/** Must match the 'lg' card width multiplier in Card.module.css. */
+const CARD_LG_WIDTH_U = 12;
+/** Fraction of a card's own width used as the (desired, capped-to-fit) gap
+ * between adjacent card centers. */
+const FAN_SPACING_RATIO = 0.45;
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -68,8 +64,10 @@ export function Hand({
   const total = cards.length;
   const isDiscardMode = discardSelection !== undefined;
   const angles = fanAngles(total);
-  const u = useScaleUnit();
-  const originYPx = (CARD_LG_HEIGHT_U + PIVOT_DISTANCE_BELOW_CARD_U) * u;
+  const { width, u } = useTableMetrics();
+  const cardWidthPx = CARD_LG_WIDTH_U * u;
+  const spacing = fitSpacing(width, cardWidthPx, total, cardWidthPx * FAN_SPACING_RATIO);
+  const offsets = fanOffsets(total, spacing);
 
   return (
     <div className={styles.wrap}>
@@ -101,13 +99,8 @@ export function Hand({
                 key={cardKey(card)}
                 layoutId={cardKey(card)}
                 className={styles.cardSlot}
-                // Framer Motion rebuilds `transform-origin` from its own `originX`/`originY`
-                // style keys every render and overwrites a plain `style.transformOrigin`
-                // string with the CSS default (50% 50% 0) — so the far pivot has to be set
-                // through those keys, not as a literal transform-origin value.
-                style={{ originX: '50%', originY: `${originYPx}px` }}
-                initial={{ opacity: 0, y: 40, rotate: angle }}
-                animate={{ opacity: 1, y: 0, rotate: angle }}
+                initial={{ opacity: 0, x: offsets[i], y: 40, rotate: angle }}
+                animate={{ opacity: 1, x: offsets[i], y: 0, rotate: angle }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
               >

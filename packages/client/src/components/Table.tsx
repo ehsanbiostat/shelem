@@ -3,7 +3,7 @@ import type { Seat as SeatIndex } from '@shelem/shared';
 import styles from './Table.module.css';
 import { Seat } from './Seat.js';
 import { TableFeltMotif } from './TableFeltMotif.js';
-import { useTableScaleUnit } from '../useTableScaleUnit.js';
+import { TableMetricsContext, useMeasureTableMetrics } from '../tableMetrics.js';
 
 export interface TablePlayer {
   seat: SeatIndex;
@@ -51,43 +51,45 @@ export function Table({
   cornerPanel,
 }: TableProps) {
   const bySeat = new Map(players.map((p) => [p.seat, p]));
-  const { ref: tableRef, u } = useTableScaleUnit<HTMLDivElement>();
+  const { ref: tableRef, metrics } = useMeasureTableMetrics<HTMLDivElement>();
 
   return (
-    <div ref={tableRef} className={styles.tableWrap} style={{ '--u': `${u}px` } as CSSProperties}>
-      <div className={styles.felt}>
-        <div className={styles.feltPattern}>
-          <TableFeltMotif />
-        </div>
-      </div>
-
-      {([0, 1, 2, 3] as SeatIndex[]).map((seat) => {
-        const player = bySeat.get(seat);
-        const slot = screenSlotFor(seat, mySeat);
-        const isTurn = seat === currentTurnSeat;
-        return (
-          <div key={seat} className={`${styles.seatSlot} ${styles[slot]}`}>
-            <Seat
-              name={player?.name ?? ''}
-              connected={player?.connected ?? false}
-              handSize={slot === 'bottom' ? 0 : (player?.handSize ?? 0)}
-              isDealer={seat === dealerSeat}
-              isTurn={isTurn}
-              isBiddingTurn={biddingInProgress && isTurn}
-              isDeclarer={seat === declarerSeat}
-              bidLabel={player?.bidLabel}
-              empty={!player}
-              slot={slot}
-            />
+    <div ref={tableRef} className={styles.tableWrap} style={{ '--u': `${metrics.u}px` } as CSSProperties}>
+      <TableMetricsContext.Provider value={metrics}>
+        <div className={styles.felt}>
+          <div className={styles.feltPattern}>
+            <TableFeltMotif />
           </div>
-        );
-      })}
+        </div>
 
-      <div className={styles.center}>{center}</div>
+        {([0, 1, 2, 3] as SeatIndex[]).map((seat) => {
+          const player = bySeat.get(seat);
+          const slot = screenSlotFor(seat, mySeat);
+          const isTurn = seat === currentTurnSeat;
+          return (
+            <div key={seat} className={`${styles.seatSlot} ${styles[slot]}`}>
+              <Seat
+                name={player?.name ?? ''}
+                connected={player?.connected ?? false}
+                handSize={slot === 'bottom' ? 0 : (player?.handSize ?? 0)}
+                isDealer={seat === dealerSeat}
+                isTurn={isTurn}
+                isBiddingTurn={biddingInProgress && isTurn}
+                isDeclarer={seat === declarerSeat}
+                bidLabel={player?.bidLabel}
+                empty={!player}
+                slot={slot}
+              />
+            </div>
+          );
+        })}
 
-      {cornerPanel && <div className={styles.cornerPanel}>{cornerPanel}</div>}
+        <div className={styles.center}>{center}</div>
 
-      {bottomOverlay && <div className={styles.bottomOverlay}>{bottomOverlay}</div>}
+        {cornerPanel && <div className={styles.cornerPanel}>{cornerPanel}</div>}
+
+        {bottomOverlay && <div className={styles.bottomOverlay}>{bottomOverlay}</div>}
+      </TableMetricsContext.Provider>
     </div>
   );
 }

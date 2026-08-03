@@ -41,11 +41,12 @@
   margin-top: 8px;
 }
 
-/* Every card sits on the exact same spot (centered, flush with the bottom of the
- * strip) — the fan comes entirely from each one's `rotate` (set in Hand.tsx) around
- * the shared distant transform-origin, which is what makes the arc's spacing even.
- * Margin is half the 'lg' card width (see Card.module.css), so cards stay centered
- * on the same `--u` scale unit the rest of the table uses (theme.css). */
+/* Every card starts at the exact same anchor (centered, flush with the bottom
+ * of the strip); the fan comes from each one's own horizontal offset (set
+ * inline, Hand.tsx — spacing capped to guarantee the hand fits) plus a small
+ * cosmetic `rotate`. Margin is half the 'lg' card width (see Card.module.css),
+ * so cards stay centered on the same `--u` scale unit the rest of the table
+ * uses (theme.css). */
 .cardSlot {
   position: absolute;
   left: 50%;
