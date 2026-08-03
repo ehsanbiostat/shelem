@@ -8,7 +8,12 @@
   --fan-reveal: calc(var(--u) * 7);
   display: flex;
   align-items: center;
-  gap: 2px;
+  /* The fan's *layout* footprint is exactly --fan-reveal, but the curve
+   * (Seat.tsx's fanCurve, up to 3.5u) pushes dead-center cards further toward
+   * the identity label than that via a transform — which doesn't affect
+   * layout, so the gap has to cover that extra reach itself or the curve's
+   * peak visually overlaps the name/badges beneath it. */
+  gap: calc(var(--u) * 5);
   color: var(--color-ivory-100);
 }
 

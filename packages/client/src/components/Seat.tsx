@@ -6,13 +6,16 @@ import { fitSpacing, fanOffsets, fanCurve } from '../fanGeometry.js';
 
 export type SeatSlot = 'top' | 'bottom' | 'left' | 'right';
 
-/** Opponent fans spread wider per card than the local hand (see fan.ts) — there's
- * a whole table edge to fill here (à la Trickster Cards) rather than a compact
- * hand of clickable cards, so a fuller, more dramatic tilt per card reads
- * better. Purely cosmetic now (see fanGeometry.ts) — position comes from
- * spacing, not from these angles. */
-const FAN_DEGREES_PER_CARD = 10;
-const FAN_MAX_SPREAD = 150;
+/** Purely cosmetic tilt (see fanGeometry.ts — position comes from spacing, not
+ * from these angles), so it needs to stay modest regardless of how tightly
+ * `fitSpacing` ends up packing the cards: a card doesn't get more room to
+ * rotate into just because more cards fit into the same space, so a wide
+ * angle range (this used to go up to ±55°, back when rotation also drove
+ * position and wider angles meant more spread) reads as a jumbled, crossed-
+ * over mess of edges once density and angle are independent — exactly the
+ * "cut into each other" / "strange orientation" look. */
+const FAN_DEGREES_PER_CARD = 3;
+const FAN_MAX_SPREAD = 30;
 /** Fraction of a card's own width used as the (desired, capped-to-fit) gap
  * between adjacent card centers — smaller than 1 so cards overlap. */
 const FAN_SPACING_RATIO = 0.4;
@@ -75,7 +78,17 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
         <div
           key={i}
           className={styles.fanCard}
-          style={{ transform: `translate(${offsets[i]}px, ${curve[i]}px) rotate(${angle}deg)` }}
+          style={{
+            transform: `translate(${offsets[i]}px, ${curve[i]}px) rotate(${angle}deg)`,
+            // Without this, stacking order falls back to DOM order (left-to-
+            // right) regardless of the curve — so a card the curve pushes
+            // toward the viewer could still render *behind* a neighbor it's
+            // supposed to be in front of, which is exactly what read as cards
+            // "cutting into" each other. Matching z-index to the same
+            // distance-from-center the curve itself uses keeps the two
+            // consistent: dead center is both furthest forward and topmost.
+            zIndex: Math.round(1000 - Math.abs(offsets[i])),
+          }}
         >
           {/* The crop lives in here, one level inside the positioned+tilted
            * .fanCard, not on the shared row — see the comment on .fanCardCrop
