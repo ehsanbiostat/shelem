@@ -48,7 +48,7 @@
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: var(--color-emerald-700);
+  background: linear-gradient(155deg, var(--color-ruby-500) 0%, var(--color-ruby-700) 55%, var(--color-ruby-900) 100%);
   border: 1px solid var(--color-gold-500);
   color: var(--color-gold-300);
   display: flex;
@@ -58,8 +58,8 @@
 }
 
 .back svg {
-  width: 78%;
-  height: 78%;
+  width: 92%;
+  height: 92%;
 }
 
 .button {
