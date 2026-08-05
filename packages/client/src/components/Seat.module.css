@@ -143,8 +143,24 @@
   transform: translateX(-50%);
 }
 
+/* Whose turn it is — the one thing on the table everyone needs to find at a
+   glance. This used to tint the name gold and nothing more, which on a phone is a
+   13px colour shift on a dark translucent pill: far too quiet to answer "who are
+   we waiting for?" from across the board. The whole pill now carries a gold ring
+   and glow, and the name goes bold as well as gold.
+
+   A ring and glow rather than filling the pill gold: the "Bidding…" badge inside
+   it is itself gold on ink and the trump badge is ivory, so a gold fill would
+   swallow one or the other. Deliberately static, too — the bidding badge already
+   pulses, and two competing pulses on one label is noise. */
+.activeTurn .identity {
+  background: rgba(10, 30, 25, 0.88);
+  box-shadow: 0 0 0 2px var(--color-gold-500), 0 0 16px 3px rgba(201, 162, 39, 0.45);
+}
+
 .activeTurn .name {
   color: var(--color-gold-300);
+  font-weight: 700;
   text-shadow: 0 0 8px rgba(224, 197, 105, 0.7);
 }
 
