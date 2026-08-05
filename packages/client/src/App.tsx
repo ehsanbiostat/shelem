@@ -13,7 +13,7 @@ import { BiddingPanel } from './components/BiddingPanel.js';
 import { Hand } from './components/Hand.js';
 import { LastTrickPanel } from './components/LastTrickPanel.js';
 import { TableSettings } from './components/TableSettings.js';
-import { gameStartSound, isMuted, playCardSound, setMuted, trickClearedSound } from './sound.js';
+import { bidSound, gameStartSound, isMuted, playCardSound, setMuted, trickClearedSound } from './sound.js';
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -65,6 +65,15 @@ export default function App() {
     else if (trickCount === 0 && prevTrickCount.current > 0) trickClearedSound();
     prevTrickCount.current = trickCount;
   }, [trickCount]);
+
+  // Every bid anyone places, tracked the same way as the trick: off the synced
+  // history growing, so all four seats' bids are heard rather than only our own.
+  const prevBidCount = useRef(0);
+  const bidCount = state?.bidHistory.length ?? 0;
+  useEffect(() => {
+    if (bidCount > prevBidCount.current) bidSound();
+    prevBidCount.current = bidCount;
+  }, [bidCount]);
 
   // Each new deal, including a redeal after three passes — the chime marks cards
   // arriving, which is what the player is waiting on.
@@ -301,6 +310,7 @@ export default function App() {
         // pile needs to keep clear of the opponents' fans. See Table.module.css.
         centerVariant={state.phase === 'lobby' || state.phase === 'bidding' ? 'wide' : 'trick'}
         hideOwnLabel={state.phase === 'widow' && state.declarerSeat === mySeat}
+        trumpSuit={trumpSuit}
         cornerPanel={
           state.phase !== 'lobby' ? (
             <ScoreBar
@@ -359,7 +369,7 @@ export default function App() {
               onBid={sendBid}
             />
           ) : (
-            <TrickArea mySeat={mySeat} plays={currentTrickPlays} trumpSuit={trumpSuit} />
+            <TrickArea mySeat={mySeat} plays={currentTrickPlays} />
           )
         }
         bottomOverlay={

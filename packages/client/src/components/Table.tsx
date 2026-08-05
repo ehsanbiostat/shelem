@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { Seat as SeatIndex } from '@shelem/shared';
+import type { Seat as SeatIndex, Suit } from '@shelem/shared';
 import styles from './Table.module.css';
 import { Seat } from './Seat.js';
 import { TableFeltMotif } from './TableFeltMotif.js';
@@ -45,6 +45,8 @@ export interface TableProps {
    * top of it — and during a discard the label is the one piece of information on
    * the table you definitely already have. */
   hideOwnLabel?: boolean;
+  /** Once set, shown as a suit glyph on the declarer's seat. */
+  trumpSuit?: Suit | null;
 }
 
 export function Table({
@@ -60,6 +62,7 @@ export function Table({
   cornerPanel,
   cornerPanelRight,
   hideOwnLabel = false,
+  trumpSuit,
 }: TableProps) {
   const bySeat = new Map(players.map((p) => [p.seat, p]));
   const { ref: tableRef, metrics } = useMeasureTableMetrics<HTMLDivElement>();
@@ -89,6 +92,7 @@ export function Table({
                 isBiddingTurn={biddingInProgress && isTurn}
                 isDeclarer={seat === declarerSeat}
                 bidLabel={player?.bidLabel}
+                trumpSuit={trumpSuit}
                 empty={!player}
                 slot={slot}
               />

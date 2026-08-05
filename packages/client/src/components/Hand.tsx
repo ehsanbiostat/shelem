@@ -126,9 +126,10 @@ export function Hand({
                 initial={{ opacity: 0, x: offsets[i], y: 40 + curve[i], rotate: angle }}
                 animate={{ opacity: 1, x: offsets[i], y: curve[i] - lift, rotate: angle }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
+                transition={{ type: 'spring', stiffness: 320, damping: 34, mass: 0.7 }}
               >
-                <Card
+                <div className={styles.hoverLift}>
+                  <Card
                   card={card}
                   size="xl"
                   playable={playable}
@@ -138,7 +139,8 @@ export function Hand({
                   disabled={isDiscardMode ? false : undefined}
                   liftOnInteract={false}
                   onClick={() => (isDiscardMode ? onToggleDiscard!(card) : onPlay(card))}
-                />
+                  />
+                </div>
               </motion.div>
             );
           })}
