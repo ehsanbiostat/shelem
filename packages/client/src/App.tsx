@@ -302,7 +302,6 @@ export default function App() {
       <Table
         mySeat={mySeat}
         players={tablePlayers}
-        dealerSeat={state.dealerSeat as SeatIndex}
         currentTurnSeat={state.currentTurnSeat as SeatIndex}
         declarerSeat={state.declarerSeat as SeatIndex | -1}
         biddingInProgress={state.phase === 'bidding'}

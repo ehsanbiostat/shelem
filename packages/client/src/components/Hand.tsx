@@ -121,7 +121,6 @@ export function Hand({
             return (
               <motion.div
                 key={cardKey(card)}
-                layoutId={cardKey(card)}
                 className={styles.cardSlot}
                 initial={{ opacity: 0, x: offsets[i], y: 40 + curve[i], rotate: angle }}
                 animate={{ opacity: 1, x: offsets[i], y: curve[i] - lift, rotate: angle }}

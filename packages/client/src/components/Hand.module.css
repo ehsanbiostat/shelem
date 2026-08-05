@@ -68,17 +68,21 @@
   margin-left: calc(var(--u) * -9.5);
 }
 
-/* Hover feedback. It lives on this wrapper rather than on the Card's own button
-   (Card.module.css) for two reasons: the button is `disabled` for any card that
-   isn't currently legal, and a disabled control is an unreliable hover target —
-   but you still want to see which card you're pointing at. And the motion.div
-   above owns its transform (Framer writes x/y/rotate inline), so a transform
-   there would be overwritten on every frame.
+/* Hover feedback — deliberately no movement.
 
-   Raising z-index on hover matters as much as the lift: cards overlap heavily in
-   a fan, so without it a card lifts but stays tucked behind its neighbour. */
+   Lift used to live here as well as on the motion.div above, and the two stacked:
+   a hovered card rose 3u, a selected one 3.6u, and a selected-and-hovered one
+   6.6u, on two different timing curves (a CSS ease against Framer's spring). At
+   those magnitudes "hovered" and "selected" were indistinguishable, which is what
+   made selection feel unreliable. Position is now owned by one system and means
+   exactly one thing: this card is selected.
+
+   So hover speaks in the other channel — depth. The card brightens and gains a
+   ring, and comes to the front: cards overlap heavily in a fan, so without the
+   z-index the highlight on an inner card is mostly hidden behind its neighbour. */
 .hoverLift {
-  transition: transform 140ms ease, filter 140ms ease;
+  transition: filter 130ms ease, box-shadow 130ms ease;
+  border-radius: var(--radius-sm);
 }
 
 .cardSlot:hover {
@@ -86,15 +90,15 @@
 }
 
 .cardSlot:hover .hoverLift {
-  transform: translateY(calc(var(--u) * -3));
-  filter: brightness(1.06) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+  filter: brightness(1.08);
+  box-shadow: 0 0 0 2px var(--color-ivory-100), 0 4px 14px rgba(0, 0, 0, 0.45);
 }
 
-/* Nothing to point at with a finger — and on touch, `:hover` sticks to the last
-   thing tapped, which would leave a card stuck in the raised state. */
+/* Nothing to point at with a finger — and on touch `:hover` sticks to whatever
+   was last tapped, which would leave a card permanently highlighted. */
 @media (hover: none) {
   .cardSlot:hover .hoverLift {
-    transform: none;
     filter: none;
+    box-shadow: none;
   }
 }
