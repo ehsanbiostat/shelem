@@ -23,13 +23,13 @@
   --card-h: calc(var(--u) * 16.9);
 }
 
-/* The local player's own hand. Deliberately taller than the felt has room for —
- * Hand.module.css crops it to its top portion, which is all a fanned hand ever
- * shows of any card but the last anyway. Trading the hidden bottom half for a
- * much wider card is what makes the rank/suit index readable on a phone. */
+/* The local player's own hand — shown whole, and the largest size on the table,
+ * because it's the one a player actually reads. It can afford to be this big
+ * because Hand.module.css parks the fan hard against the bottom edge of the
+ * display rather than floating it above the edge. */
 .card.xl {
-  --card-w: calc(var(--u) * 17);
-  --card-h: calc(var(--u) * 23.9);
+  --card-w: calc(var(--u) * 19);
+  --card-h: calc(var(--u) * 26.7);
 }
 
 .face {

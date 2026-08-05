@@ -37,7 +37,7 @@ const DISCARD_REQUIRED = 4;
  * (fanGeometry.ts has the full explanation) — position and rotation are
  * decoupled here specifically to avoid that. */
 /** Must match the 'xl' card width multiplier in Card.module.css. */
-const CARD_XL_WIDTH_U = 17;
+const CARD_XL_WIDTH_U = 19;
 /** Fraction of a card's own width used as the (desired, capped-to-fit) gap
  * between adjacent card centers. */
 const FAN_SPACING_RATIO = 0.45;

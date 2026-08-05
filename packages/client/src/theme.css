@@ -7,6 +7,12 @@
   --color-emerald-900: #0a3d31;
   --color-emerald-700: #0f5c4a;
   --color-emerald-500: #16805f;
+  /* Deliberately brighter than the whole emerald ramp above, which is the felt's
+   * own range — the felt's radial gradient is literally emerald-500 at its
+   * centre (Table.module.css), so a green control painted from that ramp lands
+   * on an identical background and reads as transparent. Anything green that
+   * sits on the felt has to come from here instead. */
+  --color-green-400: #2fbf85;
 
   --color-sapphire-700: #1e4e8c;
   --color-sapphire-500: #2c68b3;

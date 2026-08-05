@@ -19,21 +19,24 @@
 }
 
 /* The top seat spends its footprint on table *height*, which is the axis with
- * room to spare, so it keeps the full-size 'md' fan: --fan-thickness is that
- * card's height (13.7u — Card.module.css) plus headroom for a rotated card's
- * larger bounding box (up to ±15° tilt) and the curve's own extra reach (up to
- * 3.5u). Opponent cards are shown in full, not cropped to a sliver, so the
- * footprint has to actually contain a whole (tilted, curved) card.
+ * room to spare, so it keeps the full-size 'md' fan.
  *
- * The fan's *layout* footprint is exactly --fan-thickness, but the curve
- * (Seat.tsx's fanCurve) pushes dead-center cards further toward the identity
- * label than that via a transform — which doesn't affect layout, so the gap
- * has to cover that extra reach itself or the curve's peak visually overlaps
- * the name/badges beneath it. */
+ * --fan-thickness is sized to a *rotated* card, not a flat one: cards are
+ * anchored to the row's inner edge (.fanCard below), so every bit of slack in
+ * this value shows up as a gap between the fan and the player's own screen
+ * edge. At 13.7u tall and 9.7u wide (Card.module.css) tilted up to 15°, the
+ * bounding height is 13.7·cos15 + 9.7·sin15 ≈ 15.7u — so 16u is the whole card
+ * with essentially nothing spare, and the fan sits hard against its border.
+ * It used to be 20u, which parked the top fan a visible ~5u short of the edge.
+ *
+ * The curve (Seat.tsx's fanCurve) then pushes dead-center cards further inward
+ * than the footprint via a transform, which doesn't affect layout — so the gap
+ * below has to cover that extra reach itself or the curve's peak visually
+ * overlaps the name/badges beneath it. */
 .top,
 .bottom {
   --fan-card-w: calc(var(--u) * 9.7);
-  --fan-thickness: calc(var(--u) * 20);
+  --fan-thickness: calc(var(--u) * 16);
   gap: calc(var(--u) * 5);
   flex-direction: column;
 }
@@ -49,7 +52,10 @@
 .left,
 .right {
   --fan-card-w: calc(var(--u) * 6.3);
-  --fan-thickness: calc(var(--u) * 13);
+  /* Same rotated-card sizing as the top seat: 8.9·cos15 + 6.3·sin15 ≈ 10.2u for
+   * an 'sm' card, so 10.5u holds it with nothing to spare and the fan sits
+   * against the left/right border. */
+  --fan-thickness: calc(var(--u) * 10.5);
   gap: calc(var(--u) * 3);
   flex-direction: row;
 }
