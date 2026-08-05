@@ -42,8 +42,11 @@ const CARD_XL_WIDTH_U = 19;
  * between adjacent card centers. */
 const FAN_SPACING_RATIO = 0.45;
 /** How far (in `--u`) dead-center pokes further into the table (up, toward the
- * felt) than the two outermost cards — see fanCurve in fanGeometry.ts. */
-const FAN_CURVE_U = 4;
+ * felt) than the two outermost cards — see fanCurve in fanGeometry.ts. Deep
+ * enough to read as a real arc: at 4u the fan was close enough to a straight row
+ * that the curve barely registered, and it's the arc that lets the ends drop away
+ * to the bottom corners while the middle of the hand stays high and legible. */
+const FAN_CURVE_U = 9;
 /** How far (in `--u`) a playable or selected card rises out of the fan. Applied
  * here rather than by Card's own `.button.playable` transform, so it scales with
  * the board like every other distance on the table instead of being a fixed 6px

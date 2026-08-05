@@ -24,7 +24,12 @@ export function fitSpacing(
   cardThickness: number,
   count: number,
   desiredSpacing: number,
-  marginFactor = 0.94,
+  // Near 1: the fan is meant to reach the edges of the space it's given, and this
+  // factor is the only thing holding it back from them. At 0.94 it discarded 6% of
+  // the available width — ~11px a side on a phone — which read as the ends of every
+  // arc floating well short of the screen. The remainder is just enough that a
+  // rotated end card's corner doesn't quite touch.
+  marginFactor = 0.995,
 ): number {
   if (count <= 1) return 0;
   const maxSpacing = (availableSpace * marginFactor - cardThickness) / (count - 1);
