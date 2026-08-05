@@ -41,6 +41,12 @@ const CARD_XL_WIDTH_U = 19;
 /** Fraction of a card's own width used as the (desired, capped-to-fit) gap
  * between adjacent card centers. */
 const FAN_SPACING_RATIO = 0.45;
+/** Tilt spread, wider than `fanAngles`' defaults. Rotation is purely cosmetic
+ * (see fanGeometry.ts — position comes from spacing), but it's half of what makes
+ * a hand read as a *fan* rather than a curved row, and it costs no vertical room
+ * the way a deeper curve does. */
+const FAN_DEGREES_PER_CARD = 5;
+const FAN_MAX_SPREAD = 64;
 /** How far (in `--u`) dead-center pokes further into the table (up, toward the
  * felt) than the two outermost cards — see fanCurve in fanGeometry.ts.
  *
@@ -50,7 +56,7 @@ const FAN_SPACING_RATIO = 0.45;
  * whole hand off the bottom with them. Cards are only ever clipped from below, so
  * a clipped card keeps its top-left rank index — the part you actually read in a
  * fan — which is why the ends can afford to go this far. */
-const FAN_CURVE_U = 20;
+const FAN_CURVE_U = 26;
 /** How far (in `--u`) a playable or selected card rises out of the fan. Applied
  * here rather than by Card's own `.button.playable` transform, so it scales with
  * the board like every other distance on the table instead of being a fixed 6px
@@ -79,7 +85,7 @@ export function Hand({
 }: HandProps) {
   const total = cards.length;
   const isDiscardMode = discardSelection !== undefined;
-  const angles = fanAngles(total);
+  const angles = fanAngles(total, FAN_DEGREES_PER_CARD, FAN_MAX_SPREAD);
   const { width, u } = useTableMetrics();
   const cardWidthPx = CARD_XL_WIDTH_U * u;
   const spacing = fitSpacing(width, cardWidthPx, total, cardWidthPx * FAN_SPACING_RATIO);

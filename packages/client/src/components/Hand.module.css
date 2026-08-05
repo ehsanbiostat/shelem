@@ -64,6 +64,6 @@
 .cardSlot {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--u) * -18);
+  bottom: calc(var(--u) * -24);
   margin-left: calc(var(--u) * -9.5);
 }
