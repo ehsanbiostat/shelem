@@ -296,3 +296,36 @@
     display: none;
   }
 }
+
+/* The trump suit, shown against the declarer's name (see Seat.tsx). Bigger than
+   the text badges around it and on a solid light pill, because it's the one piece
+   of state every player needs to be able to find at a glance mid-trick — and
+   unlike the dealer/declarer tags it is never hidden on a narrow screen. Red and
+   black follow the cards themselves. */
+.trumpBadge {
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--color-ivory-100);
+}
+
+.trumpBadge.hearts,
+.trumpBadge.diamonds {
+  color: #c02040;
+}
+
+.trumpBadge.spades,
+.trumpBadge.clubs {
+  color: var(--color-ink-900);
+}
+
+/* Suit glyphs are symbols, not language — they must stay upright on the side
+   seats rather than being rotated with the name text (see the writing-mode rule
+   above), or a heart reads as a smear. */
+.left .identity > .trumpBadge,
+.right .identity > .trumpBadge {
+  writing-mode: horizontal-tb;
+  transform: none;
+}

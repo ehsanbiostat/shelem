@@ -117,6 +117,22 @@ export function playCardSound() {
   tone(now, { frequency: 160, duration: 0.06, gain: 0.05 });
 }
 
+/** A bid being placed: a knock on wood. Wood is a resonant body rather than a
+ * flat surface, so this is the same noise burst as a card landing but with a much
+ * narrower filter (high Q) around a low frequency — that resonance is what makes
+ * it read as "hollow wood" instead of "click". Two knocks rather than one, since
+ * a single one reads as a card being played, which is a different event. */
+export function bidSound() {
+  if (muted) return;
+  const context = audio();
+  if (!context) return;
+  const now = context.currentTime;
+  noiseBurst(now, { duration: 0.06, frequency: 420, q: 3.6, gain: 0.16 });
+  tone(now, { frequency: 180, duration: 0.05, gain: 0.07 });
+  noiseBurst(now + 0.11, { duration: 0.07, frequency: 370, q: 3.6, gain: 0.13 });
+  tone(now + 0.11, { frequency: 160, duration: 0.06, gain: 0.06 });
+}
+
 /** The completed trick being swept off the table: longer, quieter, and sliding
  * downward in pitch so it reads as cards moving away rather than landing. */
 export function trickClearedSound() {

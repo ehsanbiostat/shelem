@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import type { Card as CardModel, Seat as SeatIndex, Suit } from '@shelem/shared';
+import type { Card as CardModel, Seat as SeatIndex } from '@shelem/shared';
 import styles from './TrickArea.module.css';
 import { Card } from './Card.js';
 import { cardKey } from '../cardKey.js';
@@ -14,15 +14,7 @@ export interface TrickPlayItem {
 export interface TrickAreaProps {
   mySeat: SeatIndex;
   plays: TrickPlayItem[];
-  trumpSuit: Suit | null;
 }
-
-const SUIT_LABEL: Record<Suit, string> = {
-  spades: 'Spades',
-  hearts: 'Hearts',
-  diamonds: 'Diamonds',
-  clubs: 'Clubs',
-};
 
 /** A card played from a given seat is left oriented as that player set it down —
  * upright from their own seat, not ours — so its rotation alone tells you who
@@ -58,12 +50,11 @@ const FLY_IN_OFFSET_U: Record<'top' | 'bottom' | 'left' | 'right', { x: number; 
   right: { x: 28, y: 0 },
 };
 
-export function TrickArea({ mySeat, plays, trumpSuit }: TrickAreaProps) {
+export function TrickArea({ mySeat, plays }: TrickAreaProps) {
   const { u } = useTableMetrics();
 
   return (
     <div className={styles.area}>
-      {trumpSuit && <div className={styles.trumpBadge}>Trump: {SUIT_LABEL[trumpSuit]}</div>}
       <AnimatePresence>
         {plays.map(({ seat, card }) => {
           const slot = screenSlotFor(seat, mySeat);
@@ -90,7 +81,16 @@ export function TrickArea({ mySeat, plays, trumpSuit }: TrickAreaProps) {
               }}
               animate={{ opacity: 1, scale: 1, rotate, ...(flyIn && { x: 0, y: 0 }) }}
               exit={{ opacity: 0, scale: 0.6 }}
-              transition={{ duration: isMine ? 0.35 : 0.28, ease: 'easeOut' }}
+              // A spring rather than a fixed-duration tween: our own card is doing a
+              // real shared-element flight from the hand (see `layoutId` above), and a
+              // spring carries its momentum into the landing instead of stopping dead
+              // at the end of a curve. Opponents' cards only fade in from a direction,
+              // so they keep a short tween — a spring on a 100px fade reads as wobble.
+              transition={
+                isMine
+                  ? { type: 'spring', stiffness: 200, damping: 26, mass: 0.9 }
+                  : { duration: 0.28, ease: 'easeOut' }
+              }
             >
               <Card card={card} size="lg" />
             </motion.div>

@@ -67,3 +67,34 @@
   bottom: calc(var(--u) * -12);
   margin-left: calc(var(--u) * -9.5);
 }
+
+/* Hover feedback. It lives on this wrapper rather than on the Card's own button
+   (Card.module.css) for two reasons: the button is `disabled` for any card that
+   isn't currently legal, and a disabled control is an unreliable hover target —
+   but you still want to see which card you're pointing at. And the motion.div
+   above owns its transform (Framer writes x/y/rotate inline), so a transform
+   there would be overwritten on every frame.
+
+   Raising z-index on hover matters as much as the lift: cards overlap heavily in
+   a fan, so without it a card lifts but stays tucked behind its neighbour. */
+.hoverLift {
+  transition: transform 140ms ease, filter 140ms ease;
+}
+
+.cardSlot:hover {
+  z-index: 600;
+}
+
+.cardSlot:hover .hoverLift {
+  transform: translateY(calc(var(--u) * -3));
+  filter: brightness(1.06) drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+}
+
+/* Nothing to point at with a finger — and on touch, `:hover` sticks to the last
+   thing tapped, which would leave a card stuck in the raised state. */
+@media (hover: none) {
+  .cardSlot:hover .hoverLift {
+    transform: none;
+    filter: none;
+  }
+}

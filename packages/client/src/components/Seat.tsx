@@ -1,10 +1,16 @@
 import { fanAngles } from '@shelem/shared';
+import type { Suit } from '@shelem/shared';
 import styles from './Seat.module.css';
 import { Card } from './Card.js';
 import { useTableMetrics } from '../tableMetrics.js';
 import { fitSpacing, fanOffsets, fanCurve } from '../fanGeometry.js';
 
 export type SeatSlot = 'top' | 'bottom' | 'left' | 'right';
+
+/** The trump suit is set by the declarer's opening lead, not announced — so once
+ * it exists it's shown against the declarer's own name, where the table already
+ * looks to see who took the contract. */
+const SUIT_SYMBOL: Record<Suit, string> = { spades: '\u2660', hearts: '\u2665', diamonds: '\u2666', clubs: '\u2663' };
 
 /** Purely cosmetic tilt (see fanGeometry.ts — position comes from spacing, not
  * from these angles), so it needs to stay modest regardless of how tightly
@@ -40,6 +46,8 @@ export interface SeatProps {
   isBiddingTurn: boolean;
   isDeclarer: boolean;
   bidLabel?: string;
+  /** Set once the declarer's lead has fixed trump; shown only on their seat. */
+  trumpSuit?: Suit | null;
   empty: boolean;
   slot: SeatSlot;
 }
@@ -119,6 +127,7 @@ export function Seat({
   isBiddingTurn,
   isDeclarer,
   bidLabel,
+  trumpSuit,
   empty,
   slot,
 }: SeatProps) {
@@ -132,6 +141,11 @@ export function Seat({
       {isBiddingTurn && <span className={styles.biddingBadge}>Bidding…</span>}
       {!isBiddingTurn && bidLabel && (
         <span className={`${styles.bidLabelBadge} ${bidLabel === 'Pass' ? styles.bidLabelPass : ''}`}>{bidLabel}</span>
+      )}
+      {isDeclarer && trumpSuit && (
+        <span className={`${styles.trumpBadge} ${styles[trumpSuit]}`} title={`Trump: ${trumpSuit}`}>
+          {SUIT_SYMBOL[trumpSuit]}
+        </span>
       )}
       {isDeclarer && <span className={styles.declarerBadge}>Declarer</span>}
     </div>
