@@ -34,16 +34,17 @@
   cursor: default;
 }
 
-/* Holds a whole 'xl' card (26.7u — Card.module.css) plus the anchor gap below it
- * (see .cardSlot). This strip's own bottom edge is the table's bottom edge,
- * which is the bottom of the window — App.module.css's .gameShell has no bottom
- * padding — so the hand ends up parked against the edge of the display.
- * Table.module.css's `.bottom` (the local player's name label, just above this
- * strip) and `.center` both mirror this multiple — keep the three in step. */
+/* Reaches as high as the arc's peak: the anchor (-2u) plus the 9u the curve
+ * lifts the middle of the fan plus a whole 'xl' card (26.7u — Card.module.css).
+ * This strip's own bottom edge is the table's bottom edge, which is the bottom
+ * of the window — App.module.css's .gameShell has no bottom padding — so the
+ * hand ends up parked against the edge of the display. Table.module.css's
+ * `.bottom` (the local player's name label, just above this strip) and `.center`
+ * both mirror this multiple — keep the three in step. */
 .hand {
   position: relative;
   width: 100%;
-  height: calc(var(--u) * 28.7);
+  height: calc(var(--u) * 33.7);
   margin-top: 8px;
 }
 
@@ -53,20 +54,16 @@
  * cosmetic `rotate`. Margin is half the 'xl' card width (see Card.module.css),
  * so cards stay centered on the same `--u` scale unit the rest of the table
  * uses (theme.css). */
-/* Cards sit as low as they can go: whole and uncropped, but parked against the
- * bottom of the display rather than floating above it. Pushing the fan to the
- * player's own edge is what frees the height to make the card big in the first
- * place — and it mirrors what the opponents' fans do at their edges (see
- * Seat.module.css), so every seat's hand hugs the border it belongs to.
- *
- * The small offset is not padding. The outermost cards are the most rotated
- * (Hand.tsx fans them up to ±25°), and rotating about a card's own centre swings
- * its lower corner below its flat bottom edge — about 2.7u at that angle for
- * this card size. Without the offset that corner would be clipped by
- * .tableWrap's overflow, so the fan would look subtly cut off at both ends. */
+/* This anchor is where the *ends* of the fan sit, not the middle — the curve
+ * (Hand.tsx) lifts the middle 9u above it. Negative, so the two outermost cards
+ * run off the bottom of the display and the arc rises out of the bottom corners,
+ * the way a hand of cards held in front of you does. Only the outer corners are
+ * lost, and they're the most rotated and least readable part of the fan; the
+ * middle of the hand sits higher than it did when the whole row was parked flat
+ * above the edge. */
 .cardSlot {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--u) * 2);
+  bottom: calc(var(--u) * -2);
   margin-left: calc(var(--u) * -9.5);
 }

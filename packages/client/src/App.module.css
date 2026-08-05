@@ -101,11 +101,16 @@
   text-align: center;
 }
 
+/* No horizontal padding: the table underneath is meant to run the full width of
+   the display, so a fanned hand can reach the actual left and right edges. The
+   16px that used to sit here was invisible as padding but showed up as a gap
+   between the ends of every fan and the side of the browser. The header keeps
+   its own inset instead — it's the only thing that wanted one. */
 .gameShell {
   height: 100dvh;
   display: flex;
   flex-direction: column;
-  padding: 8px 16px 0;
+  padding: 8px 0 0;
 }
 
 .header {
@@ -114,6 +119,7 @@
   justify-content: space-between;
   color: var(--color-ivory-100);
   margin-bottom: 4px;
+  padding: 0 12px;
   flex: none;
 }
 
