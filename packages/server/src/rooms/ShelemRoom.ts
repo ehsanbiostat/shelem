@@ -26,18 +26,20 @@ interface JoinOptions {
   targetScore?: number;
 }
 
-/** Bounds on the host-configurable match target. The floor is one hand's worth of
- * points (165 — see docs/game-rules.md), below which a match would be decided by a
- * single deal; the ceiling just keeps a typo from producing an unwinnable table.
- * Multiples of 5 because every score in the game is one. */
+/** Bounds on the host-configurable match target. Any whole number in range is
+ * allowed — deliberately not restricted to multiples of 5, even though every
+ * score in the game is one: a target of 1234 is perfectly playable (a team simply
+ * crosses it) and there's no reason to reject a number the host meant to type.
+ * The floor is one hand's worth of points (165 — see docs/game-rules.md), below
+ * which a match would be decided by a single deal; the ceiling only keeps a typo
+ * from producing a table nobody can finish. */
 const MIN_TARGET_SCORE = 165;
-const MAX_TARGET_SCORE = 10000;
+const MAX_TARGET_SCORE = 100000;
 
 function isValidTargetScore(value: unknown): value is number {
   return (
     typeof value === 'number' &&
     Number.isInteger(value) &&
-    value % 5 === 0 &&
     value >= MIN_TARGET_SCORE &&
     value <= MAX_TARGET_SCORE
   );
@@ -122,7 +124,7 @@ export class ShelemRoom extends Room<GameState> {
       if (!isValidTargetScore(message.targetScore)) {
         client.send('actionRejected', {
           action: 'setTableOption',
-          reason: `Target score must be a multiple of 5 between ${MIN_TARGET_SCORE} and ${MAX_TARGET_SCORE}`,
+          reason: `Target score must be a whole number between ${MIN_TARGET_SCORE} and ${MAX_TARGET_SCORE}`,
         });
         return;
       }

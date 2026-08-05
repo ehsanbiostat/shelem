@@ -39,9 +39,14 @@ export function isValidBid(bid: Bid, currentHighest: Bid | null): boolean {
   return true;
 }
 
+/** Consecutive passes with no bid on the table that end the auction and force a
+ * redeal. Three, not four: once three seats have passed without anyone opening,
+ * the hand is dead and the fourth seat doesn't get a turn. */
+export const PASSES_TO_REDEAL = 3;
+
 export interface BiddingResolution {
   complete: boolean;
-  /** True when every seat passed and no bid was ever made — the hand must be redealt. */
+  /** True when the auction died without a bid — see PASSES_TO_REDEAL. */
   redeal: boolean;
   declarerSeat?: Seat;
   winningBid?: Bid;
@@ -72,7 +77,10 @@ export function resolveBidding(events: BidEvent[]): BiddingResolution {
     passedSeats.delete(event.seat);
   }
 
-  if (passedSeats.size === 4) {
+  // No bid on the table means every event so far was a pass, so the count is
+  // necessarily a run of consecutive ones. Checked before the last-active-bidder
+  // rule below, which needs a bid to have been made anyway.
+  if (!anyBidMade && passedSeats.size >= PASSES_TO_REDEAL) {
     return { complete: true, redeal: true };
   }
 

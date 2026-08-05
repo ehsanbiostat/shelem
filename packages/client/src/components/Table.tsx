@@ -36,9 +36,9 @@ export interface TableProps {
    * out of the bottom-center hand's way rather than occupying its own row above
    * the table. */
   cornerPanel?: ReactNode;
-  /** Mirror of `cornerPanel` on the felt's bottom-right — the last-trick review.
-   * Bottom rather than top so it sits near the hand it's about, and opposite the
-   * score panel so the two never collide. */
+  /** Mirror of `cornerPanel` on the felt's top-right — the last-trick review.
+   * Both overlays sit along the top edge, leaving the bottom corners clear for
+   * the hand fan, which runs off the bottom of the display. */
   cornerPanelRight?: ReactNode;
 }
 

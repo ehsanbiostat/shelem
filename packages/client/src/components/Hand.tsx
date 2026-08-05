@@ -45,9 +45,9 @@ const FAN_SPACING_RATIO = 0.45;
  * felt) than the two outermost cards — see fanCurve in fanGeometry.ts. */
 const FAN_CURVE_U = 4;
 /** How far (in `--u`) a playable or selected card rises out of the fan. Applied
- * here rather than by Card's own `.button.playable` transform, because these
- * cards are cropped (see `.crop` in Hand.module.css) and a transform *inside* a
- * crop window scrolls the art instead of lifting the card. */
+ * here rather than by Card's own `.button.playable` transform, so it scales with
+ * the board like every other distance on the table instead of being a fixed 6px
+ * that reads as nothing on a phone and as a twitch on a desktop. */
 const LIFT_PLAYABLE_U = 1.6;
 const LIFT_SELECTED_U = 3.6;
 
@@ -115,19 +115,17 @@ export function Hand({
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
               >
-                <div className={styles.crop}>
-                  <Card
-                    card={card}
-                    size="xl"
-                    playable={playable}
-                    selected={selected}
-                    highlighted={highlighted}
-                    trump={!!trumpSuit && card.suit === trumpSuit}
-                    disabled={isDiscardMode ? false : undefined}
-                    liftOnInteract={false}
-                    onClick={() => (isDiscardMode ? onToggleDiscard!(card) : onPlay(card))}
-                  />
-                </div>
+                <Card
+                  card={card}
+                  size="xl"
+                  playable={playable}
+                  selected={selected}
+                  highlighted={highlighted}
+                  trump={!!trumpSuit && card.suit === trumpSuit}
+                  disabled={isDiscardMode ? false : undefined}
+                  liftOnInteract={false}
+                  onClick={() => (isDiscardMode ? onToggleDiscard!(card) : onPlay(card))}
+                />
               </motion.div>
             );
           })}
