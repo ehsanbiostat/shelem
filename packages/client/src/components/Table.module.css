@@ -65,7 +65,7 @@
  * dead-center cards further up toward this label via a transform — same
  * reasoning as the opponent seats' gap in Seat.module.css. */
 .bottom {
-  bottom: calc(var(--u) * 19 + var(--u) * 4 + 8px);
+  bottom: calc(var(--u) * 17.925 + var(--u) * 4 + 8px);
   left: 50%;
   transform: translate(-50%, 0);
 }
@@ -87,7 +87,7 @@
 .center {
   position: absolute;
   top: calc(var(--u) * 20 + 100px);
-  bottom: calc(var(--u) * 19 + 40px);
+  bottom: calc(var(--u) * 17.925 + 40px);
   left: calc(var(--u) * 16 + 36px);
   right: calc(var(--u) * 16 + 36px);
   z-index: 1;
@@ -102,7 +102,7 @@
  * above the seats (z-index) since it now deliberately overlaps them. */
 .centerWide {
   top: calc(var(--u) * 20 + 60px);
-  bottom: calc(var(--u) * 19);
+  bottom: calc(var(--u) * 17.925);
   left: 8px;
   right: 8px;
   z-index: 5;
@@ -129,12 +129,13 @@
   z-index: 4;
 }
 
-/* Bottom-right — diagonally opposite the score panel so the two can both be open
-   without meeting, and low enough to sit beside the hand it reports on. Clear of
-   the hand fan itself, which is centered and capped to fit (see fanGeometry.ts). */
+/* Top-right — mirroring the score panel across the top of the felt, so the two
+   overlays sit on one line instead of one being stranded down by the hand. The
+   bottom corners are left clear for the hand fan, which now runs right off the
+   bottom edge of the display (see Hand.module.css). */
 .cornerPanelRight {
   position: absolute;
   right: 10px;
-  bottom: 10px;
+  top: 10px;
   z-index: 4;
 }

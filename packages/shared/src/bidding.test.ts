@@ -62,16 +62,56 @@ describe('isValidBid', () => {
 });
 
 describe('resolveBidding', () => {
-  it('redeals if every player passes with no bid ever made', () => {
+  it('redeals on three consecutive passes, without giving the fourth seat a turn', () => {
     const events: BidEvent[] = [
       { seat: 0, bid: { type: 'pass' } },
+      { seat: 1, bid: { type: 'pass' } },
+      { seat: 2, bid: { type: 'pass' } },
+    ];
+    const result = resolveBidding(events);
+    expect(result.complete).toBe(true);
+    expect(result.redeal).toBe(true);
+    expect(result.declarerSeat).toBeUndefined();
+  });
+
+  it('is still live after only two passes', () => {
+    const events: BidEvent[] = [
+      { seat: 0, bid: { type: 'pass' } },
+      { seat: 1, bid: { type: 'pass' } },
+    ];
+    const result = resolveBidding(events);
+    expect(result.complete).toBe(false);
+    expect(result.redeal).toBe(false);
+  });
+
+  // The redeal rule is about an auction that never opened. Once someone has bid,
+  // three passes behind them settle the auction in their favour instead.
+  it('does not redeal when three passes follow an actual bid', () => {
+    const events: BidEvent[] = [
+      { seat: 0, bid: { type: 'numeric', amount: 100 } },
       { seat: 1, bid: { type: 'pass' } },
       { seat: 2, bid: { type: 'pass' } },
       { seat: 3, bid: { type: 'pass' } },
     ];
     const result = resolveBidding(events);
     expect(result.complete).toBe(true);
-    expect(result.redeal).toBe(true);
+    expect(result.redeal).toBe(false);
+    expect(result.declarerSeat).toBe(0);
+    expect(result.winningBid).toEqual({ type: 'numeric', amount: 100 });
+  });
+
+  // A pass before the opening bid still counts against nobody once a bid lands —
+  // the three-pass run has to be unbroken and bid-free to kill the hand.
+  it('does not redeal when a bid interrupts the run of passes', () => {
+    const events: BidEvent[] = [
+      { seat: 0, bid: { type: 'pass' } },
+      { seat: 1, bid: { type: 'pass' } },
+      { seat: 2, bid: { type: 'numeric', amount: 100 } },
+      { seat: 3, bid: { type: 'pass' } },
+    ];
+    const result = resolveBidding(events);
+    expect(result.redeal).toBe(false);
+    expect(result.declarerSeat).toBe(2);
   });
 
   it('is incomplete while more than one seat is still active', () => {

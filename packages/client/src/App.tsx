@@ -13,6 +13,7 @@ import { BiddingPanel } from './components/BiddingPanel.js';
 import { Hand } from './components/Hand.js';
 import { LastTrickPanel } from './components/LastTrickPanel.js';
 import { TableSettings } from './components/TableSettings.js';
+import { gameStartSound, isMuted, playCardSound, setMuted, trickClearedSound } from './sound.js';
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -42,6 +43,7 @@ export default function App() {
   // diff the moment the 16-card hand arrives — used to highlight them in place
   // rather than opening a separate picker for the discard.
   const widowAddedRef = useRef<CardModel[]>([]);
+  const [muted, setMutedState] = useState(isMuted);
 
   // Trump is unknown (and every suit-color-alternating order is equivalent) until the
   // declarer's opening lead sets it — re-sort whenever that changes, not just on deal.
@@ -51,6 +53,25 @@ export default function App() {
   useEffect(() => {
     if (state?.phase !== 'widow') setWidowSelection([]);
   }, [state?.phase]);
+
+  // Sound is driven off transitions in the synced state rather than off the local
+  // player's own actions, so every seat's play is heard, not just our own. The
+  // trick length going up means a card just landed; going back to empty means the
+  // completed trick was just swept away (see ShelemRoom's resolveTrick pause).
+  const prevTrickCount = useRef(0);
+  const trickCount = state?.currentTrick.length ?? 0;
+  useEffect(() => {
+    if (trickCount > prevTrickCount.current) playCardSound();
+    else if (trickCount === 0 && prevTrickCount.current > 0) trickClearedSound();
+    prevTrickCount.current = trickCount;
+  }, [trickCount]);
+
+  // Each new deal, including a redeal after three passes — the chime marks cards
+  // arriving, which is what the player is waiting on.
+  const handNumber = state?.handNumber ?? 0;
+  useEffect(() => {
+    if (handNumber > 0) gameStartSound();
+  }, [handNumber]);
 
   useEffect(() => {
     const token = localStorage.getItem(RECONNECT_STORAGE_KEY);
@@ -232,6 +253,19 @@ export default function App() {
         <strong>Shelem</strong>
         <div className={styles.headerRight}>
           <span className={styles.roomCode}>Table code: {room.roomId}</span>
+          <button
+            type="button"
+            className={styles.iconBtn}
+            aria-label={muted ? 'Unmute sound' : 'Mute sound'}
+            title={muted ? 'Unmute sound' : 'Mute sound'}
+            onClick={() => {
+              const next = !muted;
+              setMuted(next);
+              setMutedState(next);
+            }}
+          >
+            {muted ? '🔇' : '🔊'}
+          </button>
           <button type="button" className={styles.leaveBtn} onClick={leaveTable}>
             Leave table
           </button>

@@ -99,10 +99,12 @@
   color: white;
 }
 
+/* Solid green rather than the outline treatment it used to have: passing is a
+   real, common choice, and a ghost button next to two solid ones read as
+   disabled. */
 .btnPass {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.4);
-  color: var(--color-ivory-100);
+  background: var(--color-emerald-500);
+  color: white;
 }
 
 .history {

@@ -104,12 +104,11 @@
   transform: none;
 }
 
-/* Suppresses the lift transforms above, for a caller that crops the card (see
- * Hand.module.css's .crop): inside an overflow-hidden window a translateY
- * doesn't lift the card, it scrolls the art up out of view and leaves a gap at
- * the bottom. Such a caller moves the whole cropped card itself instead — same
- * split as the fan geometry (see fanGeometry.ts), where the caller owns
- * position and Card owns only what a card looks like. */
+/* Suppresses the lift transforms above, for a caller that positions the card
+ * itself — Hand lifts a playable card by a `--u`-scaled amount through the same
+ * animation that places it (Hand.tsx), so Card's own fixed-px transform would
+ * only fight it. Same split as the fan geometry (see fanGeometry.ts): the caller
+ * owns position, Card owns only what a card looks like. */
 .button.noLift,
 .button.noLift:hover {
   transform: none;

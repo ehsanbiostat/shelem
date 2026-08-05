@@ -17,7 +17,7 @@ The deck is **not** fully randomised between hands, and this is a rule, not an o
 - The cards carry over from the previous hand. Each team stacks the tricks it wins in the order it won them, cards in the order they were played; the declarer's 4 buried cards sit under their team's pile. At the end of the hand the two piles are squared together into one deck.
 - That deck gets **2 riffle shuffles and one cut** — a normal table shuffle, not a thorough randomisation.
 - The first hand of a match has no previous hand to inherit, so it starts from a fully randomised deck.
-- On a redeal (everyone passes), the hands and widow are gathered back up and dealt again, rather than a fresh deck being introduced.
+- On a redeal (three consecutive passes — see [Bidding](#bidding)), the hands and widow are gathered back up and dealt again, rather than a fresh deck being introduced.
 
 **Why it matters.** A trick is mostly cards of one suit, so a played-out deck comes back with the suits grouped. A light shuffle leaves that grouping partly intact, and because the deal hands out contiguous 12-card blocks, a run of same-suit cards lands in one player's hand instead of being split one card per seat. The result is longer suits, which is what makes a trump-length bid reachable — the whole point of bidding a suit you're long in. Shuffling thoroughly, or dealing one card at a time, erases the effect completely and flattens every hand toward 4-3-3-2.
 
@@ -40,7 +40,8 @@ Measured over 40,000 chained hands, against a fully randomised deal:
 - Plain numeric bidding **caps at 160**. There is no numeric bid of 165 — claiming all 165 points can only be done via the Shelem/Sar-Shelem tiers below.
 - A player who passes is out of the bidding for that hand and cannot re-enter.
 - Bidding continues in rounds until either one bidder remains (all others have passed) or the current highest bidder is the only one left.
-- If every player passes without any bid being made, the hand is **redealt**.
+- If **three players pass in a row without any bid being made**, the hand is **redealt** — the fourth seat does not get a turn. Note the consequence: when the other three pass, the dealer never gets to declare.
+- Three passes only kill the hand while the auction is still unopened. Once someone has bid, the other three passing simply settles the auction in the bidder's favour (see above).
 
 ### Bid ladder
 
@@ -83,4 +84,4 @@ A-K-Q-J-10-9-8-7-6-5-4-3-2 (high to low), standard in every suit including trump
 ## Match structure
 
 - A match is played as a repeating series of hands (dealer rotates each hand) until one team's cumulative score reaches a **target score**.
-- The target score is configurable per table by the host, in the table lobby, any time before the first deal. **Default: 1650** (10× the max single-hand score of 165). It must be a multiple of 5, and at least 165 — below one hand's worth of points a match would be decided by a single deal.
+- The target score is configurable per table by the host, in the table lobby, any time before the first deal. **Default: 1650** (10× the max single-hand score of 165). Any whole number from 165 up is allowed — deliberately not restricted to multiples of 5, since a team simply crosses the target rather than landing on it. The 165 floor is one hand's worth of points, below which a match would be decided by a single deal.
