@@ -101,10 +101,14 @@
 
 /* Solid green rather than the outline treatment it used to have: passing is a
    real, common choice, and a ghost button next to two solid ones read as
-   disabled. */
+   disabled. Painted from --color-green-400, not the emerald ramp — this panel
+   renders over the middle of the felt, whose gradient *is* emerald-500 there, so
+   an emerald button would vanish into it. Dark ink rather than white text,
+   since this green is light enough that white loses contrast (the sapphire and
+   ruby buttons beside it are dark fills and keep white). */
 .btnPass {
-  background: var(--color-emerald-500);
-  color: white;
+  background: var(--color-green-400);
+  color: var(--color-ink-900);
 }
 
 .history {

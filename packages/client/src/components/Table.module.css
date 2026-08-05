@@ -39,22 +39,27 @@
 }
 
 /* Every seat hugs the true edge of the window, matching a table that fills the
-   whole viewport rather than a card floating with margins around it. */
+   whole viewport rather than a card floating with margins around it. Each fan is
+   pushed to the border that belongs to *that* player as seen from here — the top
+   seat's to the top of the display, the side seats' to the left and right — the
+   same way the local player's own hand parks against the bottom edge (see
+   Hand.module.css). 2px, not the 6px this used to be: combined with the tightened
+   --fan-thickness in Seat.module.css, that's what actually closes the gap. */
 .top {
-  top: 6px;
+  top: 2px;
   left: 50%;
   transform: translate(-50%, 0);
 }
 
 .left {
   top: 50%;
-  left: 6px;
+  left: 2px;
   transform: translate(0, -50%);
 }
 
 .right {
   top: 50%;
-  right: 6px;
+  right: 2px;
   transform: translate(0, -50%);
 }
 
@@ -65,7 +70,7 @@
  * dead-center cards further up toward this label via a transform — same
  * reasoning as the opponent seats' gap in Seat.module.css. */
 .bottom {
-  bottom: calc(var(--u) * 17.925 + var(--u) * 4 + 8px);
+  bottom: calc(var(--u) * 28.7 + var(--u) * 4 + 8px);
   left: 50%;
   transform: translate(-50%, 0);
 }
@@ -77,19 +82,24 @@
  * rather than snapping at a fixed breakpoint, it stays in proportion at any
  * window size instead of needing to stay in sync with a separate breakpoint.
  *
- * The horizontal numbers add up a side seat's real footprint: 6px of edge
- * offset (.left/.right above) + 13u of fan + 3u of gap + 26px of rotated
+ * The horizontal numbers add up a side seat's real footprint: 2px of edge
+ * offset (.left/.right above) + 10.5u of fan + 3u of gap + 26px of rotated
  * identity, plus the curve's own extra reach. They used to read `20u + 95px`,
  * which on a phone (`--u` ≈ 3.6px) claimed 333px of a 358px-wide table and left
  * the trick pile a 25px slot — the identity's old 84px min-width was reserved
  * for text rendered sideways. Both halves of that are fixed in Seat.module.css;
- * these track the result. */
+ * these track the result. The vertical ones add up the same way: the top seat's
+ * 16u fan + its 5u gap + ~44px of identity text above, and the local hand's
+ * 28.7u strip (Hand.module.css) below. Worth keeping honest rather than padded —
+ * the fixed-px parts don't shrink with `--u`, so on a short viewport (a phone
+ * turned landscape) an over-generous constant is most of what squeezes the trick
+ * pile out of the middle. */
 .center {
   position: absolute;
-  top: calc(var(--u) * 20 + 100px);
-  bottom: calc(var(--u) * 17.925 + 40px);
-  left: calc(var(--u) * 16 + 36px);
-  right: calc(var(--u) * 16 + 36px);
+  top: calc(var(--u) * 21 + 46px);
+  bottom: calc(var(--u) * 28.7 + 16px);
+  left: calc(var(--u) * 14 + 32px);
+  right: calc(var(--u) * 14 + 32px);
   z-index: 1;
 }
 
@@ -101,8 +111,8 @@
  * insets can serve both. Hence two variants rather than one compromise. Stacked
  * above the seats (z-index) since it now deliberately overlaps them. */
 .centerWide {
-  top: calc(var(--u) * 20 + 60px);
-  bottom: calc(var(--u) * 17.925);
+  top: calc(var(--u) * 21 + 30px);
+  bottom: calc(var(--u) * 28.7);
   left: 8px;
   right: 8px;
   z-index: 5;
