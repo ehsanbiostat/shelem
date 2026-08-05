@@ -56,7 +56,7 @@ const FAN_MAX_SPREAD = 64;
  * whole hand off the bottom with them. Cards are only ever clipped from below, so
  * a clipped card keeps its top-left rank index — the part you actually read in a
  * fan — which is why the ends can afford to go this far. */
-const FAN_CURVE_U = 20;
+const FAN_CURVE_U = 15;
 /** How far (in `--u`) a playable or selected card rises out of the fan. Applied
  * here rather than by Card's own `.button.playable` transform, so it scales with
  * the board like every other distance on the table instead of being a fixed 6px
