@@ -83,4 +83,4 @@ A-K-Q-J-10-9-8-7-6-5-4-3-2 (high to low), standard in every suit including trump
 ## Match structure
 
 - A match is played as a repeating series of hands (dealer rotates each hand) until one team's cumulative score reaches a **target score**.
-- The target score is configurable per table by the host at table-creation time. **Default: 1650** (10× the max single-hand score of 165).
+- The target score is configurable per table by the host, in the table lobby, any time before the first deal. **Default: 1650** (10× the max single-hand score of 165). It must be a multiple of 5, and at least 165 — below one hand's worth of points a match would be decided by a single deal.

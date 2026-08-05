@@ -11,6 +11,8 @@ import { TrickArea } from './components/TrickArea.js';
 import { ScoreBar } from './components/ScoreBar.js';
 import { BiddingPanel } from './components/BiddingPanel.js';
 import { Hand } from './components/Hand.js';
+import { LastTrickPanel } from './components/LastTrickPanel.js';
+import { TableSettings } from './components/TableSettings.js';
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -216,6 +218,7 @@ export default function App() {
 
   const winningBid = winningBidFrom(state);
   const currentTrickPlays = state.currentTrick.map((p) => ({ seat: p.seat as SeatIndex, card: toCard(p) }));
+  const lastTrickPlays = state.lastTrick.map((p) => ({ seat: p.seat as SeatIndex, card: toCard(p) }));
   const leadSuit = currentTrickPlays.length > 0 ? currentTrickPlays[0].card.suit : null;
   const isMyTurn = state.currentTurnSeat === mySeat;
   const legal = trumpSuit && leadSuit ? legalCards(hand, leadSuit, trumpSuit) : hand;
@@ -260,6 +263,9 @@ export default function App() {
         currentTurnSeat={state.currentTurnSeat as SeatIndex}
         declarerSeat={state.declarerSeat as SeatIndex | -1}
         biddingInProgress={state.phase === 'bidding'}
+        // The lobby and the bid grid want the table's full width; only the trick
+        // pile needs to keep clear of the opponents' fans. See Table.module.css.
+        centerVariant={state.phase === 'lobby' || state.phase === 'bidding' ? 'wide' : 'trick'}
         cornerPanel={
           state.phase !== 'lobby' ? (
             <ScoreBar
@@ -271,24 +277,44 @@ export default function App() {
               team1HandPoints={team1HandPoints}
               matchTargetScore={state.matchTargetScore}
               handNumber={state.handNumber}
+              handHistory={state.handHistory}
+              playerNames={playerNames}
+            />
+          ) : null
+        }
+        cornerPanelRight={
+          state.phase === 'playing' ? (
+            <LastTrickPanel
+              mySeat={mySeat}
+              plays={lastTrickPlays}
+              winnerSeat={state.lastTrickWinnerSeat as SeatIndex | -1}
+              points={state.lastTrickPoints}
+              playerNames={playerNames}
             />
           ) : null
         }
         center={
           state.phase === 'lobby' ? (
-            tablePlayers.length === 4 ? (
-              <div className={styles.lobbyWaiting}>
-                <div className={styles.big}>All 4 players are seated</div>
-                <button className={styles.startGameBtn} onClick={() => room?.send('startGame')}>
-                  Start Game
-                </button>
-              </div>
-            ) : (
-              <div className={styles.lobbyWaiting}>
-                <div className={styles.big}>Waiting for players…</div>
-                <div>{tablePlayers.length} / 4 seated</div>
-              </div>
-            )
+            <div className={styles.lobbyWaiting}>
+              <TableSettings
+                targetScore={state.matchTargetScore}
+                isHost={room.sessionId === state.hostSessionId}
+                onChangeTargetScore={(targetScore) => room?.send('setTableOption', { targetScore })}
+              />
+              {tablePlayers.length === 4 ? (
+                <>
+                  <div className={styles.big}>All 4 players are seated</div>
+                  <button className={styles.startGameBtn} onClick={() => room?.send('startGame')}>
+                    Start Game
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className={styles.big}>Waiting for players…</div>
+                  <div>{tablePlayers.length} / 4 seated</div>
+                </>
+              )}
+            </div>
           ) : state.phase === 'bidding' ? (
             <BiddingPanel
               bidHistory={state.bidHistory.map((b) => ({ seat: b.seat as SeatIndex, bidType: b.bidType, amount: b.amount }))}

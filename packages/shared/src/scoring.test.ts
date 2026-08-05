@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { createDeck } from './deck.js';
-import { cardPoints, resolveHandScore, TOTAL_HAND_POINTS, trickPoints, TRICKS_PER_HAND } from './scoring.js';
+import {
+  cardPoints,
+  isMatchComplete,
+  resolveHandScore,
+  TOTAL_HAND_POINTS,
+  trickPoints,
+  TRICKS_PER_HAND,
+} from './scoring.js';
 
 describe('cardPoints', () => {
   it('values Ace, Ten, and Five as scoring cards; everything else as zero', () => {
@@ -84,5 +91,30 @@ describe('resolveHandScore', () => {
     const result = resolveHandScore({ type: 'sarShelem' }, 150, 15);
     expect(result.declarerDelta).toBe(-330);
     expect(result.defenderDelta).toBe(15);
+  });
+});
+
+describe('isMatchComplete', () => {
+  it('is not complete while both teams are short of the target', () => {
+    expect(isMatchComplete({ team0: 1600, team1: 1200 }, 1650)).toBe(false);
+  });
+
+  it('completes on reaching the target exactly, not only on exceeding it', () => {
+    expect(isMatchComplete({ team0: 1650, team1: 800 }, 1650)).toBe(true);
+  });
+
+  it('completes when either team crosses the target', () => {
+    expect(isMatchComplete({ team0: 200, team1: 1700 }, 1650)).toBe(true);
+  });
+
+  it('honours a custom target, since the host sets it per table', () => {
+    expect(isMatchComplete({ team0: 300, team1: 0 }, 1650)).toBe(false);
+    expect(isMatchComplete({ team0: 300, team1: 0 }, 200)).toBe(true);
+  });
+
+  // A failed bid subtracts (see resolveHandScore), so a team's running total can
+  // go negative — that must never read as having reached the target.
+  it('is not complete for a team sitting on a negative score', () => {
+    expect(isMatchComplete({ team0: -330, team1: 400 }, 1650)).toBe(false);
   });
 });

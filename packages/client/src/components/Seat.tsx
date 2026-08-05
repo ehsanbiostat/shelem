@@ -23,8 +23,13 @@ const FAN_SPACING_RATIO = 0.4;
  * outermost cards — see fanCurve in fanGeometry.ts. */
 const FAN_CURVE_U = 3.5;
 
-/** Must match the 'md' card width multiplier in Card.module.css. */
-const CARD_MD_WIDTH_U = 9.7;
+/** The top seat's fan uses full-size 'md' cards; the side seats' use the smaller
+ * 'sm', because their footprint eats table *width* — the scarce axis on a phone.
+ * See the .left/.right block in Seat.module.css for the full reasoning, and keep
+ * both the size choice and these multipliers in step with it and with
+ * Card.module.css's own width multipliers. */
+const FAN_CARD_SIZE = { top: 'md', left: 'sm', right: 'sm' } as const;
+const CARD_WIDTH_U = { md: 9.7, sm: 6.3 } as const;
 
 export interface SeatProps {
   name: string;
@@ -63,7 +68,8 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
   // *this* much real, measured space, for *this* many cards (see
   // fanGeometry.ts for why this — not deriving position from rotation — is
   // what actually guarantees every card fits).
-  const cardWidthPx = CARD_MD_WIDTH_U * u;
+  const cardSize = FAN_CARD_SIZE[orientation];
+  const cardWidthPx = CARD_WIDTH_U[cardSize] * u;
   const availableSpace = orientation === 'top' ? width : height;
   const spacing = fitSpacing(availableSpace, cardWidthPx, count, cardWidthPx * FAN_SPACING_RATIO);
   const offsets = fanOffsets(count, spacing);
@@ -94,7 +100,7 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
             zIndex: Math.round(1000 - Math.abs(offsets[i])),
           }}
         >
-          <Card card={{ suit: 'spades', rank: '2' }} size="md" faceDown />
+          <Card card={{ suit: 'spades', rank: '2' }} size={cardSize} faceDown />
         </div>
       ))}
     </div>

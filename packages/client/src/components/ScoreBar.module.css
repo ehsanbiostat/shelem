@@ -1,16 +1,21 @@
 /* Translucent so it reads as an overlay on the felt, not a panel sitting on top of
-   it — same idea as Hand's discardBar pill. Both this and .trigger are <button>s
-   (see ScoreBar.tsx) so the reset undoes the browser's default button chrome. */
+   it — same idea as Hand's discardBar pill. .trigger and .closeBtn are <button>s
+   (see ScoreBar.tsx) so the reset undoes the browser's default button chrome; the
+   expanded .panel is a plain <div>, because the scrollable history inside it can't
+   live in a button that collapses on every click. */
 .panel,
 .trigger {
   appearance: none;
   border: none;
   font-family: inherit;
-  cursor: pointer;
   color: var(--color-ivory-100);
   background: rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(3px);
   border-radius: var(--radius-md);
+}
+
+.trigger {
+  cursor: pointer;
 }
 
 .panel {
@@ -19,13 +24,41 @@
   align-items: stretch;
   text-align: left;
   gap: 2px;
-  min-width: 138px;
+  min-width: 178px;
   padding: 8px 10px;
   font-size: 11px;
 }
 
-.panel:hover {
-  background: rgba(0, 0, 0, 0.42);
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.panelTitle {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 9px;
+  opacity: 0.6;
+}
+
+.closeBtn {
+  appearance: none;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: var(--color-ivory-100);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.6;
+}
+
+.closeBtn:hover {
+  opacity: 1;
 }
 
 /* Collapsed default (see ScoreBar.tsx) — just enough to glance at the running
@@ -102,12 +135,89 @@
   font-size: 10px;
 }
 
-/* Keep pace with Table.module.css's and Seat.module.css's matching breakpoint: on
-   a narrow board the fixed-size hand fan already reaches close to this corner, so
-   shrink the panel rather than let it push into the cards. */
+/* The per-hand history: how the match reached the totals above, rather than only
+   the totals. Newest hand first (see ScoreBar.tsx). Capped in height and scrolled
+   so a long match can't grow the panel off the felt. */
+.history {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  max-height: 168px;
+  overflow-y: auto;
+  font-size: 10px;
+}
+
+.historyHead,
+.historyRow {
+  display: grid;
+  grid-template-columns: 1.4em 1fr 3.1em 3.1em;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.historyHead {
+  position: sticky;
+  top: 0;
+  background: rgba(0, 0, 0, 0.55);
+  opacity: 0.7;
+  font-size: 9px;
+}
+
+.historyRow + .historyRow {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.historyHand {
+  opacity: 0.6;
+  font-variant-numeric: tabular-nums;
+}
+
+.historyBid {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+
+.historyDeclarer {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0.75;
+}
+
+/* Whether the declarer made or was set is the thing you scan a history for, so
+   it's carried by color on the bid itself rather than an extra column. */
+.made {
+  font-weight: 700;
+  color: var(--color-gold-300);
+}
+
+.set {
+  font-weight: 700;
+  color: #e88b8b;
+}
+
+.num {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-variant-numeric: tabular-nums;
+}
+
+.runningTotal {
+  font-size: 8px;
+  opacity: 0.5;
+}
+
+/* Keep pace with Seat.module.css's matching breakpoint: on a narrow board the
+   hand fan already reaches close to this corner, so shrink the panel rather than
+   let it push into the cards. */
 @media (max-width: 700px) {
   .panel {
-    min-width: 104px;
+    min-width: 158px;
     padding: 6px 8px;
     font-size: 10px;
   }
@@ -117,6 +227,11 @@
   }
 
   .meta {
+    font-size: 9px;
+  }
+
+  .history {
+    max-height: 128px;
     font-size: 9px;
   }
 }

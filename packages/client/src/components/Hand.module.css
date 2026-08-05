@@ -34,22 +34,44 @@
   cursor: default;
 }
 
+/* Tall enough for the cropped card height below plus the lift a playable card
+ * gets (see Hand.tsx). Table.module.css's `.bottom` (the local player's name
+ * label, which sits just above this strip) mirrors this multiple — keep the two
+ * in step. */
 .hand {
   position: relative;
   width: 100%;
-  height: calc(var(--u) * 21);
+  height: calc(var(--u) * 19);
   margin-top: 8px;
 }
 
 /* Every card starts at the exact same anchor (centered, flush with the bottom
  * of the strip); the fan comes from each one's own horizontal offset (set
  * inline, Hand.tsx — spacing capped to guarantee the hand fits) plus a small
- * cosmetic `rotate`. Margin is half the 'lg' card width (see Card.module.css),
+ * cosmetic `rotate`. Margin is half the 'xl' card width (see Card.module.css),
  * so cards stay centered on the same `--u` scale unit the rest of the table
  * uses (theme.css). */
 .cardSlot {
   position: absolute;
   left: 50%;
   bottom: 4px;
-  margin-left: calc(var(--u) * -6);
+  margin-left: calc(var(--u) * -8.5);
+}
+
+/* Shows only the top ~60% of each 'xl' card. A fan already hides everything but
+ * a vertical sliver of every card except the last, so the bottom of a card is
+ * dead space — spending it on a bigger card instead is what makes the rank/suit
+ * index legible on a phone, where a full-height card had to shrink to ~43px
+ * wide to fit. The card's own shadow is on the crop window rather than the card,
+ * since the card's bottom edge no longer exists visually.
+ *
+ * Two knock-on effects, both accepted: the trump/highlight rings
+ * (Card.module.css) lose their bottom edge and read as a three-sided bracket,
+ * and a lift transform inside here would scroll the art out of the window — so
+ * Hand.tsx passes `liftOnInteract={false}` and lifts this element instead. */
+.crop {
+  height: calc(var(--u) * 23.9 * 0.6);
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
 }

@@ -23,6 +23,15 @@
   --card-h: calc(var(--u) * 16.9);
 }
 
+/* The local player's own hand. Deliberately taller than the felt has room for —
+ * Hand.module.css crops it to its top portion, which is all a fanned hand ever
+ * shows of any card but the last anyway. Trading the hidden bottom half for a
+ * much wider card is what makes the rank/suit index readable on a phone. */
+.card.xl {
+  --card-w: calc(var(--u) * 17);
+  --card-h: calc(var(--u) * 23.9);
+}
+
 .face {
   width: 100%;
   height: 100%;
@@ -92,5 +101,16 @@
 }
 
 .button.disabled:hover {
+  transform: none;
+}
+
+/* Suppresses the lift transforms above, for a caller that crops the card (see
+ * Hand.module.css's .crop): inside an overflow-hidden window a translateY
+ * doesn't lift the card, it scrolls the art up out of view and leaves a gap at
+ * the bottom. Such a caller moves the whole cropped card itself instead — same
+ * split as the fan geometry (see fanGeometry.ts), where the caller owns
+ * position and Card owns only what a card looks like. */
+.button.noLift,
+.button.noLift:hover {
   transform: none;
 }
