@@ -129,12 +129,18 @@
 }
 
 /* The local player's seat draws no fan (Table.tsx passes handSize 0 — you see
- * your real hand instead), so there's nothing to anchor to: the label is the
- * whole seat, already placed just above the hand by Table.module.css's .bottom. */
+ * your real hand instead), so there's nothing to anchor to but the seat's own
+ * position, which Table.module.css's .bottom puts just above the hand.
+ *
+ * Anchored by its bottom edge, not its centre. Centred, half the label hung
+ * below the anchor point and landed on top of the cards — and because the
+ * overhang is half the label's *rendered* height, which depends on font metrics,
+ * it overlapped in some browsers and not others. Growing upward from a fixed
+ * bottom edge can't collide with the hand however tall the text renders. */
 .bottom .identity {
+  bottom: 0;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translateX(-50%);
 }
 
 .activeTurn .name {
