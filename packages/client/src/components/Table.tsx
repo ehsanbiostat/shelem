@@ -17,7 +17,6 @@ export interface TablePlayer {
 export interface TableProps {
   mySeat: SeatIndex;
   players: TablePlayer[];
-  dealerSeat: SeatIndex;
   currentTurnSeat: SeatIndex;
   declarerSeat: SeatIndex | -1;
   biddingInProgress: boolean;
@@ -52,7 +51,6 @@ export interface TableProps {
 export function Table({
   mySeat,
   players,
-  dealerSeat,
   currentTurnSeat,
   declarerSeat,
   biddingInProgress,
@@ -87,7 +85,6 @@ export function Table({
                 name={player?.name ?? ''}
                 connected={player?.connected ?? false}
                 handSize={slot === 'bottom' ? 0 : (player?.handSize ?? 0)}
-                isDealer={seat === dealerSeat}
                 isTurn={isTurn}
                 isBiddingTurn={biddingInProgress && isTurn}
                 isDeclarer={seat === declarerSeat}

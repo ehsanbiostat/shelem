@@ -178,15 +178,6 @@
   background: #b3261e;
 }
 
-.dealerTag {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-gold-300);
-  opacity: 0.9;
-}
-
 /* Every card sits at the exact same anchor (centered, flush to the row's own
  * bottom), then gets its own horizontal offset (set inline, Seat.tsx) — spacing
  * between cards, capped to guarantee the fan fits in the table's actual
@@ -278,29 +269,16 @@
   font-weight: 600;
 }
 
-.declarerBadge {
-  font-size: 11px;
-  color: var(--color-gold-300);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-/* The fan itself no longer needs a breakpoint override — it's already sized off
- * `--u`, which scales continuously with the viewport (see theme.css). This only
- * declutters: text badges intentionally don't shrink with `--u` (they'd become
- * illegible), so on a narrow screen the least essential ones are dropped
- * instead. */
-@media (max-width: 700px) {
-  .dealerTag,
-  .declarerBadge {
-    display: none;
-  }
-}
+/* There's no narrow-screen breakpoint here any more. It existed to drop the
+ * least essential text badges — the dealer and declarer tags — on a small board,
+ * since text intentionally doesn't shrink with `--u` (it would become
+ * illegible). Those tags are gone entirely now, and what's left is the seat's
+ * irreducible content: who they are, what they bid while bidding is live, and
+ * the trump suit once it exists. None of that is droppable. */
 
 /* The trump suit, shown against the declarer's name (see Seat.tsx). Bigger than
-   the text badges around it and on a solid light pill, because it's the one piece
-   of state every player needs to be able to find at a glance mid-trick — and
-   unlike the dealer/declarer tags it is never hidden on a narrow screen. Red and
+   the bid badges beside it and on a solid light pill, because it's the one piece
+   of state every player needs to be able to find at a glance mid-trick. Red and
    black follow the cards themselves. */
 .trumpBadge {
   font-size: 15px;

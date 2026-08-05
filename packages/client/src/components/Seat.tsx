@@ -41,7 +41,6 @@ export interface SeatProps {
   name: string;
   connected: boolean;
   handSize: number;
-  isDealer: boolean;
   isTurn: boolean;
   isBiddingTurn: boolean;
   isDeclarer: boolean;
@@ -122,7 +121,6 @@ export function Seat({
   name,
   connected,
   handSize,
-  isDealer,
   isTurn,
   isBiddingTurn,
   isDeclarer,
@@ -137,7 +135,6 @@ export function Seat({
         <span className={`${styles.connectedDot} ${connected ? '' : styles.offline}`} />
         {empty ? 'Waiting…' : name}
       </div>
-      {isDealer && !empty && <span className={styles.dealerTag}>Dealer</span>}
       {isBiddingTurn && <span className={styles.biddingBadge}>Bidding…</span>}
       {!isBiddingTurn && bidLabel && (
         <span className={`${styles.bidLabelBadge} ${bidLabel === 'Pass' ? styles.bidLabelPass : ''}`}>{bidLabel}</span>
@@ -147,7 +144,6 @@ export function Seat({
           {SUIT_SYMBOL[trumpSuit]}
         </span>
       )}
-      {isDeclarer && <span className={styles.declarerBadge}>Declarer</span>}
     </div>
   );
 

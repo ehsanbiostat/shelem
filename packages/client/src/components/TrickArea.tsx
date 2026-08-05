@@ -36,13 +36,11 @@ const TILT: Record<'top' | 'bottom' | 'left' | 'right', number> = {
   right: 4,
 };
 
-/** Where an opponent's card visually flies in from, offset from its final
- * position — there's no real source element for their (face-down) card the way
- * there is for our own hand, so this fakes "it came from that seat" directionally
- * instead of the true shared-element flight our own plays get (see `layoutId`
- * below). In multiples of the shared `--u` scale unit (theme.css), like every
- * other distance on the table — as fixed px these were the one thing that didn't
- * shrink with the board, so on a phone a card flew in from well off-screen. */
+/** Where a card visually flies in from, offset from its final position, so it
+ * reads as having come from its player's seat. In multiples of the shared `--u`
+ * scale unit (theme.css), like every other distance on the table — as fixed px
+ * these were the one thing that didn't shrink with the board, so on a phone a
+ * card flew in from well off-screen. */
 const FLY_IN_OFFSET_U: Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }> = {
   top: { x: 0, y: -22 },
   bottom: { x: 0, y: 22 },
@@ -59,38 +57,32 @@ export function TrickArea({ mySeat, plays }: TrickAreaProps) {
         {plays.map(({ seat, card }) => {
           const slot = screenSlotFor(seat, mySeat);
           const rotate = FACE_ROTATION[slot] + TILT[slot];
-          const isMine = seat === mySeat;
-          // Our own card shares a layoutId with its instance in Hand.tsx — Framer
-          // Motion detects the matching id disappearing from the hand and appearing
-          // here, and animates a real flight between the two positions (a "shared
-          // layout" / FLIP animation) instead of a plain fade. Opponents' cards
-          // have no such source element (we never render their actual card before
-          // it's played), so they get a directional fly-in from their seat instead.
-          const flyInU = isMine ? null : FLY_IN_OFFSET_U[slot];
-          const flyIn = flyInU && { x: flyInU.x * u, y: flyInU.y * u };
+          // Every card, ours included, flies in from its own seat. Our own used to
+          // ride a `layoutId` shared-element flight from the hand, which Motion
+          // implements as FLIP — and FLIP interpolates *axis-aligned bounding
+          // boxes*. A card leaves the hand at a fan angle of up to ±32° and lands
+          // rotated 0/90/180/-90 for its seat, so the two boxes describe different
+          // shapes and the tween between them followed neither: that mismatch was
+          // the visible pop, and no spring tuning could remove it. Motion's docs
+          // give no guidance on combining rotation with layout animations, and
+          // separately warn that layout changes shouldn't come from `animate` at
+          // all — which is exactly what the fan does. Animating explicitly costs
+          // the true point-of-origin flight and buys a transform-and-opacity-only
+          // move that is correct at both ends.
+          const flyInU = FLY_IN_OFFSET_U[slot];
+          const flyIn = { x: flyInU.x * u, y: flyInU.y * u };
           return (
             <motion.div
               key={cardKey(card)}
-              layoutId={isMine ? cardKey(card) : undefined}
               className={`${styles.slot} ${styles[slot]}`}
-              initial={{
-                opacity: 0,
-                scale: 0.6,
-                rotate: FACE_ROTATION[slot],
-                ...(flyIn && { x: flyIn.x, y: flyIn.y }),
-              }}
-              animate={{ opacity: 1, scale: 1, rotate, ...(flyIn && { x: 0, y: 0 }) }}
+              initial={{ opacity: 0, scale: 0.86, rotate: FACE_ROTATION[slot], x: flyIn.x, y: flyIn.y }}
+              animate={{ opacity: 1, scale: 1, rotate, x: 0, y: 0 }}
               exit={{ opacity: 0, scale: 0.6 }}
-              // A spring rather than a fixed-duration tween: our own card is doing a
-              // real shared-element flight from the hand (see `layoutId` above), and a
-              // spring carries its momentum into the landing instead of stopping dead
-              // at the end of a curve. Opponents' cards only fade in from a direction,
-              // so they keep a short tween — a spring on a 100px fade reads as wobble.
-              transition={
-                isMine
-                  ? { type: 'spring', stiffness: 200, damping: 26, mass: 0.9 }
-                  : { duration: 0.28, ease: 'easeOut' }
-              }
+              // One spring for every card, so all four land the same way. Damped
+              // close to critical: enough to carry momentum into the landing,
+              // not enough to overshoot and wobble, which on a short travel
+              // distance reads as a glitch rather than as weight.
+              transition={{ type: 'spring', stiffness: 210, damping: 27, mass: 0.85 }}
             >
               <Card card={card} size="lg" />
             </motion.div>
