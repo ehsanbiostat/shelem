@@ -36,14 +36,20 @@ const DISCARD_REQUIRED = 4;
  * around a distant pivot instead, which has an unavoidable side effect
  * (fanGeometry.ts has the full explanation) — position and rotation are
  * decoupled here specifically to avoid that. */
-/** Must match the 'lg' card width multiplier in Card.module.css. */
-const CARD_LG_WIDTH_U = 12;
+/** Must match the 'xl' card width multiplier in Card.module.css. */
+const CARD_XL_WIDTH_U = 17;
 /** Fraction of a card's own width used as the (desired, capped-to-fit) gap
  * between adjacent card centers. */
 const FAN_SPACING_RATIO = 0.45;
 /** How far (in `--u`) dead-center pokes further into the table (up, toward the
  * felt) than the two outermost cards — see fanCurve in fanGeometry.ts. */
 const FAN_CURVE_U = 4;
+/** How far (in `--u`) a playable or selected card rises out of the fan. Applied
+ * here rather than by Card's own `.button.playable` transform, because these
+ * cards are cropped (see `.crop` in Hand.module.css) and a transform *inside* a
+ * crop window scrolls the art instead of lifting the card. */
+const LIFT_PLAYABLE_U = 1.6;
+const LIFT_SELECTED_U = 3.6;
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -68,7 +74,7 @@ export function Hand({
   const isDiscardMode = discardSelection !== undefined;
   const angles = fanAngles(total);
   const { width, u } = useTableMetrics();
-  const cardWidthPx = CARD_LG_WIDTH_U * u;
+  const cardWidthPx = CARD_XL_WIDTH_U * u;
   const spacing = fitSpacing(width, cardWidthPx, total, cardWidthPx * FAN_SPACING_RATIO);
   const offsets = fanOffsets(total, spacing);
   const curve = fanCurve(offsets, FAN_CURVE_U * u);
@@ -98,26 +104,30 @@ export function Hand({
               ? discardSelection!.some((c) => cardsEqual(c, card))
               : !!selectedCard && cardsEqual(selectedCard, card);
             const highlighted = !!highlightedCards?.some((c) => cardsEqual(c, card));
+            const lift = selected ? LIFT_SELECTED_U * u : playable ? LIFT_PLAYABLE_U * u : 0;
             return (
               <motion.div
                 key={cardKey(card)}
                 layoutId={cardKey(card)}
                 className={styles.cardSlot}
                 initial={{ opacity: 0, x: offsets[i], y: 40 + curve[i], rotate: angle }}
-                animate={{ opacity: 1, x: offsets[i], y: curve[i], rotate: angle }}
+                animate={{ opacity: 1, x: offsets[i], y: curve[i] - lift, rotate: angle }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeOut' }}
               >
-                <Card
-                  card={card}
-                  size="lg"
-                  playable={playable}
-                  selected={selected}
-                  highlighted={highlighted}
-                  trump={!!trumpSuit && card.suit === trumpSuit}
-                  disabled={isDiscardMode ? false : undefined}
-                  onClick={() => (isDiscardMode ? onToggleDiscard!(card) : onPlay(card))}
-                />
+                <div className={styles.crop}>
+                  <Card
+                    card={card}
+                    size="xl"
+                    playable={playable}
+                    selected={selected}
+                    highlighted={highlighted}
+                    trump={!!trumpSuit && card.suit === trumpSuit}
+                    disabled={isDiscardMode ? false : undefined}
+                    liftOnInteract={false}
+                    onClick={() => (isDiscardMode ? onToggleDiscard!(card) : onPlay(card))}
+                  />
+                </div>
               </motion.div>
             );
           })}

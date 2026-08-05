@@ -1,0 +1,125 @@
+/* Same translucent-overlay treatment as ScoreBar in the opposite corner, so the
+   two read as a matched pair of felt overlays rather than two different widgets. */
+.trigger,
+.panel {
+  color: var(--color-ivory-100);
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(3px);
+  border-radius: var(--radius-md);
+  border: none;
+  font-family: inherit;
+}
+
+.trigger {
+  appearance: none;
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trigger:hover {
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.panel {
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.title {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 9px;
+  opacity: 0.6;
+}
+
+.closeBtn {
+  appearance: none;
+  border: none;
+  background: none;
+  font-family: inherit;
+  color: var(--color-ivory-100);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.6;
+}
+
+.closeBtn:hover {
+  opacity: 1;
+}
+
+/* A 3×3 grid with the four cards in its edge-centre cells reproduces the seating
+   the live trick shows — top/left/right/bottom land where those players sit. The
+   cards are drawn upright here rather than rotated per-seat (the way TrickArea
+   does it to signal who played what), because the name under each card already
+   says that, and four sideways cards in a small panel are just hard to read. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  grid-template-rows: repeat(3, auto);
+  justify-items: center;
+  align-items: center;
+  gap: 4px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.top {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.bottom {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.who {
+  font-size: 9px;
+  opacity: 0.7;
+  max-width: calc(var(--u) * 11);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.winner {
+  opacity: 1;
+  font-weight: 700;
+  color: var(--color-gold-300);
+}
+
+.outcome {
+  margin-top: 6px;
+  padding-top: 5px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 10px;
+  text-align: center;
+}

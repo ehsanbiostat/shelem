@@ -25,6 +25,18 @@ export interface SeatSwapRequestJSON {
   toSeat: number;
 }
 
+export interface HandResultJSON {
+  handNumber: number;
+  declarerSeat: number;
+  bidType: 'numeric' | 'shelem' | 'sarShelem';
+  bidAmount: number;
+  declarerMadeBid: boolean;
+  team0Delta: number;
+  team1Delta: number;
+  team0Total: number;
+  team1Total: number;
+}
+
 export interface GameStateJSON {
   players: PlayerInfoJSON[];
   phase: 'lobby' | 'dealing' | 'bidding' | 'widow' | 'playing' | 'handComplete' | 'matchComplete';
@@ -37,13 +49,18 @@ export interface GameStateJSON {
   trumpSuit: string;
   currentTrick: TrickPlayJSON[];
   tricksPlayedThisHand: number;
+  lastTrick: TrickPlayJSON[];
+  lastTrickWinnerSeat: number;
+  lastTrickPoints: number;
   team0Score: number;
   team1Score: number;
   matchTargetScore: number;
+  handHistory: HandResultJSON[];
   declarerPointsCollected: number;
   defenderPointsCollected: number;
   pendingSeatSwap?: SeatSwapRequestJSON;
   handNumber: number;
+  hostSessionId: string;
 }
 
 export function toCard(item: { suit: string; rank: string }): Card {

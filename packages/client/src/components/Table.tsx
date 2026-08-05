@@ -4,6 +4,7 @@ import styles from './Table.module.css';
 import { Seat } from './Seat.js';
 import { TableFeltMotif } from './TableFeltMotif.js';
 import { TableMetricsContext, useMeasureTableMetrics } from '../tableMetrics.js';
+import { screenSlotFor } from '../screenSlot.js';
 
 export interface TablePlayer {
   seat: SeatIndex;
@@ -21,6 +22,12 @@ export interface TableProps {
   declarerSeat: SeatIndex | -1;
   biddingInProgress: boolean;
   center: ReactNode;
+  /** How much of the felt `center` gets. `'trick'` (the default) keeps clear of
+   * the opponents' fans, which is what the played-card pile needs. `'wide'`
+   * spans nearly the whole table and sits over them — for content that needs
+   * the width more than the clearance (the bid grid, lobby, table settings).
+   * See `.centerWide` in Table.module.css. */
+  centerVariant?: 'trick' | 'wide';
   /** The local player's own hand (or widow-discard picker), anchored flush to the
    * felt's bottom edge — on Trickster's table this is the same surface as the rest
    * of the game, not a separate panel below it. */
@@ -29,14 +36,10 @@ export interface TableProps {
    * out of the bottom-center hand's way rather than occupying its own row above
    * the table. */
   cornerPanel?: ReactNode;
-}
-
-/** Screen position for each seat relative to the local player, who is always drawn
- * at the bottom. Turn order is clockwise, so the next seat appears on-screen left
- * (standard 4-player card table convention). */
-function screenSlotFor(seat: SeatIndex, mySeat: SeatIndex): 'bottom' | 'left' | 'top' | 'right' {
-  const offset = ((seat - mySeat + 4) % 4) as 0 | 1 | 2 | 3;
-  return (['bottom', 'left', 'top', 'right'] as const)[offset];
+  /** Mirror of `cornerPanel` on the felt's bottom-right — the last-trick review.
+   * Bottom rather than top so it sits near the hand it's about, and opposite the
+   * score panel so the two never collide. */
+  cornerPanelRight?: ReactNode;
 }
 
 export function Table({
@@ -47,8 +50,10 @@ export function Table({
   declarerSeat,
   biddingInProgress,
   center,
+  centerVariant = 'trick',
   bottomOverlay,
   cornerPanel,
+  cornerPanelRight,
 }: TableProps) {
   const bySeat = new Map(players.map((p) => [p.seat, p]));
   const { ref: tableRef, metrics } = useMeasureTableMetrics<HTMLDivElement>();
@@ -84,9 +89,11 @@ export function Table({
           );
         })}
 
-        <div className={styles.center}>{center}</div>
+        <div className={`${styles.center} ${centerVariant === 'wide' ? styles.centerWide : ''}`}>{center}</div>
 
         {cornerPanel && <div className={styles.cornerPanel}>{cornerPanel}</div>}
+
+        {cornerPanelRight && <div className={styles.cornerPanelRight}>{cornerPanelRight}</div>}
 
         {bottomOverlay && <div className={styles.bottomOverlay}>{bottomOverlay}</div>}
       </TableMetricsContext.Provider>

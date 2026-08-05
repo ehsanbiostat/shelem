@@ -4,34 +4,34 @@
   height: 100%;
 }
 
-/* Offsets are half the 'md' card's own width/height (see Card.module.css), so the
+/* Offsets are half the 'lg' card's own width/height (see Card.module.css), so the
  * four played cards stay centered on the same `--u` scale unit as the rest of the
  * table (theme.css) instead of a fixed pixel guess that drifts out of proportion
- * at other sizes. */
+ * at other sizes. The seat spread below is scaled to match that card size. */
 .slot {
   position: absolute;
-  margin-top: calc(var(--u) * -6.85);
-  margin-left: calc(var(--u) * -4.85);
+  margin-top: calc(var(--u) * -8.45);
+  margin-left: calc(var(--u) * -6);
 }
 
 .top {
-  top: calc(50% - var(--u) * 5.5);
+  top: calc(50% - var(--u) * 7);
   left: 50%;
 }
 
 .bottom {
-  top: calc(50% + var(--u) * 5.5);
+  top: calc(50% + var(--u) * 7);
   left: 50%;
 }
 
 .left {
   top: 50%;
-  left: calc(50% - var(--u) * 5.5);
+  left: calc(50% - var(--u) * 7);
 }
 
 .right {
   top: 50%;
-  left: calc(50% + var(--u) * 5.5);
+  left: calc(50% + var(--u) * 7);
 }
 
 .trumpBadge {

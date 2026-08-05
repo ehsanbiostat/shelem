@@ -19,11 +19,28 @@ import {
   isMatchComplete,
   teamForSeat,
 } from '@shelem/shared';
-import { GameState, PlayerInfo, BidRecord, TrickPlay, SeatSwapRequest } from '../schema/GameState.js';
+import { GameState, PlayerInfo, BidRecord, TrickPlay, SeatSwapRequest, HandResult } from '../schema/GameState.js';
 
 interface JoinOptions {
   name?: string;
   targetScore?: number;
+}
+
+/** Bounds on the host-configurable match target. The floor is one hand's worth of
+ * points (165 — see docs/game-rules.md), below which a match would be decided by a
+ * single deal; the ceiling just keeps a typo from producing an unwinnable table.
+ * Multiples of 5 because every score in the game is one. */
+const MIN_TARGET_SCORE = 165;
+const MAX_TARGET_SCORE = 10000;
+
+function isValidTargetScore(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value % 5 === 0 &&
+    value >= MIN_TARGET_SCORE &&
+    value <= MAX_TARGET_SCORE
+  );
 }
 
 function cardsEqual(a: Card, b: Card): boolean {
@@ -53,7 +70,7 @@ export class ShelemRoom extends Room<GameState> {
 
   onCreate(options: JoinOptions) {
     const state = new GameState();
-    if (options.targetScore && options.targetScore > 0) {
+    if (isValidTargetScore(options.targetScore)) {
       state.matchTargetScore = options.targetScore;
     }
     for (let seat = 0; seat < 4; seat++) {
@@ -64,6 +81,7 @@ export class ShelemRoom extends Room<GameState> {
     this.state = state;
 
     this.onMessage('startGame', (client) => this.handleStartGame(client));
+    this.onMessage('setTableOption', (client, message) => this.handleSetTableOption(client, message));
     this.onMessage('bid', (client, message) => this.handleBid(client, message));
     this.onMessage('discardWidow', (client, message) => this.handleDiscardWidow(client, message));
     this.onMessage('playCard', (client, message) => this.handlePlayCard(client, message));
@@ -82,6 +100,34 @@ export class ShelemRoom extends Room<GameState> {
     player.name = options.name?.trim() || `Player ${seat + 1}`;
     player.connected = true;
     this.seatBySessionId.set(client.sessionId, seat as Seat);
+
+    // First player to sit down is whoever created the table, and becomes host.
+    if (this.state.hostSessionId === '') {
+      this.state.hostSessionId = client.sessionId;
+    }
+  }
+
+  /** Table settings, changeable by the host right up until the game starts — a
+   * table's target score is something everyone should be able to see and agree on
+   * before the first deal, not a value baked in at creation that only the creator
+   * ever saw. */
+  private handleSetTableOption(client: Client, message: { targetScore?: number }) {
+    if (this.state.phase !== 'lobby') return;
+    if (client.sessionId !== this.state.hostSessionId) {
+      client.send('actionRejected', { action: 'setTableOption', reason: 'Only the host can change table settings' });
+      return;
+    }
+
+    if (message.targetScore !== undefined) {
+      if (!isValidTargetScore(message.targetScore)) {
+        client.send('actionRejected', {
+          action: 'setTableOption',
+          reason: `Target score must be a multiple of 5 between ${MIN_TARGET_SCORE} and ${MAX_TARGET_SCORE}`,
+        });
+        return;
+      }
+      this.state.matchTargetScore = message.targetScore;
+    }
   }
 
   /** Filling the last seat only makes the table ready — it doesn't deal. Any seated
@@ -310,6 +356,21 @@ export class ShelemRoom extends Room<GameState> {
     // order they were played — led suit first, which is what keeps suits grouped.
     this.teamPiles[teamForSeat(winnerSeat)].push(...plays.map((p) => p.card));
 
+    // Keep a copy for the last-trick review before the live trick is cleared.
+    // Fresh TrickPlay instances rather than the originals: a Colyseus schema
+    // instance belongs to exactly one array, so re-pushing the same objects here
+    // would pull them out of `currentTrick` instead of duplicating them.
+    this.state.lastTrick.clear();
+    for (const play of plays) {
+      const copy = new TrickPlay();
+      copy.seat = play.seat;
+      copy.suit = play.card.suit;
+      copy.rank = play.card.rank;
+      this.state.lastTrick.push(copy);
+    }
+    this.state.lastTrickWinnerSeat = winnerSeat;
+    this.state.lastTrickPoints = points;
+
     this.state.tricksPlayedThisHand += 1;
     this.state.currentTrick.clear();
     this.state.currentTurnSeat = winnerSeat;
@@ -325,7 +386,7 @@ export class ShelemRoom extends Room<GameState> {
       throw new Error('Hand completed without a resolved bid — this should be unreachable');
     }
 
-    const { declarerDelta, defenderDelta } = resolveHandScore(
+    const { declarerDelta, defenderDelta, declarerMadeBid } = resolveHandScore(
       bid,
       this.state.declarerPointsCollected,
       this.state.defenderPointsCollected,
@@ -341,6 +402,19 @@ export class ShelemRoom extends Room<GameState> {
       this.state.team1Score += declarerTeamDelta;
       this.state.team0Score += defenderTeamDelta;
     }
+
+    // Recorded here, before startHand() below bumps handNumber to the next deal.
+    const result = new HandResult();
+    result.handNumber = this.state.handNumber;
+    result.declarerSeat = this.state.declarerSeat;
+    result.bidType = bid.type;
+    result.bidAmount = bid.type === 'numeric' ? bid.amount : 0;
+    result.declarerMadeBid = declarerMadeBid;
+    result.team0Delta = declarerTeam === 0 ? declarerTeamDelta : defenderTeamDelta;
+    result.team1Delta = declarerTeam === 1 ? declarerTeamDelta : defenderTeamDelta;
+    result.team0Total = this.state.team0Score;
+    result.team1Total = this.state.team1Score;
+    this.state.handHistory.push(result);
 
     // The two piles get squared together into one deck for the next deal. Which team's
     // pile ends up on top isn't fixed at a real table, so don't fix it here either.
@@ -430,6 +504,9 @@ export class ShelemRoom extends Room<GameState> {
     this.state.winningBidAmount = 0;
     this.state.trumpSuit = '';
     this.state.currentTrick.clear();
+    this.state.lastTrick.clear();
+    this.state.lastTrickWinnerSeat = -1;
+    this.state.lastTrickPoints = 0;
     this.state.tricksPlayedThisHand = 0;
     this.state.bidHistory.clear();
     this.state.handNumber += 1;

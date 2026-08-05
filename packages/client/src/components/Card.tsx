@@ -15,6 +15,11 @@ const SUIT_LETTER: Record<Suit, string> = {
  * string for number cards (`S10`, `H9`...). */
 const RANK_LETTER: Partial<Record<CardModel['rank'], string>> = { A: 'a', J: 'j', Q: 'q', K: 'k' };
 
+/** Every size is a multiple of the shared `--u` scale unit — see Card.module.css
+ * for the multipliers, and note that callers computing fan geometry mirror those
+ * width multipliers in TS (Hand.tsx, Seat.tsx) and must be kept in step. */
+export type CardSize = 'sm' | 'md' | 'lg' | 'xl';
+
 function standardDeckKey(card: CardModel): string {
   return `${SUIT_LETTER[card.suit]}${RANK_LETTER[card.rank] ?? card.rank}`;
 }
@@ -29,7 +34,7 @@ function CardFace({
   highlighted,
 }: {
   card: CardModel;
-  size: 'sm' | 'md' | 'lg';
+  size: CardSize;
   trump?: boolean;
   highlighted?: boolean;
 }) {
@@ -44,7 +49,7 @@ function CardFace({
   );
 }
 
-function CardBack({ size }: { size: 'sm' | 'md' | 'lg' }) {
+function CardBack({ size }: { size: CardSize }) {
   return (
     <div className={`${styles.card} ${styles[size]}`}>
       <div className={styles.back}>
@@ -56,7 +61,7 @@ function CardBack({ size }: { size: 'sm' | 'md' | 'lg' }) {
 
 export interface CardProps {
   card: CardModel;
-  size?: 'sm' | 'md' | 'lg';
+  size?: CardSize;
   faceDown?: boolean;
   selected?: boolean;
   playable?: boolean;
@@ -67,6 +72,10 @@ export interface CardProps {
   /** Overrides the default (`!playable`) disabled state — for modes like widow
    * discard where every card is clickable but none should show the "legal" ring. */
   disabled?: boolean;
+  /** Set false when the card is rendered inside a crop window, where a lift
+   * transform would scroll the art out of view rather than raise the card — the
+   * caller then owns the lift. See `.button.noLift` in Card.module.css. */
+  liftOnInteract?: boolean;
   onClick?: () => void;
 }
 
@@ -81,6 +90,7 @@ export function Card({
   trump = false,
   highlighted = false,
   disabled,
+  liftOnInteract = true,
   onClick,
 }: CardProps) {
   const content = faceDown ? <CardBack size={size} /> : <CardFace card={card} size={size} trump={trump} highlighted={highlighted} />;
@@ -88,7 +98,13 @@ export function Card({
   if (!onClick) return content;
 
   const isDisabled = disabled ?? !playable;
-  const classes = [styles.button, playable && styles.playable, selected && styles.selected, isDisabled && styles.disabled]
+  const classes = [
+    styles.button,
+    playable && styles.playable,
+    selected && styles.selected,
+    isDisabled && styles.disabled,
+    !liftOnInteract && styles.noLift,
+  ]
     .filter(Boolean)
     .join(' ');
 

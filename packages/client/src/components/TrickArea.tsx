@@ -3,6 +3,8 @@ import type { Card as CardModel, Seat as SeatIndex, Suit } from '@shelem/shared'
 import styles from './TrickArea.module.css';
 import { Card } from './Card.js';
 import { cardKey } from '../cardKey.js';
+import { useTableMetrics } from '../tableMetrics.js';
+import { screenSlotFor } from '../screenSlot.js';
 
 export interface TrickPlayItem {
   seat: SeatIndex;
@@ -21,11 +23,6 @@ const SUIT_LABEL: Record<Suit, string> = {
   diamonds: 'Diamonds',
   clubs: 'Clubs',
 };
-
-function screenSlotFor(seat: SeatIndex, mySeat: SeatIndex): 'bottom' | 'left' | 'top' | 'right' {
-  const offset = ((seat - mySeat + 4) % 4) as 0 | 1 | 2 | 3;
-  return (['bottom', 'left', 'top', 'right'] as const)[offset];
-}
 
 /** A card played from a given seat is left oriented as that player set it down —
  * upright from their own seat, not ours — so its rotation alone tells you who
@@ -47,19 +44,23 @@ const TILT: Record<'top' | 'bottom' | 'left' | 'right', number> = {
   right: 4,
 };
 
-/** Where an opponent's card visually flies in from, in px offset from its final
+/** Where an opponent's card visually flies in from, offset from its final
  * position — there's no real source element for their (face-down) card the way
  * there is for our own hand, so this fakes "it came from that seat" directionally
  * instead of the true shared-element flight our own plays get (see `layoutId`
- * below). */
-const FLY_IN_OFFSET: Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }> = {
-  top: { x: 0, y: -140 },
-  bottom: { x: 0, y: 140 },
-  left: { x: -180, y: 0 },
-  right: { x: 180, y: 0 },
+ * below). In multiples of the shared `--u` scale unit (theme.css), like every
+ * other distance on the table — as fixed px these were the one thing that didn't
+ * shrink with the board, so on a phone a card flew in from well off-screen. */
+const FLY_IN_OFFSET_U: Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }> = {
+  top: { x: 0, y: -22 },
+  bottom: { x: 0, y: 22 },
+  left: { x: -28, y: 0 },
+  right: { x: 28, y: 0 },
 };
 
 export function TrickArea({ mySeat, plays, trumpSuit }: TrickAreaProps) {
+  const { u } = useTableMetrics();
+
   return (
     <div className={styles.area}>
       {trumpSuit && <div className={styles.trumpBadge}>Trump: {SUIT_LABEL[trumpSuit]}</div>}
@@ -74,7 +75,8 @@ export function TrickArea({ mySeat, plays, trumpSuit }: TrickAreaProps) {
           // layout" / FLIP animation) instead of a plain fade. Opponents' cards
           // have no such source element (we never render their actual card before
           // it's played), so they get a directional fly-in from their seat instead.
-          const flyIn = isMine ? null : FLY_IN_OFFSET[slot];
+          const flyInU = isMine ? null : FLY_IN_OFFSET_U[slot];
+          const flyIn = flyInU && { x: flyInU.x * u, y: flyInU.y * u };
           return (
             <motion.div
               key={cardKey(card)}
@@ -90,7 +92,7 @@ export function TrickArea({ mySeat, plays, trumpSuit }: TrickAreaProps) {
               exit={{ opacity: 0, scale: 0.6 }}
               transition={{ duration: isMine ? 0.35 : 0.28, ease: 'easeOut' }}
             >
-              <Card card={card} size="md" />
+              <Card card={card} size="lg" />
             </motion.div>
           );
         })}

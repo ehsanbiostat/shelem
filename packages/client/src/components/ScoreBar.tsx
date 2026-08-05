@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styles from './ScoreBar.module.css';
+import type { HandResultJSON } from '../roomState.js';
 
 export interface ScoreBarProps {
   team0Name: string;
@@ -10,13 +11,26 @@ export interface ScoreBarProps {
   team1HandPoints: number;
   matchTargetScore: number;
   handNumber: number;
+  /** Every hand scored so far, oldest first. Shown newest-first below. */
+  handHistory: HandResultJSON[];
+  /** Seat → display name, for naming each past hand's declarer. */
+  playerNames: Record<number, string>;
 }
 
-/** Pinned to the table's bottom-left corner (see Table's `cornerPanel`). Starts
+function describeBid(result: HandResultJSON): string {
+  if (result.bidType === 'numeric') return String(result.bidAmount);
+  return result.bidType === 'shelem' ? 'Shelem' : 'Sar-Shelem';
+}
+
+function signed(delta: number): string {
+  return delta > 0 ? `+${delta}` : String(delta);
+}
+
+/** Pinned to the table's top-left corner (see Table's `cornerPanel`). Starts
  * as a small tap target showing just the running score — full team names, hand
- * points, and target/hand number are a tap away instead of sitting open on the
- * felt all the time, since that's real space taken from a board that's already
- * tight on mobile. Tapping either state toggles to the other. */
+ * points, target/hand number, and the per-hand history are a tap away instead of
+ * sitting open on the felt all the time, since that's real space taken from a
+ * board that's already tight on mobile. */
 export function ScoreBar({
   team0Name,
   team1Name,
@@ -26,6 +40,8 @@ export function ScoreBar({
   team1HandPoints,
   matchTargetScore,
   handNumber,
+  handHistory,
+  playerNames,
 }: ScoreBarProps) {
   const [open, setOpen] = useState(false);
 
@@ -41,8 +57,17 @@ export function ScoreBar({
     );
   }
 
+  // A <div> with its own close control rather than one big <button>: the history
+  // below scrolls, and every scroll-grab inside a button would collapse the panel.
   return (
-    <button type="button" className={styles.panel} onClick={() => setOpen(false)} aria-label="Hide scores">
+    <div className={styles.panel}>
+      <div className={styles.panelHead}>
+        <span className={styles.panelTitle}>Score</span>
+        <button type="button" className={styles.closeBtn} onClick={() => setOpen(false)} aria-label="Hide scores">
+          ×
+        </button>
+      </div>
+
       <div className={styles.team}>
         <span className={`${styles.dot} ${styles.dotA}`} />
         <span className={styles.name}>{team0Name}</span>
@@ -61,6 +86,42 @@ export function ScoreBar({
         <span>Target {matchTargetScore}</span>
         <span>Hand {handNumber}</span>
       </div>
-    </button>
+
+      {handHistory.length > 0 && (
+        <div className={styles.history}>
+          <div className={styles.historyHead}>
+            <span>#</span>
+            <span>Declarer / bid</span>
+            {/* The same two dots that label the teams above, so a column needs no
+                name of its own — team names are two players' names joined and are
+                far too long to head a column with. */}
+            <span className={styles.num}>
+              <span className={`${styles.dot} ${styles.dotA}`} />
+            </span>
+            <span className={styles.num}>
+              <span className={`${styles.dot} ${styles.dotB}`} />
+            </span>
+          </div>
+          {/* Newest first — the hand that just finished is the one being looked for. */}
+          {[...handHistory].reverse().map((result) => (
+            <div key={result.handNumber} className={styles.historyRow}>
+              <span className={styles.historyHand}>{result.handNumber}</span>
+              <span className={styles.historyBid}>
+                <span className={styles.historyDeclarer}>{playerNames[result.declarerSeat] ?? '—'}</span>
+                <span className={result.declarerMadeBid ? styles.made : styles.set}>{describeBid(result)}</span>
+              </span>
+              <span className={styles.num}>
+                {signed(result.team0Delta)}
+                <span className={styles.runningTotal}>{result.team0Total}</span>
+              </span>
+              <span className={styles.num}>
+                {signed(result.team1Delta)}
+                <span className={styles.runningTotal}>{result.team1Total}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
