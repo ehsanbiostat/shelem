@@ -117,6 +117,51 @@ export function playCardSound() {
   tone(now, { frequency: 160, duration: 0.06, gain: 0.05 });
 }
 
+/** A riffle shuffle. Physically a riffle is not one sound but a burst of a few
+ * dozen tiny impacts as the two halves interleave, so that's exactly what this
+ * is: a train of very short, bright noise clicks, each jittered in pitch and
+ * level so no two are identical — a perfectly regular train reads as a machine
+ * gun, not as cards. The spacing eases in and out across the burst, because a
+ * riffle is fastest in the middle, and it finishes with the squared deck being
+ * tapped down on the table.
+ *
+ * ~35 scheduled bursts, all of which the Web Audio graph handles on its own
+ * clock — nothing here touches the main thread while the deal animates. */
+export function shuffleSound() {
+  if (muted) return;
+  const context = audio();
+  if (!context) return;
+  const now = context.currentTime;
+  const CLICKS = 35;
+  const SPAN = 0.7;
+
+  for (let i = 0; i < CLICKS; i++) {
+    const t = i / (CLICKS - 1);
+    // Pulls the middle of the train tighter than the ends.
+    const eased = t - 0.16 * Math.sin(2 * Math.PI * t);
+    noiseBurst(now + eased * SPAN, {
+      duration: 0.022,
+      frequency: 2600 + Math.random() * 1900,
+      q: 1.1,
+      gain: 0.03 + Math.random() * 0.03,
+    });
+  }
+
+  const squareUp = now + SPAN + 0.07;
+  noiseBurst(squareUp, { duration: 0.09, frequency: 520, q: 1.7, gain: 0.1 });
+  tone(squareUp, { frequency: 140, duration: 0.08, gain: 0.05 });
+}
+
+/** One block of cards sliding across the felt to a player. Longer and softer
+ * than a single card landing, sweeping downward so it reads as movement away
+ * from the dealer rather than an impact. */
+export function dealBlockSound() {
+  if (muted) return;
+  const context = audio();
+  if (!context) return;
+  noiseBurst(context.currentTime, { duration: 0.14, frequency: 1900, q: 0.8, gain: 0.055, sweepTo: 650 });
+}
+
 /** A bid being placed: a knock on wood. Wood is a resonant body rather than a
  * flat surface, so this is the same noise burst as a card landing but with a much
  * narrower filter (high Q) around a low frequency — that resonance is what makes

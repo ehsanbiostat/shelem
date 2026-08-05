@@ -307,3 +307,12 @@
   writing-mode: horizontal-tb;
   transform: none;
 }
+
+/* During the deal, a seat shows its name but not yet its cards — the cards are
+   still in the air (see DealingOverlay). Hidden rather than unmounted so the
+   reveal at the end is one repaint instead of a remount of twelve card faces. */
+.fanHidden .fanRow,
+.fanHidden .fanWrap {
+  opacity: 0;
+  visibility: hidden;
+}

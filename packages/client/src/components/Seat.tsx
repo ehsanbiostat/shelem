@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { fanAngles } from '@shelem/shared';
 import type { Suit } from '@shelem/shared';
 import styles from './Seat.module.css';
@@ -49,6 +50,8 @@ export interface SeatProps {
   trumpSuit?: Suit | null;
   empty: boolean;
   slot: SeatSlot;
+  /** Hides this seat's cards (not its name) while the deal animation plays. */
+  hideFan?: boolean;
 }
 
 /** Opponents are represented by a fanned arc of face-down cards hugging the table
@@ -117,7 +120,7 @@ function CardFan({ handSize, orientation }: { handSize: number; orientation: 'to
   return <div className={`${styles.fanWrap} ${styles[orientation]}`}>{row}</div>;
 }
 
-export function Seat({
+function SeatImpl({
   name,
   connected,
   handSize,
@@ -128,6 +131,7 @@ export function Seat({
   trumpSuit,
   empty,
   slot,
+  hideFan = false,
 }: SeatProps) {
   const identity = (
     <div className={styles.identity}>
@@ -151,7 +155,7 @@ export function Seat({
     !empty && handSize > 0 && slot !== 'bottom' ? <CardFan handSize={handSize} orientation={slot} /> : null;
 
   return (
-    <div className={`${styles.seat} ${styles[slot]} ${isTurn ? styles.activeTurn : ''}`}>
+    <div className={`${styles.seat} ${styles[slot]} ${isTurn ? styles.activeTurn : ''} ${hideFan ? styles.fanHidden : ''}`}>
       {slot === 'top' && fan}
       {slot === 'left' && fan}
       {identity}
@@ -159,3 +163,10 @@ export function Seat({
     </div>
   );
 }
+
+/* Memoised because the table re-renders on every step of the deal animation as
+ * each block lands, and a seat's own props don't change when that happens. Without
+ * this, five landings meant five full reconciliations of four seats' twelve-card
+ * fans in the middle of the animation — measured as ~90-175ms frames, i.e. visible
+ * stutter, on a 4x-throttled CPU. */
+export const Seat = memo(SeatImpl);
