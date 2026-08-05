@@ -300,6 +300,7 @@ export default function App() {
         // The lobby and the bid grid want the table's full width; only the trick
         // pile needs to keep clear of the opponents' fans. See Table.module.css.
         centerVariant={state.phase === 'lobby' || state.phase === 'bidding' ? 'wide' : 'trick'}
+        hideOwnLabel={state.phase === 'widow' && state.declarerSeat === mySeat}
         cornerPanel={
           state.phase !== 'lobby' ? (
             <ScoreBar
