@@ -1,0 +1,26 @@
+/* Sits over the whole felt while the deal plays. Non-interactive: the cards are
+   pure decoration and must never intercept a click meant for the table beneath.
+   Above the seats and the centre, below the corner panels. */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* The deck the cards come off: the middle of the table. Every flyer starts here
+   and is moved by its own transform, so there is exactly one positioned element
+   and 52 transforms rather than 52 layout positions. */
+.deck {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+
+/* Half an 'sm' card (6.3u x 8.9u — Card.module.css), so a flyer is centred on
+   the deck point rather than hanging off it. */
+.flyer {
+  position: absolute;
+  margin-left: calc(var(--u) * -3.15);
+  margin-top: calc(var(--u) * -4.45);
+}

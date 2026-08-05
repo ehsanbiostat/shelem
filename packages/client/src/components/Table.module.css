@@ -150,3 +150,12 @@
   top: 10px;
   z-index: 4;
 }
+
+/* A hand that hasn't been dealt yet, during the deal animation (see Table.tsx).
+   Opacity only — the cards stay mounted so the reveal costs nothing but a
+   composite, and `visibility` is included so an undealt hand can't be clicked or
+   tabbed into before it exists. */
+.undealt {
+  opacity: 0.001;
+  pointer-events: none;
+}

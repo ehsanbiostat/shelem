@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Room } from 'colyseus.js';
+import { MotionConfig, useReducedMotion } from 'framer-motion';
 import type { Bid, Card as CardModel, Seat as SeatIndex, Team } from '@shelem/shared';
 import { legalCards, teamForSeat } from '@shelem/shared';
 import styles from './App.module.css';
@@ -13,7 +14,7 @@ import { BiddingPanel } from './components/BiddingPanel.js';
 import { Hand } from './components/Hand.js';
 import { LastTrickPanel } from './components/LastTrickPanel.js';
 import { TableSettings } from './components/TableSettings.js';
-import { bidSound, gameStartSound, isMuted, playCardSound, setMuted, trickClearedSound } from './sound.js';
+import { bidSound, gameStartSound, isMuted, playCardSound, setMuted, shuffleSound, trickClearedSound } from './sound.js';
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -44,6 +45,8 @@ export default function App() {
   // rather than opening a separate picker for the discard.
   const widowAddedRef = useRef<CardModel[]>([]);
   const [muted, setMutedState] = useState(isMuted);
+  const [dealing, setDealing] = useState<{ dealerSeat: SeatIndex } | null>(null);
+  const reduceMotion = useReducedMotion();
 
   // Trump is unknown (and every suit-color-alternating order is equivalent) until the
   // declarer's opening lead sets it — re-sort whenever that changes, not just on deal.
@@ -75,12 +78,26 @@ export default function App() {
     prevBidCount.current = bidCount;
   }, [bidCount]);
 
-  // Each new deal, including a redeal after three passes — the chime marks cards
-  // arriving, which is what the player is waiting on.
+  // Each new deal, including a redeal after three passes. The riffle plays as the
+  // cards go out and the chime lands once they've arrived, so the two read as one
+  // sequence rather than stacking on top of each other. Anyone who has asked their
+  // system for less motion skips straight to the chime.
   const handNumber = state?.handNumber ?? 0;
+  const dealerSeat = state?.dealerSeat ?? 0;
   useEffect(() => {
-    if (handNumber > 0) gameStartSound();
+    if (handNumber <= 0) return;
+    if (reduceMotion) {
+      gameStartSound();
+      return;
+    }
+    shuffleSound();
+    setDealing({ dealerSeat: dealerSeat as SeatIndex });
   }, [handNumber]);
+
+  const finishDeal = useCallback(() => {
+    setDealing(null);
+    gameStartSound();
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem(RECONNECT_STORAGE_KEY);
@@ -257,6 +274,7 @@ export default function App() {
     state.pendingSeatSwap && state.pendingSeatSwap.toSeat === mySeat ? state.pendingSeatSwap : null;
 
   return (
+    <MotionConfig reducedMotion="user">
     <div className={styles.gameShell}>
       <div className={styles.header}>
         <strong>Shelem</strong>
@@ -310,6 +328,8 @@ export default function App() {
         centerVariant={state.phase === 'lobby' || state.phase === 'bidding' ? 'wide' : 'trick'}
         hideOwnLabel={state.phase === 'widow' && state.declarerSeat === mySeat}
         trumpSuit={trumpSuit}
+        dealing={dealing}
+        onDealDone={finishDeal}
         cornerPanel={
           state.phase !== 'lobby' ? (
             <ScoreBar
@@ -419,5 +439,6 @@ export default function App() {
 
       {error && <p className={styles.error}>{error}</p>}
     </div>
+    </MotionConfig>
   );
 }
