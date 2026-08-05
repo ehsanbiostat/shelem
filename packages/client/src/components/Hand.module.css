@@ -34,7 +34,7 @@
   cursor: default;
 }
 
-/* Reaches as high as the arc's peak: the anchor (-2u) plus the 9u the curve
+/* Reaches as high as the arc's peak: the anchor (-6u) plus the 9u the curve
  * lifts the middle of the fan plus a whole 'xl' card (26.7u — Card.module.css).
  * This strip's own bottom edge is the table's bottom edge, which is the bottom
  * of the window — App.module.css's .gameShell has no bottom padding — so the
@@ -44,7 +44,7 @@
 .hand {
   position: relative;
   width: 100%;
-  height: calc(var(--u) * 33.7);
+  height: calc(var(--u) * 29.7);
   margin-top: 8px;
 }
 
@@ -64,6 +64,6 @@
 .cardSlot {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--u) * -2);
+  bottom: calc(var(--u) * -6);
   margin-left: calc(var(--u) * -9.5);
 }

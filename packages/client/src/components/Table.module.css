@@ -70,7 +70,7 @@
  * dead-center cards further up toward this label via a transform — same
  * reasoning as the opponent seats' gap in Seat.module.css. */
 .bottom {
-  bottom: calc(var(--u) * 33.7 + 8px);
+  bottom: calc(var(--u) * 29.7 + 8px);
   left: 50%;
   transform: translate(-50%, 0);
 }
@@ -98,7 +98,7 @@
 .center {
   position: absolute;
   top: calc(var(--u) * 19.5 + 10px);
-  bottom: calc(var(--u) * 33.7 + 12px);
+  bottom: calc(var(--u) * 29.7 + 12px);
   left: calc(var(--u) * 14 + 10px);
   right: calc(var(--u) * 14 + 10px);
   z-index: 1;
@@ -113,7 +113,7 @@
  * above the seats (z-index) since it now deliberately overlaps them. */
 .centerWide {
   top: calc(var(--u) * 19.5);
-  bottom: calc(var(--u) * 33.7);
+  bottom: calc(var(--u) * 29.7);
   left: 8px;
   right: 8px;
   z-index: 5;
