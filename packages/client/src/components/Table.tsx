@@ -40,6 +40,11 @@ export interface TableProps {
    * Both overlays sit along the top edge, leaving the bottom corners clear for
    * the hand fan, which runs off the bottom of the display. */
   cornerPanelRight?: ReactNode;
+  /** Drops the local player's own name label. The widow-discard bar renders in
+   * the same band (it sits above the hand, inside `bottomOverlay`) and lands on
+   * top of it — and during a discard the label is the one piece of information on
+   * the table you definitely already have. */
+  hideOwnLabel?: boolean;
 }
 
 export function Table({
@@ -54,6 +59,7 @@ export function Table({
   bottomOverlay,
   cornerPanel,
   cornerPanelRight,
+  hideOwnLabel = false,
 }: TableProps) {
   const bySeat = new Map(players.map((p) => [p.seat, p]));
   const { ref: tableRef, metrics } = useMeasureTableMetrics<HTMLDivElement>();
@@ -70,6 +76,7 @@ export function Table({
         {([0, 1, 2, 3] as SeatIndex[]).map((seat) => {
           const player = bySeat.get(seat);
           const slot = screenSlotFor(seat, mySeat);
+          if (slot === 'bottom' && hideOwnLabel) return null;
           const isTurn = seat === currentTurnSeat;
           return (
             <div key={seat} className={`${styles.seatSlot} ${styles[slot]}`}>
