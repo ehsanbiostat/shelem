@@ -82,24 +82,25 @@
  * rather than snapping at a fixed breakpoint, it stays in proportion at any
  * window size instead of needing to stay in sync with a separate breakpoint.
  *
- * The horizontal numbers add up a side seat's real footprint: 2px of edge
- * offset (.left/.right above) + 10.5u of fan + 3u of gap + 26px of rotated
- * identity, plus the curve's own extra reach. They used to read `20u + 95px`,
- * which on a phone (`--u` ≈ 3.6px) claimed 333px of a 358px-wide table and left
- * the trick pile a 25px slot — the identity's old 84px min-width was reserved
- * for text rendered sideways. Both halves of that are fixed in Seat.module.css;
- * these track the result. The vertical ones add up the same way: the top seat's
- * 16u fan + its 5u gap + ~44px of identity text above, and the local hand's
- * 28.7u strip (Hand.module.css) below. Worth keeping honest rather than padded —
- * the fixed-px parts don't shrink with `--u`, so on a short viewport (a phone
- * turned landscape) an over-generous constant is most of what squeezes the trick
- * pile out of the middle. */
+ * These are now purely the cards' own footprint, because the name labels no
+ * longer sit between the fans and the middle — they're laid over the fans
+ * instead (see .identity in Seat.module.css). What's left is: 2px of edge offset
+ * (.left/.right above) + --fan-thickness + the ~3.5u the fan curve reaches past
+ * that footprint via a transform, plus a little breathing room. So 10.5u + 3.5u
+ * horizontally, 16u + 3.5u vertically.
+ *
+ * For scale, the horizontal pair has gone `20u + 95px` -> `14u + 32px` ->
+ * `14u + 10px` over three passes: on a phone that's 333px of a 358px-wide table
+ * down to 120px, with the trick pile's slot going from 25px to ~238px. Keeping
+ * these honest rather than padded matters beyond tidiness — the fixed-px parts
+ * don't shrink with `--u`, so on a short viewport (a phone turned landscape)
+ * an over-generous constant is most of what squeezes the middle out. */
 .center {
   position: absolute;
-  top: calc(var(--u) * 21 + 46px);
+  top: calc(var(--u) * 19.5 + 10px);
   bottom: calc(var(--u) * 28.7 + 16px);
-  left: calc(var(--u) * 14 + 32px);
-  right: calc(var(--u) * 14 + 32px);
+  left: calc(var(--u) * 14 + 10px);
+  right: calc(var(--u) * 14 + 10px);
   z-index: 1;
 }
 
@@ -111,7 +112,7 @@
  * insets can serve both. Hence two variants rather than one compromise. Stacked
  * above the seats (z-index) since it now deliberately overlaps them. */
 .centerWide {
-  top: calc(var(--u) * 21 + 30px);
+  top: calc(var(--u) * 19.5);
   bottom: calc(var(--u) * 28.7);
   left: 8px;
   right: 8px;

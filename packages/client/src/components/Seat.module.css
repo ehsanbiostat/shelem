@@ -13,6 +13,7 @@
  * flex-direction/gap in those blocks are inert on it. */
 .seat {
   --fan-fill: calc(var(--u) * 110);
+  position: relative;
   display: flex;
   align-items: center;
   color: var(--color-ivory-100);
@@ -30,14 +31,14 @@
  * It used to be 20u, which parked the top fan a visible ~5u short of the edge.
  *
  * The curve (Seat.tsx's fanCurve) then pushes dead-center cards further inward
- * than the footprint via a transform, which doesn't affect layout — so the gap
- * below has to cover that extra reach itself or the curve's peak visually
- * overlaps the name/badges beneath it. */
+ * than the footprint via a transform, which doesn't affect layout — so whatever
+ * clearance the table's centre keeps (Table.module.css's `.center`) has to cover
+ * that extra reach on top of --fan-thickness. */
 .top,
 .bottom {
   --fan-card-w: calc(var(--u) * 9.7);
   --fan-thickness: calc(var(--u) * 16);
-  gap: calc(var(--u) * 5);
+  min-height: var(--fan-thickness);
   flex-direction: column;
 }
 
@@ -56,30 +57,37 @@
    * an 'sm' card, so 10.5u holds it with nothing to spare and the fan sits
    * against the left/right border. */
   --fan-thickness: calc(var(--u) * 10.5);
-  gap: calc(var(--u) * 3);
+  min-width: var(--fan-thickness);
   flex-direction: row;
 }
 
+/* Laid over the middle of the seat's own fan rather than beside it. Beside it,
+ * the name sat in a band of its own between the cards and the table's centre —
+ * ~37px per side seat and ~62px above the top seat, all of it taken straight out
+ * of the playing area, and none of it recoverable by nudging the fans outward
+ * (they're already within a few px of their screen edges). Out of flow, the
+ * seat's whole footprint is just the fan, and the middle of the table gets that
+ * space back.
+ *
+ * It reads fine over cards because they're face-down backs with no detail to
+ * obscure, and the pill gives the text its own ground. */
 .identity {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-}
-
-.top .identity,
-.bottom .identity {
-  min-width: 84px;
-}
-
-/* A side seat's identity is rendered sideways (see the writing-mode rule
- * below), so its text runs down the screen and it needs only a text line's
- * worth of *width* — the 84px above is horizontal room the middle of the table
- * needs far more than a rotated name does. */
-.left .identity,
-.right .identity {
-  min-width: 0;
-  width: 26px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(10, 30, 25, 0.62);
+  backdrop-filter: blur(2px);
+  pointer-events: none;
+  /* Above the cards, which carry inline z-indexes up to 1000 (Seat.tsx gives
+   * each one a depth matching the fan curve) and share this stacking context. */
+  z-index: 1001;
 }
 
 .activeTurn .name {
