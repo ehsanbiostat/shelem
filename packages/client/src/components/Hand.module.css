@@ -78,15 +78,23 @@
    exactly one thing: this card is selected.
 
    So hover speaks in the other channel — depth. The card brightens and gains a
-   ring, and comes to the front: cards overlap heavily in a fan, so without the
-   z-index the highlight on an inner card is mostly hidden behind its neighbour. */
+   ring along whatever part of it is actually visible.
+
+   Deliberately no z-index change on hover, though bringing the card to the front
+   is the obvious thing to want. It is self-defeating: raising the hovered card
+   stacks it above its neighbours, so it keeps winning the hit test as the pointer
+   travels on over them, and only surrenders hover once the pointer leaves its
+   whole box — by which point it has skipped a card. Measured by sweeping a
+   pointer across a 12-card fan: with the raise, only slots 0,1,3,5,7,9,10,11 were
+   reachable at all; without it, every slot from 0 to 11, at even intervals of one
+   card's spacing. Half the hand was un-hoverable.
+
+   The ring being clipped by the next card is not a defect — the card genuinely is
+   behind its neighbour, and its highlighted edge shows exactly where the card
+   itself shows. */
 .hoverLift {
   transition: filter 130ms ease, box-shadow 130ms ease;
   border-radius: var(--radius-sm);
-}
-
-.cardSlot:hover {
-  z-index: 600;
 }
 
 .cardSlot:hover .hoverLift {
