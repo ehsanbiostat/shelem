@@ -38,8 +38,14 @@
 .bottom {
   --fan-card-w: calc(var(--u) * 9.7);
   --fan-thickness: calc(var(--u) * 16);
-  min-height: var(--fan-thickness);
   flex-direction: column;
+}
+
+/* Only the top seat reserves the fan's footprint. The bottom seat draws no fan,
+ * and giving it this height would push its label off the position
+ * Table.module.css's .bottom puts it at. */
+.top {
+  min-height: var(--fan-thickness);
 }
 
 /* A side seat spends its footprint on table *width*, which on a phone is the
@@ -73,9 +79,11 @@
  * obscure, and the pill gives the text its own ground. */
 .identity {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  /* Clears the fan curve's peak. The curve (Seat.tsx) pushes dead-centre cards
+   * this far past the fan's own footprint toward the table, and the label sits at
+   * that same centre — so this is the closest it can sit to the cards without
+   * landing on top of them. */
+  --label-gap: calc(var(--u) * 3.5 + 2px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -88,6 +96,45 @@
   /* Above the cards, which carry inline z-indexes up to 1000 (Seat.tsx gives
    * each one a depth matching the fan curve) and share this stacking context. */
   z-index: 1001;
+}
+
+/* Each label is anchored to the table-facing edge of its own fan, so it reads as
+ * belonging to those cards — the same relationship the local player's name has to
+ * their hand, which sits just above it. Centring it on the fan instead (as this
+ * did) left every opponent's name floating in the middle of their own cards,
+ * unattached to anything and positioned by the seat box rather than by where the
+ * cards actually are.
+ *
+ * Anchored with percentages off the seat box, whose size is exactly the fan's
+ * footprint (--fan-thickness) — so the labels track the cards automatically if
+ * that footprint ever changes, instead of needing their own copy of the number.
+ * They stay out of flow, so none of this costs the middle of the table any space;
+ * they sit far outside the trick pile, which is compact and centred. */
+.top .identity {
+  top: 100%;
+  left: 50%;
+  transform: translate(-50%, var(--label-gap));
+}
+
+.left .identity {
+  left: 100%;
+  top: 50%;
+  transform: translate(var(--label-gap), -50%);
+}
+
+.right .identity {
+  right: 100%;
+  top: 50%;
+  transform: translate(calc(-1 * var(--label-gap)), -50%);
+}
+
+/* The local player's seat draws no fan (Table.tsx passes handSize 0 — you see
+ * your real hand instead), so there's nothing to anchor to: the label is the
+ * whole seat, already placed just above the hand by Table.module.css's .bottom. */
+.bottom .identity {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
 }
 
 .activeTurn .name {
