@@ -6,6 +6,10 @@ export interface OverlayProps {
   title: string;
   /** Omitted when the overlay is not the player's to close — see `dismissible`. */
   onClose?: () => void;
+  /** False to drop the visible heading. `title` is still used as the dialog's
+   * accessible name — a dialog with no name is a dialog a screen reader announces
+   * as nothing, so the two are deliberately separate. */
+  showTitle?: boolean;
   /** False for an overlay the game is holding open, like the end-of-hand scores.
    * Removes the close button and both escape routes, so it can't be dismissed
    * into a table that isn't ready to be played yet. */
@@ -33,7 +37,7 @@ export interface OverlayProps {
  * dialog rendered under the "Waiting on X" text. A portal takes it out of the
  * table's stacking contexts altogether, which is the only way to be sure a modal
  * is on top of everything rather than on top of its own corner. */
-export function Overlay({ title, onClose, dismissible = true, children }: OverlayProps) {
+export function Overlay({ title, onClose, showTitle = true, dismissible = true, children }: OverlayProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -63,8 +67,8 @@ export function Overlay({ title, onClose, dismissible = true, children }: Overla
         // not a click on the scrim, so it must not bubble up and close it.
         onClick={(e) => e.stopPropagation()}
       >
-        <div className={styles.head}>
-          <span className={styles.title}>{title}</span>
+        <div className={`${styles.head} ${showTitle ? '' : styles.headBare}`}>
+          {showTitle && <span className={styles.title}>{title}</span>}
           {dismissible && (
             <button type="button" className={styles.close} onClick={onClose} aria-label="Close">
               ×

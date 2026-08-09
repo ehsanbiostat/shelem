@@ -16,7 +16,7 @@
 
 .card {
   width: 100%;
-  max-width: 340px;
+  max-width: 400px;
   max-height: 82vh;
   display: flex;
   flex-direction: column;
@@ -71,4 +71,12 @@
 .body {
   padding: 14px 16px 16px;
   overflow-y: auto;
+}
+
+/* No heading to sit beside, so the close button goes to the right on its own and
+   the bar collapses to just enough room to hold it. */
+.headBare {
+  justify-content: flex-end;
+  padding: 10px 12px 6px;
+  border-bottom: none;
 }

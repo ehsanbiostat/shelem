@@ -14,6 +14,8 @@ export interface ScoreBarProps {
   handNumber: number;
   /** Every hand scored so far, oldest first. Shown newest-first below. */
   handHistory: HandResultJSON[];
+  /** Seat → display name, to credit each past hand to whoever declared it. */
+  playerNames: Record<number, string>;
   /** Held open by the game rather than the player — the end-of-hand pause and the
    * end of a match. Not dismissible while set. */
   heldOpen?: boolean;
@@ -40,6 +42,7 @@ export function ScoreBar({
   matchTargetScore,
   handNumber,
   handHistory,
+  playerNames,
   heldOpen = false,
   rematch,
 }: ScoreBarProps) {
@@ -60,53 +63,57 @@ export function ScoreBar({
   return (
     <Overlay
       title={rematch ? 'Match complete' : heldOpen ? 'Hand complete' : 'Score'}
+      // "Score" stays the dialog's accessible name but is not drawn — the numbers
+      // say what they are. The held-open titles are drawn, because those explain
+      // why the panel opened by itself and cannot be closed.
+      showTitle={heldOpen}
       onClose={() => setOpen(false)}
       dismissible={!heldOpen}
     >
-      <div className={styles.team}>
-        <span className={`${styles.dot} ${styles.dotA}`} />
-        <span className={styles.name}>{team0Name}</span>
-        <span className={styles.score}>{team0Score}</span>
-      </div>
-      <div className={styles.handPoints}>+{team0HandPoints} this hand</div>
-
-      <div className={styles.team}>
-        <span className={`${styles.dot} ${styles.dotB}`} />
-        <span className={styles.name}>{team1Name}</span>
-        <span className={styles.score}>{team1Score}</span>
-      </div>
-      <div className={styles.handPoints}>+{team1HandPoints} this hand</div>
-
-      <div className={styles.meta}>
-        <span>Target {matchTargetScore}</span>
-        <span>Hand {handNumber}</span>
-      </div>
-
-      {handHistory.length > 0 && (
-        <div className={styles.history}>
-          {/* Deliberately just the two numbers per hand. Declarer, bid, made/set and
-              running totals all lived here and made a five-column table out of a
-              thing people glance at; the totals above already say where the match
-              stands, so the history only has to say how it got there. */}
-          <div className={styles.historyHead}>
-            <span />
-            <span className={styles.num}>
-              <span className={`${styles.dot} ${styles.dotA}`} />
-            </span>
-            <span className={styles.num}>
-              <span className={`${styles.dot} ${styles.dotB}`} />
-            </span>
-          </div>
-          {/* Newest first — the hand that just finished is the one being looked for. */}
-          {[...handHistory].reverse().map((result) => (
-            <div key={result.handNumber} className={styles.historyRow}>
-              <span className={styles.historyHand}>{result.handNumber}</span>
-              <span className={styles.num}>{signed(result.team0Delta)}</span>
-              <span className={styles.num}>{signed(result.team1Delta)}</span>
-            </div>
-          ))}
+      {/* Teams are the columns and every figure is a row under them, so a team's
+          match total, its running total for the hand in play, and its result in
+          each past hand all read down one line. */}
+      <div className={styles.table}>
+        <div className={`${styles.row} ${styles.headRow}`}>
+          <span />
+          <span className={styles.teamHead}>
+            <span className={`${styles.dot} ${styles.dotA}`} />
+            {team0Name}
+          </span>
+          <span className={styles.teamHead}>
+            <span className={`${styles.dot} ${styles.dotB}`} />
+            {team1Name}
+          </span>
         </div>
-      )}
+
+        <div className={`${styles.row} ${styles.totalRow}`}>
+          <span className={styles.label}>Total ({matchTargetScore})</span>
+          <span className={styles.num}>{team0Score}</span>
+          <span className={styles.num}>{team1Score}</span>
+        </div>
+
+        <div className={`${styles.row} ${styles.minorRow}`}>
+          <span className={styles.label}>Current hand</span>
+          <span className={styles.num}>+{team0HandPoints}</span>
+          <span className={styles.num}>+{team1HandPoints}</span>
+        </div>
+
+        {handHistory.length > 0 && (
+          <div className={styles.history}>
+            {/* Newest hand first — the one that just finished is the one being
+                looked for. Each is credited to whoever declared it. */}
+            {[...handHistory].reverse().map((result) => (
+              <div key={result.handNumber} className={`${styles.row} ${styles.minorRow}`}>
+                <span className={styles.label}>
+                  {result.handNumber} ({playerNames[result.declarerSeat] ?? '—'})
+                </span>
+                <span className={styles.num}>{signed(result.team0Delta)}</span>
+                <span className={styles.num}>{signed(result.team1Delta)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {rematch && (
         <div className={styles.rematch}>
