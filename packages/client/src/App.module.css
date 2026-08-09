@@ -225,3 +225,14 @@
   font-weight: 700;
   margin: 8px 0;
 }
+
+/* The four-character table code. Wide tracking and a tabular face because this
+   is a string people read out loud to each other and copy by hand, not prose. */
+.codeInput {
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-align: center;
+}

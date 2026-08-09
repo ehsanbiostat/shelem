@@ -1,7 +1,11 @@
 /* Persian-inspired palette: jewel tones (emerald, sapphire, ruby) with a saffron-gold
-   accent, on an ivory surface. Vazirmatn is a Persian-designed typeface that also
-   reads cleanly in Latin script — a deliberate nod to Shelem's origin even though the
-   v1 UI is English-only. */
+   accent, on an ivory surface.
+
+   Type is the platform's own UI font rather than a bundled webfont. This used to be
+   Vazirmatn, chosen as a nod to Shelem's origin; the system stack was preferred for
+   the way it sits on Apple devices, where it resolves to SF Pro. It also stops the
+   build shipping ~250KB of woff/woff2 the game no longer uses, and the first paint
+   no longer waits on a font download. */
 
 :root {
   --color-emerald-900: #0a3d31;
@@ -45,7 +49,8 @@
   --color-text: var(--color-ink-900);
   --color-text-muted: var(--color-ink-600);
 
-  --font-family: 'Vazirmatn', ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue',
+    ui-sans-serif, 'Segoe UI', Roboto, sans-serif;
 
   --radius-sm: 6px;
   --radius-md: 12px;

@@ -120,7 +120,8 @@ export default function App() {
 
   async function joinTable() {
     try {
-      const joined = await colyseusClient.joinById(roomIdInput.trim(), { name });
+      // Codes are generated uppercase (see ShelemRoom); accept them typed either way.
+      const joined = await colyseusClient.joinById(roomIdInput.trim().toUpperCase(), { name });
       attachRoom(joined);
     } catch (err) {
       setError(String(err));
@@ -185,7 +186,16 @@ export default function App() {
 
           <label className={styles.field}>
             Table code
-            <input className={styles.input} value={roomIdInput} onChange={(e) => setRoomIdInput(e.target.value)} />
+            <input
+            className={`${styles.input} ${styles.codeInput}`}
+            value={roomIdInput}
+            onChange={(e) => setRoomIdInput(e.target.value.toUpperCase())}
+            maxLength={4}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+placeholder="ABCD"
+          />
           </label>
           <button className={styles.secondaryBtn} onClick={joinTable} disabled={!name || !roomIdInput}>
             Join table
@@ -342,7 +352,6 @@ export default function App() {
               matchTargetScore={state.matchTargetScore}
               handNumber={state.handNumber}
               handHistory={state.handHistory}
-              playerNames={playerNames}
             />
           ) : null
         }
