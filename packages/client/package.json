@@ -11,7 +11,6 @@
     "deploy:preview": "wrangler versions upload"
   },
   "dependencies": {
-    "@fontsource/vazirmatn": "^5.3.0",
     "@letele/playing-cards": "^0.1.0",
     "@shelem/shared": "*",
     "colyseus.js": "0.16.22",

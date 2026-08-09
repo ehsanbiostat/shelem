@@ -90,8 +90,10 @@
   gap: 4px;
   padding: 3px 7px;
   border-radius: 999px;
-  background: rgba(10, 30, 25, 0.62);
-  backdrop-filter: blur(2px);
+  /* No plate behind the name by default — a text shadow is enough to hold it
+   * against both the felt and the card backs it sits over, and it keeps the table
+   * quiet. The plate is now a signal rather than a permanent fixture: only the
+   * player to act gets one (see .activeTurn below). */
   pointer-events: none;
   /* Above the cards, which carry inline z-indexes up to 1000 (Seat.tsx gives
    * each one a depth matching the fan curve) and share this stacking context. */
@@ -156,6 +158,7 @@
 .activeTurn .identity {
   background: rgba(10, 30, 25, 0.88);
   box-shadow: 0 0 0 2px var(--color-gold-500), 0 0 16px 3px rgba(201, 162, 39, 0.45);
+  backdrop-filter: blur(2px);
 }
 
 .activeTurn .name {
@@ -165,6 +168,7 @@
 }
 
 .name {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
   font-size: 13px;
   font-weight: 600;
   display: flex;

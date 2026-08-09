@@ -1,8 +1,5 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import '@fontsource/vazirmatn/index.css';
-import '@fontsource/vazirmatn/600.css';
-import '@fontsource/vazirmatn/700.css';
 import './theme.css';
 import App from './App.js';
 

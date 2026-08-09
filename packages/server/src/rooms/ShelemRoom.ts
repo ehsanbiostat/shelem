@@ -1,4 +1,4 @@
-import { Room, Client } from 'colyseus';
+import { Room, Client, matchMaker } from 'colyseus';
 import {
   type Bid,
   type BidEvent,
@@ -45,6 +45,29 @@ function isValidTargetScore(value: unknown): value is number {
   );
 }
 
+/** Room codes get read aloud and typed in by hand, so the alphabet leaves out the
+ * pairs that get confused when spoken or squinted at: I/1, L/1, O/0. Four
+ * characters from the remaining 31 is ~920k codes, which is far more than a
+ * private-table game will ever hold open at once, and short enough to say down a
+ * phone line in one go. */
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH = 4;
+
+/** Four characters collide often enough to matter, so this checks the codes
+ * actually in use rather than trusting randomness. The attempt cap means a
+ * pathologically full server fails loudly instead of spinning forever. */
+async function generateRoomCode(): Promise<string> {
+  const taken = new Set((await matchMaker.query({})).map((room) => room.roomId));
+  for (let attempt = 0; attempt < 100; attempt++) {
+    let code = '';
+    for (let i = 0; i < CODE_LENGTH; i++) {
+      code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
+    }
+    if (!taken.has(code)) return code;
+  }
+  throw new Error('Could not allocate a free room code');
+}
+
 function cardsEqual(a: Card, b: Card): boolean {
   return a.suit === b.suit && a.rank === b.rank;
 }
@@ -70,7 +93,9 @@ export class ShelemRoom extends Room<GameState> {
   // The previous hand's cards, awaiting the next deal. Null before the first hand.
   private collectedDeck: Card[] | null = null;
 
-  onCreate(options: JoinOptions) {
+  async onCreate(options: JoinOptions) {
+    this.roomId = await generateRoomCode();
+
     const state = new GameState();
     if (isValidTargetScore(options.targetScore)) {
       state.matchTargetScore = options.targetScore;

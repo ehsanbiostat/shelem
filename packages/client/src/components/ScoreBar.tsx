@@ -13,13 +13,6 @@ export interface ScoreBarProps {
   handNumber: number;
   /** Every hand scored so far, oldest first. Shown newest-first below. */
   handHistory: HandResultJSON[];
-  /** Seat → display name, for naming each past hand's declarer. */
-  playerNames: Record<number, string>;
-}
-
-function describeBid(result: HandResultJSON): string {
-  if (result.bidType === 'numeric') return String(result.bidAmount);
-  return result.bidType === 'shelem' ? 'Shelem' : 'Sar-Shelem';
 }
 
 function signed(delta: number): string {
@@ -41,7 +34,6 @@ export function ScoreBar({
   matchTargetScore,
   handNumber,
   handHistory,
-  playerNames,
 }: ScoreBarProps) {
   const [open, setOpen] = useState(false);
 
@@ -89,12 +81,12 @@ export function ScoreBar({
 
       {handHistory.length > 0 && (
         <div className={styles.history}>
+          {/* Deliberately just the two numbers per hand. Declarer, bid, made/set and
+              running totals all lived here and made a five-column table out of a
+              thing people glance at; the totals above already say where the match
+              stands, so the history only has to say how it got there. */}
           <div className={styles.historyHead}>
-            <span>#</span>
-            <span>Declarer / bid</span>
-            {/* The same two dots that label the teams above, so a column needs no
-                name of its own — team names are two players' names joined and are
-                far too long to head a column with. */}
+            <span />
             <span className={styles.num}>
               <span className={`${styles.dot} ${styles.dotA}`} />
             </span>
@@ -106,18 +98,8 @@ export function ScoreBar({
           {[...handHistory].reverse().map((result) => (
             <div key={result.handNumber} className={styles.historyRow}>
               <span className={styles.historyHand}>{result.handNumber}</span>
-              <span className={styles.historyBid}>
-                <span className={styles.historyDeclarer}>{playerNames[result.declarerSeat] ?? '—'}</span>
-                <span className={result.declarerMadeBid ? styles.made : styles.set}>{describeBid(result)}</span>
-              </span>
-              <span className={styles.num}>
-                {signed(result.team0Delta)}
-                <span className={styles.runningTotal}>{result.team0Total}</span>
-              </span>
-              <span className={styles.num}>
-                {signed(result.team1Delta)}
-                <span className={styles.runningTotal}>{result.team1Total}</span>
-              </span>
+              <span className={styles.num}>{signed(result.team0Delta)}</span>
+              <span className={styles.num}>{signed(result.team1Delta)}</span>
             </div>
           ))}
         </div>

@@ -150,7 +150,7 @@
 .historyHead,
 .historyRow {
   display: grid;
-  grid-template-columns: 1.4em 1fr 3.1em 3.1em;
+  grid-template-columns: 1.6em 1fr 1fr;
   align-items: center;
   gap: 4px;
   padding: 2px 0;
