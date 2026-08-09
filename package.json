@@ -11,6 +11,8 @@
     "build": "npm run build --workspace=packages/shared && npm run build --workspace=packages/server && npm run build --workspace=packages/client",
     "test": "npm run test --workspace=packages/shared",
     "dev:server": "npm run dev --workspace=packages/server",
-    "dev:client": "npm run dev --workspace=packages/client"
+    "dev:client": "npm run dev --workspace=packages/client",
+    "deploy": "npm run deploy --workspace=packages/client",
+    "deploy:preview": "npm run deploy:preview --workspace=packages/client"
   }
 }
