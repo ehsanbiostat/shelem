@@ -9,26 +9,6 @@
   padding: 8px;
 }
 
-.status {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--color-ivory-100);
-  text-align: center;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
-}
-
-.statusSub {
-  margin-top: -6px;
-  font-size: 12px;
-  color: rgba(250, 246, 236, 0.8);
-  text-align: center;
-}
-
-.highest {
-  font-weight: 700;
-  color: var(--color-gold-300);
-}
-
 .grid {
   display: flex;
   flex-wrap: wrap;
@@ -109,21 +89,4 @@
 .btnPass {
   background: var(--color-green-400);
   color: var(--color-ink-900);
-}
-
-.history {
-  margin-top: 4px;
-  font-size: 11px;
-  color: rgba(250, 246, 236, 0.75);
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: 300px;
-}
-
-.historyItem {
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.14);
 }

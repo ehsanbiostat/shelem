@@ -6,6 +6,7 @@ export interface PlayerInfoJSON {
   seat: number;
   connected: boolean;
   handSize: number;
+  wantsRematch: boolean;
 }
 
 export interface BidRecordJSON {

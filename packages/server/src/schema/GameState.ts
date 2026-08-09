@@ -8,6 +8,9 @@ export class PlayerInfo extends Schema {
   @type('number') seat = -1;
   @type('boolean') connected = true;
   @type('number') handSize = 0;
+  /** Set when this seat has asked for a rematch at the end of a match. Per-seat
+   * rather than a count so every client can show who is still to agree. */
+  @type('boolean') wantsRematch = false;
 }
 
 export class BidRecord extends Schema {

@@ -33,6 +33,10 @@ interface JoinOptions {
  * The floor is one hand's worth of points (165 — see docs/game-rules.md), below
  * which a match would be decided by a single deal; the ceiling only keeps a typo
  * from producing a table nobody can finish. */
+/** How long the completed hand's scores stay up before the next one is dealt.
+ * Server-driven so all four players get the same pause at the same moment. */
+const HAND_REVIEW_MS = 5000;
+
 const MIN_TARGET_SCORE = 165;
 const MAX_TARGET_SCORE = 100000;
 
@@ -109,6 +113,7 @@ export class ShelemRoom extends Room<GameState> {
 
     this.onMessage('startGame', (client) => this.handleStartGame(client));
     this.onMessage('setTableOption', (client, message) => this.handleSetTableOption(client, message));
+    this.onMessage('playAgain', (client) => this.handlePlayAgain(client));
     this.onMessage('bid', (client, message) => this.handleBid(client, message));
     this.onMessage('discardWidow', (client, message) => this.handleDiscardWidow(client, message));
     this.onMessage('playCard', (client, message) => this.handlePlayCard(client, message));
@@ -453,8 +458,69 @@ export class ShelemRoom extends Room<GameState> {
       return;
     }
 
-    this.state.dealerSeat = ((this.state.dealerSeat + 1) % 4) as Seat;
-    this.startHand();
+    // Hold on the finished hand so everyone can read what just happened, rather
+    // than dealing the next one out from under them. The pause lives here, not on
+    // each client, so the whole table moves together.
+    this.state.phase = 'handComplete';
+    this.state.currentTurnSeat = -1;
+    this.clock.setTimeout(() => {
+      this.state.dealerSeat = ((this.state.dealerSeat + 1) % 4) as Seat;
+      this.startHand();
+    }, HAND_REVIEW_MS);
+  }
+
+  /** A rematch needs every seat, including any that are currently disconnected —
+   * a player who drops mid-match shouldn't have the table restarted without them.
+   * Votes are one-way for the same reason: this is agreement to play on, and
+   * letting someone withdraw turns it into a thing to keep re-checking. */
+  private handlePlayAgain(client: Client) {
+    if (this.state.phase !== 'matchComplete') return;
+    const seat = this.seatBySessionId.get(client.sessionId);
+    if (seat === undefined) return;
+
+    this.state.players[seat].wantsRematch = true;
+    if (!this.state.players.every((p) => p.sessionId !== '' && p.wantsRematch)) return;
+
+    this.resetForRematch();
+  }
+
+  /** Back to the lobby with the same people in the same seats — they can still
+   * swap there if they want, which is why seating isn't reshuffled here. A fresh
+   * match starts from a fully randomised deck (see docs/game-rules.md): there's no
+   * previous hand for this one to inherit, so the carried-over deck is dropped. */
+  private resetForRematch() {
+    this.state.team0Score = 0;
+    this.state.team1Score = 0;
+    this.state.handHistory.clear();
+    this.state.handNumber = 0;
+    this.state.declarerPointsCollected = 0;
+    this.state.defenderPointsCollected = 0;
+    this.state.declarerSeat = -1;
+    this.state.winningBidType = '';
+    this.state.winningBidAmount = 0;
+    this.state.trumpSuit = '';
+    this.state.currentTrick.clear();
+    this.state.lastTrick.clear();
+    this.state.lastTrickWinnerSeat = -1;
+    this.state.lastTrickPoints = 0;
+    this.state.bidHistory.clear();
+    this.state.tricksPlayedThisHand = 0;
+    this.state.currentTurnSeat = -1;
+    this.state.players.forEach((p) => (p.wantsRematch = false));
+
+    this.collectedDeck = null;
+    this.teamPiles = [[], []];
+    this.currentHighestBid = null;
+    this.bidEvents = [];
+    this.passedSeats = new Set();
+    this.resolvingTrick = false;
+
+    // A new match gets a new host, drawn at random from the seated players, so
+    // the same person doesn't own the settings match after match.
+    const seated = this.state.players.filter((p) => p.sessionId !== '');
+    this.state.hostSessionId = seated[Math.floor(Math.random() * seated.length)].sessionId;
+
+    this.state.phase = 'lobby';
   }
 
   // ---- Seat swap (lobby only) ----

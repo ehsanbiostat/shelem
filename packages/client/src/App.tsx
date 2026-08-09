@@ -309,12 +309,6 @@ placeholder="ABCD"
         </div>
       </div>
 
-      {state.phase === 'matchComplete' && (
-        <div className={styles.matchComplete}>
-          {state.team0Score >= state.matchTargetScore ? `${team0Name} wins the match!` : `${team1Name} wins the match!`}
-        </div>
-      )}
-
       {(state.phase === 'widow' || state.phase === 'playing') &&
         winningBid &&
         (() => {
@@ -352,6 +346,20 @@ placeholder="ABCD"
               matchTargetScore={state.matchTargetScore}
               handNumber={state.handNumber}
               handHistory={state.handHistory}
+              // The game holds the scores up at the end of a hand so everyone reads
+              // the result, and at the end of a match until the table agrees to play
+              // again — neither is the player's to dismiss.
+              heldOpen={state.phase === 'handComplete' || state.phase === 'matchComplete'}
+              rematch={
+                state.phase === 'matchComplete'
+                  ? {
+                      ready: state.players.filter((p) => p.sessionId !== '' && p.wantsRematch).length,
+                      total: state.players.filter((p) => p.sessionId !== '').length,
+                      iAmReady: !!state.players.find((p) => p.sessionId === room.sessionId)?.wantsRematch,
+                      onPlayAgain: () => room?.send('playAgain'),
+                    }
+                  : undefined
+              }
             />
           ) : null
         }
@@ -393,7 +401,6 @@ placeholder="ABCD"
               bidHistory={state.bidHistory.map((b) => ({ seat: b.seat as SeatIndex, bidType: b.bidType, amount: b.amount }))}
               mySeat={mySeat}
               currentTurnSeat={state.currentTurnSeat as SeatIndex}
-              playerNames={playerNames}
               onBid={sendBid}
             />
           ) : (
