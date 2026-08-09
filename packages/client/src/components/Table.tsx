@@ -2,7 +2,6 @@ import type { CSSProperties, ReactNode } from 'react';
 import type { Seat as SeatIndex, Suit } from '@shelem/shared';
 import styles from './Table.module.css';
 import { Seat } from './Seat.js';
-import { TableFeltMotif } from './TableFeltMotif.js';
 import { TableMetricsContext, useMeasureTableMetrics } from '../tableMetrics.js';
 import { screenSlotFor } from '../screenSlot.js';
 import { DealingOverlay } from './DealingOverlay.js';
@@ -87,11 +86,7 @@ export function Table({
   return (
     <div ref={tableRef} className={styles.tableWrap} style={{ '--u': `${metrics.u}px` } as CSSProperties}>
       <TableMetricsContext.Provider value={metrics}>
-        <div className={styles.felt}>
-          <div className={styles.feltPattern}>
-            <TableFeltMotif />
-          </div>
-        </div>
+        <div className={styles.felt} />
 
         {([0, 1, 2, 3] as SeatIndex[]).map((seat) => {
           const player = bySeat.get(seat);

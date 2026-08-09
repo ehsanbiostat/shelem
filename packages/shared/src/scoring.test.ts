@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createDeck } from './deck.js';
 import {
   cardPoints,
+  DOUBLE_NEGATIVE_THRESHOLD,
   isMatchComplete,
   resolveHandScore,
   TOTAL_HAND_POINTS,
@@ -116,5 +117,62 @@ describe('isMatchComplete', () => {
   // go negative — that must never read as having reached the target.
   it('is not complete for a team sitting on a negative score', () => {
     expect(isMatchComplete({ team0: -330, team1: 400 }, 1650)).toBe(false);
+  });
+});
+
+describe('resolveHandScore — double negative under 85', () => {
+  it('doubles a failed numeric bid when the declarers took fewer than 85', () => {
+    const result = resolveHandScore({ type: 'numeric', amount: 100 }, 60, 105);
+    expect(result.declarerMadeBid).toBe(false);
+    expect(result.declarerDoubled).toBe(true);
+    expect(result.declarerDelta).toBe(-200);
+  });
+
+  // The boundary is the whole rule, so both sides of it are pinned.
+  it('does not double at exactly 85 — the threshold is a floor, not a cutoff', () => {
+    const result = resolveHandScore({ type: 'numeric', amount: 120 }, 85, 80);
+    expect(result.declarerDoubled).toBe(false);
+    expect(result.declarerDelta).toBe(-120);
+  });
+
+  it('doubles at 84', () => {
+    const result = resolveHandScore({ type: 'numeric', amount: 120 }, 84, 81);
+    expect(result.declarerDoubled).toBe(true);
+    expect(result.declarerDelta).toBe(-240);
+  });
+
+  it('doubles against the bid, not a flat amount', () => {
+    expect(resolveHandScore({ type: 'numeric', amount: 160 }, 10, 155).declarerDelta).toBe(-320);
+    expect(resolveHandScore({ type: 'numeric', amount: 100 }, 10, 155).declarerDelta).toBe(-200);
+  });
+
+  it('applies to Shelem and Sar-Shelem too', () => {
+    expect(resolveHandScore({ type: 'shelem' }, 40, 125).declarerDelta).toBe(-330);
+    expect(resolveHandScore({ type: 'sarShelem' }, 40, 125).declarerDelta).toBe(-660);
+  });
+
+  it('still only single-penalises a failed Shelem that took 85 or more', () => {
+    expect(resolveHandScore({ type: 'shelem' }, 160, 5).declarerDelta).toBe(-165);
+    expect(resolveHandScore({ type: 'sarShelem' }, 85, 80).declarerDelta).toBe(-330);
+  });
+
+  // The double is a penalty, not a transfer — nobody receives the extra.
+  it('leaves the defenders' + String.fromCharCode(39) + ' score untouched', () => {
+    const result = resolveHandScore({ type: 'numeric', amount: 150 }, 20, 145);
+    expect(result.defenderDelta).toBe(145);
+  });
+
+  it('never doubles a made bid, since making one requires more than the threshold', () => {
+    const result = resolveHandScore({ type: 'numeric', amount: 100 }, 100, 65);
+    expect(result.declarerMadeBid).toBe(true);
+    expect(result.declarerDoubled).toBe(false);
+    expect(result.declarerDelta).toBe(100);
+  });
+});
+
+describe('DOUBLE_NEGATIVE_THRESHOLD', () => {
+  it('is just over half the points in a hand', () => {
+    expect(DOUBLE_NEGATIVE_THRESHOLD).toBe(85);
+    expect(DOUBLE_NEGATIVE_THRESHOLD).toBeGreaterThan(TOTAL_HAND_POINTS / 2);
   });
 });

@@ -51,6 +51,15 @@ Measured over 40,000 chained hands, against a fully randomised deal:
 | Shelem | Collect **all 165 points** | +165 | −165 |
 | Sar-Shelem | Collect **all 165 points** | +330 | −330 |
 
+### Double negative
+
+A declaring team that fails **and collects fewer than 85 points** loses **double** the failure amount above. 85 is just over half the 165 points in a hand, so the rule bites on a hand badly misjudged rather than one narrowly missed: fall short of the bid and it costs the bid; fail to take even half the points on the table and it costs twice.
+
+- Applies at **every tier** — a failed Shelem under 85 is −330, a failed Sar-Shelem −660.
+- The 85 is the declaring team's **total** for the hand, which includes the four cards they buried at the widow (those are their first trick, points included — see [Widow and trump](#widow-and-trump)).
+- **Defenders are unaffected.** The extra penalty is a penalty, not a transfer; nobody receives it.
+- It can never apply to a made contract: making a numeric bid needs at least 100 points and a Shelem needs all 165, both above the threshold.
+
 Shelem and Sar-Shelem outrank all numeric bids and each other (Sar-Shelem > Shelem), and either can be called at any point in the bidding, skipping over numeric bids entirely.
 
 ## Widow and trump
@@ -77,7 +86,7 @@ A-K-Q-J-10-9-8-7-6-5-4-3-2 (high to low), standard in every suit including trump
 
 ### Hand outcome
 
-- **Declarer's team**, numeric bid: if they collect ≥ bid points, they score exactly the bid amount; if not, they lose exactly the bid amount.
+- **Declarer's team**, numeric bid: if they collect ≥ bid points, they score exactly the bid amount; if not, they lose exactly the bid amount — doubled if they collected fewer than 85 (see [Double negative](#double-negative)).
 - **Declarer's team**, Shelem/Sar-Shelem: must collect all 165 points to succeed (see bid ladder table above for the score).
 - **Defending team**: always scores whatever points they actually collect in tricks, regardless of whether the declarer's team made or failed their bid.
 
