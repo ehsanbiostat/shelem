@@ -44,7 +44,7 @@
 .hand {
   position: relative;
   width: 100%;
-  height: calc(var(--u) * 26.7);
+  height: calc(var(--u) * 17.5);
   margin-top: 8px;
 }
 
@@ -65,7 +65,7 @@
   position: absolute;
   left: 50%;
   bottom: calc(var(--u) * -12);
-  margin-left: calc(var(--u) * -9.5);
+  margin-left: calc(var(--u) * -10.5);
 }
 
 /* Hover feedback — deliberately no movement.

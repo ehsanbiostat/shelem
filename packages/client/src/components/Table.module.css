@@ -46,20 +46,20 @@
    Hand.module.css). 2px, not the 6px this used to be: combined with the tightened
    --fan-thickness in Seat.module.css, that's what actually closes the gap. */
 .top {
-  top: 2px;
+  top: calc(var(--u) * -6);
   left: 50%;
   transform: translate(-50%, 0);
 }
 
 .left {
   top: 50%;
-  left: 2px;
+  left: calc(var(--u) * -6);
   transform: translate(0, -50%);
 }
 
 .right {
   top: 50%;
-  right: 2px;
+  right: calc(var(--u) * -6);
   transform: translate(0, -50%);
 }
 
@@ -70,7 +70,7 @@
  * dead-center cards further up toward this label via a transform — same
  * reasoning as the opponent seats' gap in Seat.module.css. */
 .bottom {
-  bottom: calc(var(--u) * 26.7 + 26px);
+  bottom: calc(var(--u) * 17.5 + 12px);
   left: 50%;
   transform: translate(-50%, 0);
 }
@@ -97,10 +97,10 @@
  * an over-generous constant is most of what squeezes the middle out. */
 .center {
   position: absolute;
-  top: calc(var(--u) * 19.5 + 10px);
-  bottom: calc(var(--u) * 26.7 + 26px);
-  left: calc(var(--u) * 14 + 10px);
-  right: calc(var(--u) * 14 + 10px);
+  top: calc(var(--u) * 7.7 + 34px);
+  bottom: calc(var(--u) * 17.5 + 22px);
+  left: calc(var(--u) * 7.7 + 10px);
+  right: calc(var(--u) * 7.7 + 10px);
   z-index: 1;
 }
 
@@ -112,8 +112,8 @@
  * insets can serve both. Hence two variants rather than one compromise. Stacked
  * above the seats (z-index) since it now deliberately overlaps them. */
 .centerWide {
-  top: calc(var(--u) * 19.5);
-  bottom: calc(var(--u) * 26.7);
+  top: calc(var(--u) * 7.7 + 26px);
+  bottom: calc(var(--u) * 17.5);
   left: 8px;
   right: 8px;
   z-index: 5;

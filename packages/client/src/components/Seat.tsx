@@ -21,21 +21,21 @@ const SUIT_SYMBOL: Record<Suit, string> = { spades: '\u2660', hearts: '\u2665', 
  * position and wider angles meant more spread) reads as a jumbled, crossed-
  * over mess of edges once density and angle are independent — exactly the
  * "cut into each other" / "strange orientation" look. */
-const FAN_DEGREES_PER_CARD = 3;
-const FAN_MAX_SPREAD = 30;
+const FAN_DEGREES_PER_CARD = 0;
+const FAN_MAX_SPREAD = 0;
 /** Fraction of a card's own width used as the (desired, capped-to-fit) gap
  * between adjacent card centers — smaller than 1 so cards overlap. */
 const FAN_SPACING_RATIO = 0.4;
 /** How far (in `--u`) dead-center pokes further into the table than the two
  * outermost cards — see fanCurve in fanGeometry.ts. */
-const FAN_CURVE_U = 3.5;
+const FAN_CURVE_U = 0;
 
 /** The top seat's fan uses full-size 'md' cards; the side seats' use the smaller
  * 'sm', because their footprint eats table *width* — the scarce axis on a phone.
  * See the .left/.right block in Seat.module.css for the full reasoning, and keep
  * both the size choice and these multipliers in step with it and with
  * Card.module.css's own width multipliers. */
-const FAN_CARD_SIZE = { top: 'md', left: 'sm', right: 'sm' } as const;
+const FAN_CARD_SIZE = { top: 'md', left: 'md', right: 'md' } as const;
 const CARD_WIDTH_U = { md: 9.7, sm: 6.3 } as const;
 
 export interface SeatProps {

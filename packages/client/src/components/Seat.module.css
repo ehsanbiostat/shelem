@@ -37,7 +37,7 @@
 .top,
 .bottom {
   --fan-card-w: calc(var(--u) * 9.7);
-  --fan-thickness: calc(var(--u) * 16);
+  --fan-thickness: calc(var(--u) * 13.7);
   flex-direction: column;
 }
 
@@ -58,11 +58,11 @@
  * 'sm' the same way the top seat's is to 'md'. */
 .left,
 .right {
-  --fan-card-w: calc(var(--u) * 6.3);
+  --fan-card-w: calc(var(--u) * 9.7);
   /* Same rotated-card sizing as the top seat: 8.9·cos15 + 6.3·sin15 ≈ 10.2u for
    * an 'sm' card, so 10.5u holds it with nothing to spare and the fan sits
    * against the left/right border. */
-  --fan-thickness: calc(var(--u) * 10.5);
+  --fan-thickness: calc(var(--u) * 13.7);
   min-width: var(--fan-thickness);
   flex-direction: row;
 }
@@ -83,7 +83,7 @@
    * this far past the fan's own footprint toward the table, and the label sits at
    * that same centre — so this is the closest it can sit to the cards without
    * landing on top of them. */
-  --label-gap: calc(var(--u) * 3.5 + 2px);
+  --label-gap: 4px;
   display: flex;
   flex-direction: column;
   align-items: center;
