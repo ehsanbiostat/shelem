@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Card as CardModel, Seat as SeatIndex } from '@shelem/shared';
 import styles from './LastTrickPanel.module.css';
+import { Overlay } from './Overlay.js';
 import { Card } from './Card.js';
 import { screenSlotFor } from '../screenSlot.js';
 
@@ -39,14 +40,7 @@ export function LastTrickPanel({ mySeat, plays, winnerSeat, points, playerNames 
   }
 
   return (
-    <div className={styles.panel}>
-      <div className={styles.head}>
-        <span className={styles.title}>Last trick</span>
-        <button type="button" className={styles.closeBtn} onClick={() => setOpen(false)} aria-label="Hide last trick">
-          ×
-        </button>
-      </div>
-
+    <Overlay title="Last trick" onClose={() => setOpen(false)}>
       {/* Laid out in the seats' own screen positions rather than play order, so a
           card sits where its player sits — the same reading the live trick gives. */}
       <div className={styles.grid}>
@@ -54,7 +48,7 @@ export function LastTrickPanel({ mySeat, plays, winnerSeat, points, playerNames 
           const slot = screenSlotFor(seat, mySeat);
           return (
             <div key={`${card.suit}-${card.rank}`} className={`${styles.cell} ${styles[slot]}`}>
-              <Card card={card} size="sm" />
+              <Card card={card} size="md" />
               <span className={`${styles.who} ${seat === winnerSeat ? styles.winner : ''}`}>
                 {seat === mySeat ? 'You' : (playerNames[seat] ?? `Seat ${seat + 1}`)}
               </span>
@@ -68,6 +62,6 @@ export function LastTrickPanel({ mySeat, plays, winnerSeat, points, playerNames 
           Won by <strong>{winnerSeat === mySeat ? 'you' : playerNames[winnerSeat]}</strong> · {points} pts
         </div>
       )}
-    </div>
+    </Overlay>
   );
 }
