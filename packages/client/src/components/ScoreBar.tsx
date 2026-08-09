@@ -14,6 +14,11 @@ export interface ScoreBarProps {
   handNumber: number;
   /** Every hand scored so far, oldest first. Shown newest-first below. */
   handHistory: HandResultJSON[];
+  /** Held open by the game rather than the player — the end-of-hand pause and the
+   * end of a match. Not dismissible while set. */
+  heldOpen?: boolean;
+  /** Present only at the end of a match. */
+  rematch?: { ready: number; total: number; iAmReady: boolean; onPlayAgain: () => void };
 }
 
 function signed(delta: number): string {
@@ -35,10 +40,12 @@ export function ScoreBar({
   matchTargetScore,
   handNumber,
   handHistory,
+  heldOpen = false,
+  rematch,
 }: ScoreBarProps) {
   const [open, setOpen] = useState(false);
 
-  if (!open) {
+  if (!open && !heldOpen) {
     return (
       <button type="button" className={styles.trigger} onClick={() => setOpen(true)} aria-label="Show scores">
         <span className={`${styles.dot} ${styles.dotA}`} />
@@ -51,7 +58,11 @@ export function ScoreBar({
   }
 
   return (
-    <Overlay title="Score" onClose={() => setOpen(false)}>
+    <Overlay
+      title={rematch ? 'Match complete' : heldOpen ? 'Hand complete' : 'Score'}
+      onClose={() => setOpen(false)}
+      dismissible={!heldOpen}
+    >
       <div className={styles.team}>
         <span className={`${styles.dot} ${styles.dotA}`} />
         <span className={styles.name}>{team0Name}</span>
@@ -94,6 +105,28 @@ export function ScoreBar({
               <span className={styles.num}>{signed(result.team1Delta)}</span>
             </div>
           ))}
+        </div>
+      )}
+
+      {rematch && (
+        <div className={styles.rematch}>
+          {/* Names the winner outright. The scores above imply it, but this is the
+              one moment in a match worth stating rather than leaving to arithmetic —
+              and the banner that used to say it was removed with the old layout. */}
+          <div className={styles.winner}>
+            {team0Score === team1Score ? 'Match drawn' : `${team0Score > team1Score ? team0Name : team1Name} wins`}
+          </div>
+          <button
+            type="button"
+            className={styles.rematchBtn}
+            onClick={rematch.onPlayAgain}
+            disabled={rematch.iAmReady}
+          >
+            {rematch.iAmReady ? 'Waiting for the others…' : 'Play again'}
+          </button>
+          <div className={styles.rematchCount}>
+            {rematch.ready} / {rematch.total} ready
+          </div>
         </div>
       )}
     </Overlay>

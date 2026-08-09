@@ -12,7 +12,6 @@ export interface BiddingPanelProps {
   bidHistory: BidHistoryItem[];
   mySeat: Seat;
   currentTurnSeat: Seat;
-  playerNames: Record<Seat, string>;
   onBid: (bid: Bid) => void;
 }
 
@@ -26,20 +25,20 @@ function currentHighestBid(history: BidHistoryItem[]): Bid | null {
   return null;
 }
 
-function describeBid(bid: Bid): string {
-  if (bid.type === 'numeric') return String(bid.amount);
-  if (bid.type === 'shelem') return 'Shelem';
-  if (bid.type === 'sarShelem') return 'Sar-Shelem';
-  return 'Pass';
-}
-
 const AMOUNTS: number[] = [];
 for (let amount = BID_FLOOR; amount <= BID_CAP; amount += BID_INCREMENT) AMOUNTS.push(amount);
 
 /** Renders on the felt itself (as the Table's center content) rather than as a
  * panel below it — a direct-tap grid of every bid amount, matching the bidding
- * boxes used by Trickster Cards, instead of a dropdown-plus-submit-button. */
-export function BiddingPanel({ bidHistory, mySeat, currentTurnSeat, playerNames, onBid }: BiddingPanelProps) {
+ * boxes used by Trickster Cards, instead of a dropdown-plus-submit-button.
+ *
+ * Controls and nothing else. This used to also carry a status line, the standing
+ * highest bid, and a running list of who bid what — all of which the table already
+ * says: each player's bid sits on their own label, and the gold ring says whose
+ * turn it is. Repeating it in the middle just filled the one part of the board
+ * that wants to stay empty. A player who isn't bidding now sees nothing here,
+ * which is the point. */
+export function BiddingPanel({ bidHistory, mySeat, currentTurnSeat, onBid }: BiddingPanelProps) {
   const highest = currentHighestBid(bidHistory);
   const isMyTurn = mySeat === currentTurnSeat;
 
@@ -48,13 +47,7 @@ export function BiddingPanel({ bidHistory, mySeat, currentTurnSeat, playerNames,
 
   return (
     <div className={styles.panel}>
-      <div className={styles.status}>{isMyTurn ? 'Your turn to bid' : `Waiting on ${playerNames[currentTurnSeat]}`}</div>
 
-      {highest && (
-        <div className={styles.statusSub}>
-          Highest bid: <span className={styles.highest}>{describeBid(highest)}</span>
-        </div>
-      )}
 
       {isMyTurn && (
         <>
@@ -96,16 +89,6 @@ export function BiddingPanel({ bidHistory, mySeat, currentTurnSeat, playerNames,
         </>
       )}
 
-      {bidHistory.length > 0 && (
-        <div className={styles.history}>
-          {bidHistory.map((item, i) => (
-            <span key={i} className={styles.historyItem}>
-              {playerNames[item.seat]}:{' '}
-              {describeBid(item.bidType === 'numeric' ? { type: 'numeric', amount: item.amount } : { type: item.bidType })}
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

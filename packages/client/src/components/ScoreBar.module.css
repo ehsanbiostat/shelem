@@ -158,3 +158,46 @@
   font-size: 8px;
   opacity: 0.5;
 }
+
+/* End-of-match rematch controls, shown inside the held-open score overlay. The
+   count is the whole point of showing it here: a rematch needs every seat, so
+   whoever has already agreed needs to see what they're waiting for. */
+.rematch {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  text-align: center;
+}
+
+.rematchBtn {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-green-400);
+  color: var(--color-ink-900);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.rematchBtn:disabled {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-ivory-100);
+  cursor: default;
+}
+
+.rematchCount {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.winner {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-gold-300);
+  margin-bottom: 12px;
+}

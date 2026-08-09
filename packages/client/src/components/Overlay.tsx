@@ -4,7 +4,12 @@ import styles from './Overlay.module.css';
 
 export interface OverlayProps {
   title: string;
-  onClose: () => void;
+  /** Omitted when the overlay is not the player's to close — see `dismissible`. */
+  onClose?: () => void;
+  /** False for an overlay the game is holding open, like the end-of-hand scores.
+   * Removes the close button and both escape routes, so it can't be dismissed
+   * into a table that isn't ready to be played yet. */
+  dismissible?: boolean;
   children: ReactNode;
 }
 
@@ -28,7 +33,7 @@ export interface OverlayProps {
  * dialog rendered under the "Waiting on X" text. A portal takes it out of the
  * table's stacking contexts altogether, which is the only way to be sure a modal
  * is on top of everything rather than on top of its own corner. */
-export function Overlay({ title, onClose, children }: OverlayProps) {
+export function Overlay({ title, onClose, dismissible = true, children }: OverlayProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,17 +41,17 @@ export function Overlay({ title, onClose, children }: OverlayProps) {
     cardRef.current?.focus();
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && dismissible) onClose?.();
     };
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.removeEventListener('keydown', onKeyDown);
       previouslyFocused?.focus?.();
     };
-  }, [onClose]);
+  }, [onClose, dismissible]);
 
   return createPortal(
-    <div className={styles.scrim} onClick={onClose}>
+    <div className={styles.scrim} onClick={dismissible ? onClose : undefined}>
       <div
         ref={cardRef}
         className={styles.card}
@@ -60,9 +65,11 @@ export function Overlay({ title, onClose, children }: OverlayProps) {
       >
         <div className={styles.head}>
           <span className={styles.title}>{title}</span>
-          <button type="button" className={styles.close} onClick={onClose} aria-label="Close">
-            ×
-          </button>
+          {dismissible && (
+            <button type="button" className={styles.close} onClick={onClose} aria-label="Close">
+              ×
+            </button>
+          )}
         </div>
         <div className={styles.body}>{children}</div>
       </div>
