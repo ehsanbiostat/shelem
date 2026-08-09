@@ -31,18 +31,16 @@ function CardFace({
   card,
   size,
   trump,
-  highlighted,
 }: {
   card: CardModel;
   size: CardSize;
   trump?: boolean;
-  highlighted?: boolean;
 }) {
   const Face = standardDeck[standardDeckKey(card)];
 
   return (
     <div className={`${styles.card} ${styles[size]}`}>
-      <div className={`${styles.face} ${trump ? styles.trump : ''} ${highlighted ? styles.highlighted : ''}`}>
+      <div className={`${styles.face} ${trump ? styles.trump : ''} `}>
         <Face className={styles.faceArt} />
       </div>
     </div>
@@ -67,8 +65,6 @@ export interface CardProps {
   playable?: boolean;
   /** Card's suit is the current trump — draws a subtle ring so it stands out in hand. */
   trump?: boolean;
-  /** Draws attention to the card — e.g. one of the widow cards just added to hand. */
-  highlighted?: boolean;
   /** Overrides the default (`!playable`) disabled state — for modes like widow
    * discard where every card is clickable but none should show the "legal" ring. */
   disabled?: boolean;
@@ -88,12 +84,11 @@ export function Card({
   selected = false,
   playable = false,
   trump = false,
-  highlighted = false,
   disabled,
   liftOnInteract = true,
   onClick,
 }: CardProps) {
-  const content = faceDown ? <CardBack size={size} /> : <CardFace card={card} size={size} trump={trump} highlighted={highlighted} />;
+  const content = faceDown ? <CardBack size={size} /> : <CardFace card={card} size={size} trump={trump} />;
 
   if (!onClick) return content;
 

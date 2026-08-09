@@ -12,7 +12,11 @@
   background: rgba(0, 0, 0, 0.3);
   border-radius: 999px;
   padding: 6px 8px 6px 16px;
-  margin-bottom: 6px;
+  /* Clears the widow cards at full rise (LIFT_WIDOW_U in Hand.tsx). Without it
+     they slide up behind this bar exactly when it matters most. Static rather
+     than only-while-raised because animating a margin animates layout, and this
+     bar only exists during the discard anyway. */
+  margin-bottom: calc(var(--u) * 9 + 8px);
   font-size: 13px;
   font-weight: 600;
 }
@@ -109,4 +113,9 @@
     filter: none;
     box-shadow: none;
   }
+}
+
+/* The hand while the widow cards are being shown. See Hand.tsx. */
+.inert {
+  pointer-events: none;
 }

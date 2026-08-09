@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Card as CardModel, Suit } from '@shelem/shared';
 import { fanAngles } from '@shelem/shared';
@@ -14,7 +15,11 @@ export interface HandProps {
   onPlay: (card: CardModel) => void;
   selectedCard: CardModel | null;
   trumpSuit?: Suit | null;
-  /** Cards to call out with a highlight ring — e.g. the widow cards just added. */
+  /** The four cards the widow pickup just added. They rise clear of the hand for a
+   * couple of seconds so the declarer can see what they got — the fan is sorted by
+   * suit, so the new cards scatter through it rather than arriving as a group, and
+   * there is otherwise no way to tell which four they were. The hand is inert while
+   * they are up, so a tap can't turn "new" into "selected" mid-showcase. */
   highlightedCards?: CardModel[];
   /** When set, the hand is in discard-picking mode: clicking a card toggles it in
    * this list instead of playing it, and a confirm bar appears once 4 are chosen.
@@ -63,6 +68,13 @@ const FAN_CURVE_U = 0;
  * that reads as nothing on a phone and as a twitch on a desktop. */
 const LIFT_PLAYABLE_U = 1.6;
 const LIFT_SELECTED_U = 3.6;
+/** How far the four widow cards ride above the rest when the declarer picks them
+ * up. Deliberately well clear of LIFT_SELECTED_U — selection is also a lift, so if
+ * the two were close the new cards would read as already-chosen ones. */
+const LIFT_WIDOW_U = 9;
+/** How long they stay up. Long enough to find four cards scattered across a
+ * sorted fan, short enough not to be waited on. */
+const WIDOW_SHOWCASE_MS = 2500;
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
   return a.suit === b.suit && a.rank === b.rank;
@@ -83,6 +95,20 @@ export function Hand({
   onToggleDiscard,
   onConfirmDiscard,
 }: HandProps) {
+  // Keyed on the actual cards, so the showcase runs once per widow pickup rather
+  // than on every re-render while the declarer is deciding.
+  const widowKey = (highlightedCards ?? []).map(cardKey).join(',');
+  const [showcasing, setShowcasing] = useState(false);
+  useEffect(() => {
+    if (!widowKey) {
+      setShowcasing(false);
+      return;
+    }
+    setShowcasing(true);
+    const timer = window.setTimeout(() => setShowcasing(false), WIDOW_SHOWCASE_MS);
+    return () => clearTimeout(timer);
+  }, [widowKey]);
+
   const total = cards.length;
   const isDiscardMode = discardSelection !== undefined;
   const angles = fanAngles(total, FAN_DEGREES_PER_CARD, FAN_MAX_SPREAD);
@@ -108,7 +134,11 @@ export function Hand({
         </div>
       )}
 
-      <div className={styles.hand}>
+      {/* Taps are blocked while the widow cards are up, via pointer-events rather
+          than the buttons' disabled state: disabled cards are greyed out, and
+          greying the whole hand for two seconds to protect four raised cards is a
+          worse cure than the problem. */}
+      <div className={`${styles.hand} ${showcasing ? styles.inert : ''}`}>
         <AnimatePresence>
           {cards.map((card, i) => {
             const angle = angles[i];
@@ -116,8 +146,15 @@ export function Hand({
             const selected = isDiscardMode
               ? discardSelection!.some((c) => cardsEqual(c, card))
               : !!selectedCard && cardsEqual(selectedCard, card);
-            const highlighted = !!highlightedCards?.some((c) => cardsEqual(c, card));
-            const lift = selected ? LIFT_SELECTED_U * u : playable ? LIFT_PLAYABLE_U * u : 0;
+            const isWidowCard = !!highlightedCards?.some((c) => cardsEqual(c, card));
+            const rising = showcasing && isWidowCard;
+            const lift = rising
+              ? LIFT_WIDOW_U * u
+              : selected
+                ? LIFT_SELECTED_U * u
+                : playable
+                  ? LIFT_PLAYABLE_U * u
+                  : 0;
             return (
               <motion.div
                 key={cardKey(card)}
@@ -133,7 +170,6 @@ export function Hand({
                   size="xl"
                   playable={playable}
                   selected={selected}
-                  highlighted={highlighted}
                   trump={!!trumpSuit && card.suit === trumpSuit}
                   disabled={isDiscardMode ? false : undefined}
                   liftOnInteract={false}
