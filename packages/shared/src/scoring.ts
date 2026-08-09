@@ -8,6 +8,10 @@ export const TOTAL_HAND_POINTS = 165;
  * hand badly misjudged rather than one narrowly missed: fall short of the bid and
  * it costs the bid, fail to take even half the points and it costs twice. */
 export const DOUBLE_NEGATIVE_THRESHOLD = 85;
+/** What Shelem and Sar-Shelem pay, won or lost. Both claim every point in the
+ * hand, so both are worth the same; Sar-Shelem outranks Shelem in the bidding by
+ * being the harder way to do it (no widow exchange), not the richer one. */
+export const SLAM_STAKE = 330;
 
 export function cardPoints(card: Card): number {
   if (card.rank === 'A' || card.rank === '10') return 10;
@@ -37,8 +41,9 @@ export interface HandScore {
  * - A numeric bid succeeds if the declarer's team collected at least the bid amount;
  *   they score exactly the bid amount either way (excess points don't matter), or
  *   lose exactly the bid amount on failure.
- * - Shelem/Sar-Shelem require collecting all 165 points; success/failure pays the
- *   fixed amount for that tier (+/-165 or +/-330).
+ * - Shelem and Sar-Shelem both require collecting all 165 points, and both pay
+ *   SLAM_STAKE either way. They differ in how they are played, not in what they
+ *   are worth — see docs/game-rules.md.
  * - Any failed contract where the declaring team collected fewer than
  *   DOUBLE_NEGATIVE_THRESHOLD points loses *double* the stake. This applies at every
  *   tier, so a failed Shelem under the threshold is -330 and a Sar-Shelem -660.
@@ -54,7 +59,7 @@ export function resolveHandScore(
 ): HandScore {
   const defenderDelta = defenderPointsCollected;
 
-  const stake = bid.type === 'numeric' ? bid.amount : bid.type === 'shelem' ? 165 : 330;
+  const stake = bid.type === 'numeric' ? bid.amount : SLAM_STAKE;
   const made =
     bid.type === 'numeric'
       ? declarerPointsCollected >= bid.amount

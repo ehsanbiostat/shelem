@@ -48,8 +48,8 @@ Measured over 40,000 chained hands, against a fully randomised deal:
 | Tier | Requirement | Success | Failure |
 |---|---|---|---|
 | Numeric (100–160, multiples of 5) | Collect ≥ bid points | Score exactly the bid amount (excess doesn't matter) | Lose exactly the bid amount |
-| Shelem | Collect **all 165 points** | +165 | −165 |
-| Sar-Shelem | Collect **all 165 points** | +330 | −330 |
+| Shelem | Collect **all 165 points** | +330 | −330 |
+| Sar-Shelem | Collect **all 165 points**, without the widow exchange | +330 | −330 |
 
 ### Double negative
 
@@ -61,6 +61,14 @@ A declaring team that fails **and collects fewer than 85 points** loses **double
 - It can never apply to a made contract: making a numeric bid needs at least 100 points and a Shelem needs all 165, both above the threshold.
 
 Shelem and Sar-Shelem outrank all numeric bids and each other (Sar-Shelem > Shelem), and either can be called at any point in the bidding, skipping over numeric bids entirely.
+
+The two are worth **the same**. Sar-Shelem outranks Shelem by being the harder way to claim every point — it is played without the widow exchange — not by paying more.
+
+### Sar-Shelem and the widow
+
+A Sar-Shelem declarer does not take up the widow or choose a discard. The four cards are **shown to them alone**, and then buried as their discard exactly as a chosen one would be — so their points still count for the declaring team, which is what keeps the contract reachable at all. A widow holding an ace would otherwise put all 165 out of reach before a card was played.
+
+The reveal is dismissed by the declarer, not on a timer: it is the only time those cards are ever seen, and the defenders never see them.
 
 ## Widow and trump
 
@@ -87,7 +95,7 @@ A-K-Q-J-10-9-8-7-6-5-4-3-2 (high to low), standard in every suit including trump
 ### Hand outcome
 
 - **Declarer's team**, numeric bid: if they collect ≥ bid points, they score exactly the bid amount; if not, they lose exactly the bid amount — doubled if they collected fewer than 85 (see [Double negative](#double-negative)).
-- **Declarer's team**, Shelem/Sar-Shelem: must collect all 165 points to succeed (see bid ladder table above for the score).
+- **Declarer's team**, Shelem/Sar-Shelem: must collect all 165 points to succeed, scoring ±330 (see bid ladder table above) — or −660 where the double-negative rule applies.
 - **Defending team**: always scores whatever points they actually collect in tricks, regardless of whether the declarer's team made or failed their bid.
 
 ## Match structure

@@ -1,0 +1,29 @@
+.blurb {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  opacity: 0.75;
+}
+
+/* Four cards laid flat in a row — they are being shown, not arranged, so there is
+   no fan and no seating to reproduce here. */
+.cards {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.continueBtn {
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-green-400);
+  color: var(--color-ink-900);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
