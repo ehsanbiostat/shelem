@@ -69,17 +69,17 @@ describe('resolveHandScore', () => {
     expect(result.defenderDelta).toBe(65);
   });
 
-  it('Shelem made (all 165 points): +165', () => {
+  it('Shelem made (all 165 points): +330', () => {
     const result = resolveHandScore({ type: 'shelem' }, 165, 0);
     expect(result.declarerMadeBid).toBe(true);
-    expect(result.declarerDelta).toBe(165);
+    expect(result.declarerDelta).toBe(330);
     expect(result.defenderDelta).toBe(0);
   });
 
-  it('Shelem failed (anything less than all 165): -165', () => {
+  it('Shelem failed (anything less than all 165): -330', () => {
     const result = resolveHandScore({ type: 'shelem' }, 160, 5);
     expect(result.declarerMadeBid).toBe(false);
-    expect(result.declarerDelta).toBe(-165);
+    expect(result.declarerDelta).toBe(-330);
     expect(result.defenderDelta).toBe(5);
   });
 
@@ -92,6 +92,17 @@ describe('resolveHandScore', () => {
     const result = resolveHandScore({ type: 'sarShelem' }, 150, 15);
     expect(result.declarerDelta).toBe(-330);
     expect(result.defenderDelta).toBe(15);
+  });
+
+  // The two slam bids are worth the same. Sar-Shelem outranks Shelem in the
+  // bidding by being harder to play, not by paying more.
+  it('scores Shelem and Sar-Shelem identically', () => {
+    expect(resolveHandScore({ type: 'shelem' }, 165, 0).declarerDelta).toBe(
+      resolveHandScore({ type: 'sarShelem' }, 165, 0).declarerDelta,
+    );
+    expect(resolveHandScore({ type: 'shelem' }, 150, 15).declarerDelta).toBe(
+      resolveHandScore({ type: 'sarShelem' }, 150, 15).declarerDelta,
+    );
   });
 });
 
@@ -147,12 +158,12 @@ describe('resolveHandScore — double negative under 85', () => {
   });
 
   it('applies to Shelem and Sar-Shelem too', () => {
-    expect(resolveHandScore({ type: 'shelem' }, 40, 125).declarerDelta).toBe(-330);
+    expect(resolveHandScore({ type: 'shelem' }, 40, 125).declarerDelta).toBe(-660);
     expect(resolveHandScore({ type: 'sarShelem' }, 40, 125).declarerDelta).toBe(-660);
   });
 
   it('still only single-penalises a failed Shelem that took 85 or more', () => {
-    expect(resolveHandScore({ type: 'shelem' }, 160, 5).declarerDelta).toBe(-165);
+    expect(resolveHandScore({ type: 'shelem' }, 160, 5).declarerDelta).toBe(-330);
     expect(resolveHandScore({ type: 'sarShelem' }, 85, 80).declarerDelta).toBe(-330);
   });
 

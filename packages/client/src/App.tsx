@@ -14,6 +14,7 @@ import { BiddingPanel } from './components/BiddingPanel.js';
 import { Hand } from './components/Hand.js';
 import { LastTrickPanel } from './components/LastTrickPanel.js';
 import { TableSettings } from './components/TableSettings.js';
+import { WidowReveal } from './components/WidowReveal.js';
 import { bidSound, gameStartSound, isMuted, playCardSound, setMuted, shuffleSound, trickClearedSound } from './sound.js';
 
 function cardsEqual(a: CardModel, b: CardModel): boolean {
@@ -46,6 +47,8 @@ export default function App() {
   const widowAddedRef = useRef<CardModel[]>([]);
   const [muted, setMutedState] = useState(isMuted);
   const [dealing, setDealing] = useState<{ dealerSeat: SeatIndex } | null>(null);
+  // The four cards a Sar-Shelem declarer is shown before they're buried.
+  const [sarShelemWidow, setSarShelemWidow] = useState<CardModel[] | null>(null);
   const reduceMotion = useReducedMotion();
 
   // Trump is unknown (and every suit-color-alternating order is equivalent) until the
@@ -140,6 +143,7 @@ export default function App() {
         return cards;
       });
     });
+    joined.onMessage('sarShelemWidow', (cards: CardModel[]) => setSarShelemWidow(cards));
     joined.onMessage('actionRejected', (payload: { reason?: string }) => setError(payload?.reason ?? 'Action rejected'));
   }
 
@@ -158,6 +162,7 @@ export default function App() {
     setRawHand([]);
     setSelectedCard(null);
     setWidowSelection([]);
+    setSarShelemWidow(null);
     setRoomIdInput('');
     setError(null);
   }
@@ -274,6 +279,9 @@ placeholder="ABCD"
   }
 
   const winningBid = winningBidFrom(state);
+  // A Sar-Shelem declarer never picks a discard, so the widow phase looks entirely
+  // different for them: no picker, just the reveal below.
+  const isSarShelem = state.winningBidType === 'sarShelem';
   const currentTrickPlays = state.currentTrick.map((p) => ({ seat: p.seat as SeatIndex, card: toCard(p) }));
   const lastTrickPlays = state.lastTrick.map((p) => ({ seat: p.seat as SeatIndex, card: toCard(p) }));
   const leadSuit = currentTrickPlays.length > 0 ? currentTrickPlays[0].card.suit : null;
@@ -409,7 +417,7 @@ placeholder="ABCD"
           )
         }
         bottomOverlay={
-          state.phase === 'widow' && state.declarerSeat === mySeat ? (
+          state.phase === 'widow' && state.declarerSeat === mySeat && !isSarShelem ? (
             <Hand
               cards={hand}
               legalCards={hand}
@@ -421,7 +429,11 @@ placeholder="ABCD"
               onToggleDiscard={toggleWidowCard}
               onConfirmDiscard={confirmWidowDiscard}
             />
-          ) : hand.length > 0 && state.phase !== 'widow' ? (
+          ) : // A Sar-Shelem declarer keeps their twelve through the widow phase and
+          // should see them while the four buried cards are on screen — that is the
+          // comparison the reveal exists for. It also means the hand doesn't pop
+          // into existence the moment they press Continue.
+          hand.length > 0 && (state.phase !== 'widow' || isSarShelem) ? (
             <Hand
               cards={hand}
               legalCards={state.phase === 'playing' ? legal : []}
@@ -452,6 +464,16 @@ placeholder="ABCD"
               ))
           )}
         </div>
+      )}
+
+      {state.phase === 'widow' && state.declarerSeat === mySeat && isSarShelem && sarShelemWidow && (
+        <WidowReveal
+          cards={sarShelemWidow}
+          onContinue={() => {
+            room?.send('confirmSarShelemWidow');
+            setSarShelemWidow(null);
+          }}
+        />
       )}
 
       {error && <p className={styles.error}>{error}</p>}

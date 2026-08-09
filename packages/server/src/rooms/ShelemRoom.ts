@@ -116,6 +116,7 @@ export class ShelemRoom extends Room<GameState> {
     this.onMessage('playAgain', (client) => this.handlePlayAgain(client));
     this.onMessage('bid', (client, message) => this.handleBid(client, message));
     this.onMessage('discardWidow', (client, message) => this.handleDiscardWidow(client, message));
+    this.onMessage('confirmSarShelemWidow', (client) => this.handleConfirmSarShelemWidow(client));
     this.onMessage('playCard', (client, message) => this.handlePlayCard(client, message));
     this.onMessage('requestSeatSwap', (client, message) => this.handleRequestSeatSwap(client, message));
     this.onMessage('respondSeatSwap', (client, message) => this.handleRespondSeatSwap(client, message));
@@ -249,9 +250,41 @@ export class ShelemRoom extends Room<GameState> {
     this.state.phase = 'widow';
     this.state.currentTurnSeat = declarerSeat;
 
+    // Sar-Shelem is played without the widow exchange: the declarer is shown the
+    // four cards and they are then buried as their discard, unchosen. The reveal
+    // goes only to them — the defenders learn nothing about which cards are out.
+    if (winningBid.type === 'sarShelem') {
+      this.clientFor(declarerSeat)?.send('sarShelemWidow', this.widow);
+      return;
+    }
+
     this.hands[declarerSeat] = this.hands[declarerSeat].concat(this.widow);
     this.widow = [];
     this.sendHand(declarerSeat);
+  }
+
+  /** The declarer has seen the Sar-Shelem widow and is ready to play. The four
+   * cards are buried exactly as a chosen discard would be — they become the
+   * declaring team's first trick, points included, which is what makes the
+   * contract reachable at all: a widow holding an ace would otherwise put all 165
+   * out of reach before a card was played. */
+  private handleConfirmSarShelemWidow(client: Client) {
+    if (this.state.phase !== 'widow') return;
+    if (this.state.winningBidType !== 'sarShelem') return;
+    const seat = this.seatBySessionId.get(client.sessionId);
+    if (seat === undefined || seat !== this.state.declarerSeat) return;
+
+    this.state.declarerPointsCollected += trickPoints(this.widow);
+    this.teamPiles[teamForSeat(seat)].push(...this.widow);
+    this.widow = [];
+
+    this.state.phase = 'playing';
+    this.state.currentTurnSeat = seat;
+  }
+
+  private clientFor(seat: Seat): Client | undefined {
+    const sessionId = this.state.players[seat].sessionId;
+    return sessionId ? this.clients.find((c) => c.sessionId === sessionId) : undefined;
   }
 
   private nextActiveSeat(from: Seat): Seat {
@@ -282,6 +315,8 @@ export class ShelemRoom extends Room<GameState> {
 
   private handleDiscardWidow(client: Client, message: { cards?: { suit: Suit; rank: Rank }[] }) {
     if (this.state.phase !== 'widow') return;
+    // A Sar-Shelem declarer never chooses a discard; theirs is buried for them.
+    if (this.state.winningBidType === 'sarShelem') return;
     const seat = this.seatBySessionId.get(client.sessionId);
     if (seat === undefined || seat !== this.state.declarerSeat) return;
 
