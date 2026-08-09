@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import styles from './ScoreBar.module.css';
+import { Overlay } from './Overlay.js';
 import type { HandResultJSON } from '../roomState.js';
 
 export interface ScoreBarProps {
@@ -49,17 +50,8 @@ export function ScoreBar({
     );
   }
 
-  // A <div> with its own close control rather than one big <button>: the history
-  // below scrolls, and every scroll-grab inside a button would collapse the panel.
   return (
-    <div className={styles.panel}>
-      <div className={styles.panelHead}>
-        <span className={styles.panelTitle}>Score</span>
-        <button type="button" className={styles.closeBtn} onClick={() => setOpen(false)} aria-label="Hide scores">
-          ×
-        </button>
-      </div>
-
+    <Overlay title="Score" onClose={() => setOpen(false)}>
       <div className={styles.team}>
         <span className={`${styles.dot} ${styles.dotA}`} />
         <span className={styles.name}>{team0Name}</span>
@@ -104,6 +96,6 @@ export function ScoreBar({
           ))}
         </div>
       )}
-    </div>
+    </Overlay>
   );
 }

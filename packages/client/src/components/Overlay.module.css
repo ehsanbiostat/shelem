@@ -1,0 +1,74 @@
+/* Fixed, not absolute: this deliberately escapes the table and centres on the
+   window. Nothing in the chain above it (gameShell -> tableWrap -> the corner
+   slots) sets transform, filter or perspective, any of which would make a fixed
+   child position against that ancestor instead of the viewport. */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(4, 20, 16, 0.62);
+  backdrop-filter: blur(3px);
+}
+
+.card {
+  width: 100%;
+  max-width: 340px;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-ivory-100);
+  background: rgba(10, 34, 28, 0.97);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  outline: none;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+/* A comfortable tap target, not just a glyph — this is the primary way out on a
+   phone, where there is no escape key. */
+.close {
+  appearance: none;
+  border: none;
+  background: rgba(255, 255, 255, 0.09);
+  color: var(--color-ivory-100);
+  font-family: inherit;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.body {
+  padding: 14px 16px 16px;
+  overflow-y: auto;
+}
