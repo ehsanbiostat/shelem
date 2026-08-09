@@ -3,6 +3,11 @@ import type { Bid, Card } from './types.js';
 export const TRICK_BONUS = 5;
 export const TRICKS_PER_HAND = 13; // 12 played + the buried widow-discard trick
 export const TOTAL_HAND_POINTS = 165;
+/** A declaring team that collects fewer points than this loses double their bid
+ * instead of single. Just over half of the 165 available, so the rule bites on a
+ * hand badly misjudged rather than one narrowly missed: fall short of the bid and
+ * it costs the bid, fail to take even half the points and it costs twice. */
+export const DOUBLE_NEGATIVE_THRESHOLD = 85;
 
 export function cardPoints(card: Card): number {
   if (card.rank === 'A' || card.rank === '10') return 10;
@@ -19,18 +24,28 @@ export interface HandScore {
   declarerDelta: number;
   defenderDelta: number;
   declarerMadeBid: boolean;
+  /** True when the loss was doubled for falling under DOUBLE_NEGATIVE_THRESHOLD. */
+  declarerDoubled: boolean;
 }
 
 /**
  * Resolves the score delta for both teams at the end of a hand.
  *
  * - The defending team always scores exactly the points they collected in tricks,
- *   independent of whether the declarer's team made their bid.
+ *   independent of anything the declaring team does — including the double below,
+ *   which is a penalty rather than a transfer.
  * - A numeric bid succeeds if the declarer's team collected at least the bid amount;
  *   they score exactly the bid amount either way (excess points don't matter), or
  *   lose exactly the bid amount on failure.
  * - Shelem/Sar-Shelem require collecting all 165 points; success/failure pays the
  *   fixed amount for that tier (+/-165 or +/-330).
+ * - Any failed contract where the declaring team collected fewer than
+ *   DOUBLE_NEGATIVE_THRESHOLD points loses *double* the stake. This applies at every
+ *   tier, so a failed Shelem under the threshold is -330 and a Sar-Shelem -660.
+ *
+ * The double can never collide with a made contract: making a numeric bid needs at
+ * least BID_FLOOR (100) points and a Shelem needs all 165, both of which are above
+ * the threshold, so anything under it has failed by definition.
  */
 export function resolveHandScore(
   bid: Exclude<Bid, { type: 'pass' }>,
@@ -39,14 +54,21 @@ export function resolveHandScore(
 ): HandScore {
   const defenderDelta = defenderPointsCollected;
 
-  if (bid.type === 'numeric') {
-    const made = declarerPointsCollected >= bid.amount;
-    return { declarerDelta: made ? bid.amount : -bid.amount, defenderDelta, declarerMadeBid: made };
-  }
+  const stake = bid.type === 'numeric' ? bid.amount : bid.type === 'shelem' ? 165 : 330;
+  const made =
+    bid.type === 'numeric'
+      ? declarerPointsCollected >= bid.amount
+      : declarerPointsCollected === TOTAL_HAND_POINTS;
 
-  const made = declarerPointsCollected === TOTAL_HAND_POINTS;
-  const stake = bid.type === 'shelem' ? 165 : 330;
-  return { declarerDelta: made ? stake : -stake, defenderDelta, declarerMadeBid: made };
+  if (made) return { declarerDelta: stake, defenderDelta, declarerMadeBid: true, declarerDoubled: false };
+
+  const doubled = declarerPointsCollected < DOUBLE_NEGATIVE_THRESHOLD;
+  return {
+    declarerDelta: doubled ? -stake * 2 : -stake,
+    defenderDelta,
+    declarerMadeBid: false,
+    declarerDoubled: doubled,
+  };
 }
 
 export interface MatchScores {
