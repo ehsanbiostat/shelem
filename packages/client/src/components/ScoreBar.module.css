@@ -1,6 +1,5 @@
-/* The expanded view's frame lives in Overlay now; what remains here is its
-   content. Sizes are up across the board — this used to be squeezed into a corner
-   at 10-11px, which is why it was hard to read on a phone. */
+/* The corner trigger. The expanded view's frame lives in Overlay and its content
+   is the table further down — nothing here belongs to both. */
 .trigger {
   appearance: none;
   border: none;
@@ -9,11 +8,7 @@
   background: rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(3px);
   border-radius: var(--radius-md);
-}
-
-/* Collapsed default (see ScoreBar.tsx) — just enough to glance at the running
- * score without taking any real space from the board; tap to see the rest. */
-.trigger {
+  cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -34,13 +29,8 @@
   opacity: 0.6;
 }
 
-.team {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-}
-
+/* Team colours, shared by the collapsed trigger and the table's column headers so
+   the two views identify a team the same way. */
 .dot {
   width: 10px;
   height: 10px;
@@ -54,109 +44,6 @@
 
 .dotB {
   background: var(--color-ruby-500);
-}
-
-.name {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.score {
-  font-weight: 700;
-  font-size: 17px;
-  font-variant-numeric: tabular-nums;
-}
-
-.handPoints {
-  font-size: 12px;
-  opacity: 0.65;
-  margin: 2px 0 10px 18px;
-  font-variant-numeric: tabular-nums;
-}
-
-.meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 4px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  opacity: 0.65;
-  font-size: 13px;
-}
-
-/* The per-hand history: how the match reached the totals above, rather than only
-   the totals. Newest hand first (see ScoreBar.tsx). Capped in height and scrolled
-   so a long match can't grow the panel off the felt. */
-.history {
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-  font-size: 14px;
-}
-
-.historyHead,
-.historyRow {
-  display: grid;
-  grid-template-columns: 1.6em 1fr 1fr;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 0;
-}
-
-.historyHead {
-  opacity: 0.7;
-  font-size: 12px;
-}
-
-.historyRow + .historyRow {
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.historyHand {
-  opacity: 0.6;
-  font-variant-numeric: tabular-nums;
-}
-
-.historyBid {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  min-width: 0;
-}
-
-.historyDeclarer {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  opacity: 0.75;
-}
-
-/* Whether the declarer made or was set is the thing you scan a history for, so
-   it's carried by color on the bid itself rather than an extra column. */
-.made {
-  font-weight: 700;
-  color: var(--color-gold-300);
-}
-
-.set {
-  font-weight: 700;
-  color: #e88b8b;
-}
-
-.num {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  font-variant-numeric: tabular-nums;
-}
-
-.runningTotal {
-  font-size: 8px;
-  opacity: 0.5;
 }
 
 /* End-of-match rematch controls, shown inside the held-open score overlay. The
@@ -200,4 +87,77 @@
   font-weight: 700;
   color: var(--color-gold-300);
   margin-bottom: 12px;
+}
+
+/* Teams across the top, figures as rows beneath. One grid for every row so the
+   three columns line up from the header down through the history, rather than
+   each section inventing its own alignment. */
+.table {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+/* Team names are two players' names joined, so they are long by nature. Smaller
+   than the figures they head, and allowed to wrap onto a second line — never
+   truncated, because a half-shown name is worse than a tall one. */
+.headRow {
+  align-items: end;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.teamHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 6px;
+  text-align: right;
+  font-size: 12px;
+  line-height: 1.25;
+  opacity: 0.85;
+}
+
+.label {
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The match score: the one figure the panel exists to show. */
+.totalRow {
+  padding: 10px 0 6px;
+}
+
+.totalRow .label {
+  opacity: 0.85;
+}
+
+.totalRow .num {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Everything that qualifies the total — the hand in progress, and each hand
+   already played — sits below it and smaller. */
+.minorRow {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.history {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
 }

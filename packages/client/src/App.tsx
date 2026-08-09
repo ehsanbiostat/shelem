@@ -346,6 +346,7 @@ placeholder="ABCD"
               matchTargetScore={state.matchTargetScore}
               handNumber={state.handNumber}
               handHistory={state.handHistory}
+              playerNames={playerNames}
               // The game holds the scores up at the end of a hand so everyone reads
               // the result, and at the end of a match until the table agrees to play
               // again — neither is the player's to dismiss.
