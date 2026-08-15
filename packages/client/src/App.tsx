@@ -331,6 +331,25 @@ placeholder="ABCD"
   const pendingSwapForMe =
     state.pendingSeatSwap && state.pendingSeatSwap.toSeat === mySeat ? state.pendingSeatSwap : null;
 
+  // The widow is on the table from the end of the deal until it reaches whoever won
+  // the bid. Held back while `dealing` is set so it doesn't sit there through the
+  // animation that is still busy dealing it — the deal's last block lands on this
+  // exact spot, and the pile takes over from there. On a redeal `dealing` comes back,
+  // which is what triggers the pile's fly-back on the way out.
+  const widow =
+    (state.phase === 'bidding' || state.phase === 'widow') && !dealing
+      ? {
+          dealerSeat: state.dealerSeat as SeatIndex,
+          declarerSeat: state.declarerSeat >= 0 ? (state.declarerSeat as SeatIndex) : null,
+          // Only ever non-empty on the declarer's own client: it's the diff between
+          // their 12-card hand and the 16 that came back.
+          faces: widowAddedRef.current,
+          // A Sar-Shelem played without the exchange never puts these cards in a
+          // hand — they're buried unchosen — so WidowReveal is the reveal, not this.
+          flip: !(isSarShelem && !state.config.sarShelemTakesWidow),
+        }
+      : null;
+
   return (
     <MotionConfig reducedMotion="user">
     <div className={styles.gameShell}>
@@ -384,6 +403,7 @@ placeholder="ABCD"
         trumpSuit={trumpSuit}
         dealing={dealing}
         onDealDone={finishDeal}
+        widow={widow}
         cornerPanel={
           // Nothing to score between matches: the totals have already been reset and
           // the next match's rules aren't settled yet.
