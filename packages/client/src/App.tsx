@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Room } from 'colyseus.js';
 import { MotionConfig, useReducedMotion } from 'framer-motion';
-import type { Bid, Card as CardModel, Seat as SeatIndex, Team } from '@shelem/shared';
-import { legalCards, teamForSeat } from '@shelem/shared';
+import type { Bid, Card as CardModel, Seat as SeatIndex, TableConfig, Team } from '@shelem/shared';
+import { DEFAULT_TABLE_CONFIG, legalCards, teamForSeat, validateTableConfig } from '@shelem/shared';
 import styles from './App.module.css';
 import { colyseusClient } from './colyseusClient';
 import { sortHand } from './cardSort';
@@ -13,7 +13,8 @@ import { ScoreBar } from './components/ScoreBar.js';
 import { BiddingPanel } from './components/BiddingPanel.js';
 import { Hand } from './components/Hand.js';
 import { LastTrickPanel } from './components/LastTrickPanel.js';
-import { TableSettings } from './components/TableSettings.js';
+import { ConfigureTable } from './components/ConfigureTable.js';
+import { RulesSummary } from './components/RulesSummary.js';
 import { WidowReveal } from './components/WidowReveal.js';
 import { bidSound, gameStartSound, isMuted, playCardSound, setMuted, shuffleSound, trickClearedSound } from './sound.js';
 
@@ -31,9 +32,30 @@ function cardsEqual(a: CardModel, b: CardModel): boolean {
  * out, which is exactly the case this needs to survive. */
 const RECONNECT_STORAGE_KEY = 'shelem:reconnectionToken';
 
+/** The last rules this browser created a table with, so someone who plays the same
+ * house rules every week doesn't re-enter them every week. Only a starting point for
+ * the create screen — the table's actual rules are whatever the server accepted. */
+const CONFIG_STORAGE_KEY = 'shelem:tableConfig';
+
+function loadStoredConfig(): TableConfig {
+  const stored = localStorage.getItem(CONFIG_STORAGE_KEY);
+  if (!stored) return DEFAULT_TABLE_CONFIG;
+  try {
+    // Validated rather than trusted: this is old data from a possibly older version
+    // of the game, and a config that no longer passes should quietly become the
+    // default rather than pre-filling a form that can't be submitted.
+    const parsed = validateTableConfig(JSON.parse(stored));
+    return parsed.ok ? parsed.config : DEFAULT_TABLE_CONFIG;
+  } catch {
+    return DEFAULT_TABLE_CONFIG;
+  }
+}
+
 export default function App() {
   const [name, setName] = useState('');
   const [roomIdInput, setRoomIdInput] = useState('');
+  // Set while the create-table screen is open, before any room exists.
+  const [configuringNewTable, setConfiguringNewTable] = useState(false);
   const [room, setRoom] = useState<Room | null>(null);
   const [reconnecting, setReconnecting] = useState(() => !!localStorage.getItem(RECONNECT_STORAGE_KEY));
   const [state, setState] = useState<GameStateJSON | null>(null);
@@ -112,9 +134,11 @@ export default function App() {
       .finally(() => setReconnecting(false));
   }, []);
 
-  async function createTable() {
+  async function createTable(config: TableConfig) {
     try {
-      const joined = await colyseusClient.create('shelem', { name });
+      const joined = await colyseusClient.create('shelem', { name, config });
+      localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(config));
+      setConfiguringNewTable(false);
       attachRoom(joined);
     } catch (err) {
       setError(String(err));
@@ -164,11 +188,25 @@ export default function App() {
     setWidowSelection([]);
     setSarShelemWidow(null);
     setRoomIdInput('');
+    setConfiguringNewTable(false);
     setError(null);
   }
 
   if (reconnecting) {
     return <div className={styles.lobbyWaiting}>Reconnecting…</div>;
+  }
+
+  if (configuringNewTable) {
+    return (
+      <ConfigureTable
+        initial={loadStoredConfig()}
+        title="New table"
+        subtitle="These rules are fixed for the whole match, so settle them now."
+        submitLabel="Create table"
+        onSubmit={createTable}
+        onCancel={() => setConfiguringNewTable(false)}
+      />
+    );
   }
 
   if (!room || !state) {
@@ -183,7 +221,7 @@ export default function App() {
             <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} />
           </label>
 
-          <button className={styles.primaryBtn} onClick={createTable} disabled={!name}>
+          <button className={styles.primaryBtn} onClick={() => setConfiguringNewTable(true)} disabled={!name}>
             Create a table
           </button>
 
@@ -215,6 +253,8 @@ placeholder="ABCD"
   const mySeat = seatOf(room.sessionId, state.players);
   const playerNames: Record<number, string> = {};
   state.players.forEach((p) => (playerNames[p.seat] = p.name || `Seat ${p.seat + 1}`));
+  const isHost = room.sessionId === state.hostSessionId;
+  const hostSeat = seatOf(state.hostSessionId, state.players) ?? -1;
 
   if (mySeat === null) {
     return <div className={styles.lobbyWaiting}>Connecting…</div>;
@@ -337,13 +377,17 @@ placeholder="ABCD"
         biddingInProgress={state.phase === 'bidding'}
         // The lobby and the bid grid want the table's full width; only the trick
         // pile needs to keep clear of the opponents' fans. See Table.module.css.
-        centerVariant={state.phase === 'lobby' || state.phase === 'bidding' ? 'wide' : 'trick'}
+        centerVariant={
+          state.phase === 'lobby' || state.phase === 'configuring' || state.phase === 'bidding' ? 'wide' : 'trick'
+        }
         hideOwnLabel={state.phase === 'widow' && state.declarerSeat === mySeat}
         trumpSuit={trumpSuit}
         dealing={dealing}
         onDealDone={finishDeal}
         cornerPanel={
-          state.phase !== 'lobby' ? (
+          // Nothing to score between matches: the totals have already been reset and
+          // the next match's rules aren't settled yet.
+          state.phase !== 'lobby' && state.phase !== 'configuring' ? (
             <ScoreBar
               team0Name={team0Name}
               team1Name={team1Name}
@@ -351,7 +395,7 @@ placeholder="ABCD"
               team1Score={state.team1Score}
               team0HandPoints={team0HandPoints}
               team1HandPoints={team1HandPoints}
-              matchTargetScore={state.matchTargetScore}
+              matchTargetScore={state.config.targetScore}
               handNumber={state.handNumber}
               handHistory={state.handHistory}
               playerNames={playerNames}
@@ -384,13 +428,15 @@ placeholder="ABCD"
           ) : null
         }
         center={
-          state.phase === 'lobby' ? (
+          state.phase === 'configuring' ? (
             <div className={styles.lobbyWaiting}>
-              <TableSettings
-                targetScore={state.matchTargetScore}
-                isHost={room.sessionId === state.hostSessionId}
-                onChangeTargetScore={(targetScore) => room?.send('setTableOption', { targetScore })}
-              />
+              <div className={styles.big}>
+                {isHost ? 'Set the rules for the next match' : `${playerNames[hostSeat]} is setting the rules…`}
+              </div>
+            </div>
+          ) : state.phase === 'lobby' ? (
+            <div className={styles.lobbyWaiting}>
+              <RulesSummary config={state.config} />
               {tablePlayers.length === 4 ? (
                 <>
                   <div className={styles.big}>All 4 players are seated</div>
@@ -445,6 +491,20 @@ placeholder="ABCD"
           ) : null
         }
       />
+
+      {/* A rematch draws a new host and sends them back through the same screen the
+          table was created on — the one moment a match's rules can change. No Back: the
+          room already exists and the other three are waiting on this. Submitting both
+          sets the rules and releases the table into the lobby, in one message. */}
+      {state.phase === 'configuring' && isHost && (
+        <ConfigureTable
+          initial={state.config}
+          title="Next match"
+          subtitle="You're the host this time. These rules are fixed for the whole match."
+          submitLabel="Start next match"
+          onSubmit={(config) => room?.send('setTableConfig', config)}
+        />
+      )}
 
       {state.phase === 'lobby' && (
         <div className={styles.swapRequest}>

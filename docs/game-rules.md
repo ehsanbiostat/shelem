@@ -62,7 +62,7 @@ A declaring team that fails **and collects fewer than 85 points** loses **double
 
 Shelem and Sar-Shelem outrank all numeric bids and each other (Sar-Shelem > Shelem), and either can be called at any point in the bidding, skipping over numeric bids entirely.
 
-The two are worth **the same**. Sar-Shelem outranks Shelem by being the harder way to claim every point — it is played without the widow exchange — not by paying more.
+By default the two are worth **the same**. Sar-Shelem outranks Shelem by being the harder way to claim every point — it is played without the widow exchange — not by paying more. A table can price them apart, and can turn the widow exchange on for Sar-Shelem, in which case it plays exactly like a Shelem; see [Table configuration](#table-configuration).
 
 ### Sar-Shelem and the widow
 
@@ -101,4 +101,27 @@ A-K-Q-J-10-9-8-7-6-5-4-3-2 (high to low), standard in every suit including trump
 ## Match structure
 
 - A match is played as a repeating series of hands (dealer rotates each hand) until one team's cumulative score reaches a **target score**.
-- The target score is configurable per table by the host, in the table lobby, any time before the first deal. **Default: 1650** (10× the max single-hand score of 165). Any whole number from 165 up is allowed — deliberately not restricted to multiples of 5, since a team simply crosses the target rather than landing on it. The 165 floor is one hand's worth of points, below which a match would be decided by a single deal.
+- The target score is set by whoever creates the table, on the create-table screen, and is then fixed for the whole match. **Default: 1165.** Any whole number from 165 up is allowed — deliberately not restricted to multiples of 5, since a team simply crosses the target rather than landing on it. The 165 floor is one hand's worth of points, below which a match would be decided by a single deal. Three match lengths are offered as shortcuts: **Quick 330** (a single Shelem), **Mid 660**, and **Standard 1165**.
+
+## Table configuration
+
+Everything above describes the default ruleset. Groups genuinely disagree about a handful of these rules, so the person creating a table chooses them on the create-table screen, before the room exists. They are then **fixed for the whole match** and shown read-only to everyone at the table, so all four players know what they've joined before the first deal.
+
+The one moment they can change is between matches: when all four agree to a rematch, a new host is drawn at random and goes back through the same screen while the other three wait.
+
+| Option | Default | Allowed |
+| --- | --- | --- |
+| Target score | 1165 | Whole number, 165–100000 |
+| Shelem value | 330 | Multiple of 5, 165–10000 |
+| Sar-Shelem value | 330 | Multiple of 5, 165–10000, and never below the Shelem value |
+| Sar-Shelem exchanges the widow | Off | On/off |
+| Double negative | On | On/off |
+| Double-negative threshold | 85 | Whole number, 0–100 |
+| Shuffle | Table | Table (light shuffle carrying the previous hand forward) or Random (fresh deck every hand) |
+
+Two bounds are load-bearing rather than arbitrary:
+
+- **Both slam values must exceed the highest numeric bid (160).** Shelem and Sar-Shelem outrank every numeric bid, and Sar-Shelem outranks Shelem — a slam worth less than a bid it outranks would make the ladder incoherent.
+- **The double-negative threshold is capped at 100**, the bid floor. That is what guarantees the penalty can never land on a made contract, since the smallest makeable numeric bid is 100 points.
+
+The bidding limits themselves — floor 100, cap 160, increments of 5 — are **not** configurable. They are pinned to the 165 points in a hand, which is in turn fixed by the card values and the flat 5-point trick bonus; moving one without the others produces a bid ladder that doesn't fit the hand.

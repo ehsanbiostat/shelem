@@ -1,0 +1,58 @@
+/* Sits on the felt inside the lobby's centre content (see App.tsx), so it uses
+   the same translucent-overlay treatment as the other on-felt panels rather than
+   the ivory card styling of the create-table screen. */
+.panel {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(3px);
+  color: var(--color-ivory-100);
+}
+
+.target {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.score {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-gold-300);
+}
+
+.rules {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 380px;
+}
+
+/* Each house rule reads as a chip rather than a bullet: they're a short list of
+   deviations, scanned rather than read in order. */
+.rule {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(224, 197, 105, 0.45);
+  color: var(--color-gold-300);
+}

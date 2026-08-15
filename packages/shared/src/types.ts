@@ -30,6 +30,7 @@ export interface BidEvent {
 }
 
 export type GamePhase =
+  | 'configuring' // between matches: the new host is setting the rules for the next one
   | 'lobby' // waiting for 4 seats to fill; seat-swap requests allowed here
   | 'dealing'
   | 'bidding'
