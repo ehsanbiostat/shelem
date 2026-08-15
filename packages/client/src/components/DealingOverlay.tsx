@@ -5,6 +5,7 @@ import styles from './DealingOverlay.module.css';
 import { Card } from './Card.js';
 import { useTableMetrics } from '../tableMetrics.js';
 import { screenSlotFor } from '../screenSlot.js';
+import { widowSpot } from '../widowSpot.js';
 import { dealBlockSound } from '../sound.js';
 
 /** Seconds between consecutive cards within one block. Small enough that a block
@@ -32,9 +33,14 @@ interface FlyingCard {
 /** The deal, animated to match the rule rather than the convention: Shelem deals
  * twelve cards as one unbroken block to each player in turn, not one card round
  * the table (see docs/game-rules.md — it's what lets the light shuffle carry long
- * suits into a hand, so it's a rule and not a detail). The order here is exactly
- * the engine's: dealer+1, dealer+2, dealer+3, the four-card widow, then the
- * dealer last.
+ * suits into a hand, so it's a rule and not a detail).
+ *
+ * The block *order* here is not the engine's. `deal()` sets the widow aside
+ * fourth, before the dealer's own twelve; this plays it last, so the four cards
+ * are the final thing to land and stay on the table in front of the dealer for
+ * the whole auction (see WidowPile). Which cards end up where is unaffected —
+ * that's settled server-side before any of this runs — so the divergence is
+ * purely in what the animation depicts.
  *
  * Every card animates `transform` and `opacity` only, which are the two
  * properties the compositor can handle without layout or paint. The cards are
@@ -42,21 +48,27 @@ interface FlyingCard {
  * moving in the same frame — and a card that hasn't started yet is sitting at
  * opacity 0, costing nothing to composite. */
 export function DealingOverlay({ mySeat, dealerSeat, onDone }: DealingOverlayProps) {
-  const { width, height, u } = useTableMetrics();
+  const metrics = useTableMetrics();
+  const { width, height, u } = metrics;
 
   const { cards, totalMs, blockStarts } = useMemo(() => {
     const blocks: { target: SeatIndex | 'widow'; count: number }[] = [
       { target: ((dealerSeat + 1) % 4) as SeatIndex, count: 12 },
       { target: ((dealerSeat + 2) % 4) as SeatIndex, count: 12 },
       { target: ((dealerSeat + 3) % 4) as SeatIndex, count: 12 },
-      { target: 'widow', count: 4 },
       { target: dealerSeat, count: 12 },
+      { target: 'widow', count: 4 },
     ];
 
     // Where each block lands, as an offset from the middle of the felt. Seats sit
-    // just inside their own edge; the widow stays near the middle, face down.
+    // just inside their own edge; the widow lands in front of the dealer, on the
+    // exact spot WidowPile then mounts on — hence the shared helper, so the pile
+    // doesn't visibly jump as one hands over to the other.
     function destination(target: SeatIndex | 'widow'): { dx: number; dy: number; rotate: number } {
-      if (target === 'widow') return { dx: 0, dy: -u * 3, rotate: 0 };
+      if (target === 'widow') {
+        const spot = widowSpot(dealerSeat, mySeat, metrics);
+        return { dx: spot.x, dy: spot.y, rotate: spot.rotate };
+      }
       const slot = screenSlotFor(target, mySeat);
       const outX = width / 2 - u * 7;
       const outY = height / 2 - u * 7;
@@ -88,7 +100,7 @@ export function DealingOverlay({ mySeat, dealerSeat, onDone }: DealingOverlayPro
       t += BLOCK_GAP;
     }
     return { cards: out, totalMs: (t + FLIGHT) * 1000, blockStarts: starts };
-  }, [mySeat, dealerSeat, width, height, u]);
+  }, [mySeat, dealerSeat, metrics, width, height, u]);
 
   // One slide per block rather than per card: 52 sounds in under two seconds is
   // noise, five is a rhythm.

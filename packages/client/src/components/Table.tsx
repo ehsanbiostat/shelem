@@ -1,10 +1,12 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { Seat as SeatIndex, Suit } from '@shelem/shared';
+import { AnimatePresence } from 'framer-motion';
+import type { Card as CardModel, Seat as SeatIndex, Suit } from '@shelem/shared';
 import styles from './Table.module.css';
 import { Seat } from './Seat.js';
 import { TableMetricsContext, useMeasureTableMetrics } from '../tableMetrics.js';
 import { screenSlotFor } from '../screenSlot.js';
 import { DealingOverlay } from './DealingOverlay.js';
+import { WidowPile } from './WidowPile.js';
 
 export interface TablePlayer {
   seat: SeatIndex;
@@ -47,6 +49,15 @@ export interface TableProps {
    * App because the animation is expressed in table coordinates. */
   dealing?: { dealerSeat: SeatIndex } | null;
   onDealDone?: () => void;
+  /** The four widow cards, parked in front of the dealer for the auction and flown
+   * to the winning bidder. Null outside bidding and the widow phase. Expressed in
+   * table coordinates, so like `dealing` it belongs here rather than in App. */
+  widow?: {
+    dealerSeat: SeatIndex;
+    declarerSeat: SeatIndex | null;
+    faces?: CardModel[];
+    flip: boolean;
+  } | null;
   hideOwnLabel?: boolean;
   /** Once set, shown as a suit glyph on the declarer's seat. */
   trumpSuit?: Suit | null;
@@ -67,6 +78,7 @@ export function Table({
   trumpSuit,
   dealing,
   onDealDone,
+  widow,
 }: TableProps) {
   const bySeat = new Map(players.map((p) => [p.seat, p]));
   const { ref: tableRef, metrics } = useMeasureTableMetrics<HTMLDivElement>();
@@ -123,6 +135,20 @@ export function Table({
         {bottomOverlay && (
           <div className={`${styles.bottomOverlay} ${dealing ? styles.undealt : ''}`}>{bottomOverlay}</div>
         )}
+
+        {/* AnimatePresence so the pile's exit actually runs — on a redeal it has to
+            fly back to the deck rather than blink out from under the new deal. */}
+        <AnimatePresence>
+          {widow && (
+            <WidowPile
+              mySeat={mySeat}
+              dealerSeat={widow.dealerSeat}
+              declarerSeat={widow.declarerSeat}
+              faces={widow.faces}
+              flip={widow.flip}
+            />
+          )}
+        </AnimatePresence>
 
         {dealing && (
           <DealingOverlay

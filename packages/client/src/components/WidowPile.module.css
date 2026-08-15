@@ -1,0 +1,24 @@
+/* Anchored to the middle of the felt and moved entirely by transform, exactly like
+   the dealing overlay's deck — the two have to share an origin, or the pile would
+   jump the moment the deal handed over to it.
+
+   z-index 6 puts it above `.centerWide` (5), which during bidding spans nearly the
+   whole table for the bid grid. Non-interactive: these four cards are a thing to
+   look at, never something to click, and they must not swallow a bid button
+   underneath them. */
+.pile {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 6;
+  pointer-events: none;
+}
+
+/* Half an 'sm' card (6.3u x 8.9u — Card.module.css), so each card is centred on
+   the pile's own point rather than hanging off it. */
+.slot {
+  position: absolute;
+  margin-left: calc(var(--u) * -3.15);
+  margin-top: calc(var(--u) * -4.45);
+  filter: drop-shadow(0 calc(var(--u) * 0.2) calc(var(--u) * 0.4) rgba(0, 0, 0, 0.35));
+}
