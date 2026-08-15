@@ -23,7 +23,7 @@ Replicate the setup, feel, and front-end quality of [Trickster Cards](https://ww
 - Host creates a table and receives a shareable link/code; the host also takes one of the 4 seats.
 - Players self-select their seat on joining (first-come, first-seated). Before the game starts, a player can send another player a request to swap seats; the swap happens if accepted.
 - Strictly **human-only** — no AI bots to fill empty seats. Play starts only once all 4 seats are filled by real players.
-- Match target score is configurable by the host in the table lobby, any time before the game starts (default 1650). It's shown to everyone at the table, not just the host, so all four players know what they're playing to before the first deal.
+- The table's rules — match target score, slam values, whether Sar-Shelem exchanges the widow, the double-negative penalty, and shuffle mode — are chosen by the creator on a create-table screen before the room exists, then fixed for the whole match. See [Table configuration](game-rules.md#table-configuration) for the full list and bounds. They're shown read-only to everyone at the table, not just the host, so all four players know what they've joined before the first deal. A rematch draws a new host and returns them to the same screen.
 
 ## Disconnect handling
 

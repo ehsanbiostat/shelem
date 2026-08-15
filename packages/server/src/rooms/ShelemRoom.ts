@@ -18,36 +18,20 @@ import {
   resolveHandScore,
   isMatchComplete,
   teamForSeat,
+  validateTableConfig,
 } from '@shelem/shared';
 import { GameState, PlayerInfo, BidRecord, TrickPlay, SeatSwapRequest, HandResult } from '../schema/GameState.js';
 
 interface JoinOptions {
   name?: string;
-  targetScore?: number;
+  /** The table's rules, sent by the create-table screen. Validated by
+   * validateTableConfig; anything missing falls back to the default ruleset. */
+  config?: unknown;
 }
 
-/** Bounds on the host-configurable match target. Any whole number in range is
- * allowed — deliberately not restricted to multiples of 5, even though every
- * score in the game is one: a target of 1234 is perfectly playable (a team simply
- * crosses it) and there's no reason to reject a number the host meant to type.
- * The floor is one hand's worth of points (165 — see docs/game-rules.md), below
- * which a match would be decided by a single deal; the ceiling only keeps a typo
- * from producing a table nobody can finish. */
 /** How long the completed hand's scores stay up before the next one is dealt.
  * Server-driven so all four players get the same pause at the same moment. */
 const HAND_REVIEW_MS = 5000;
-
-const MIN_TARGET_SCORE = 165;
-const MAX_TARGET_SCORE = 100000;
-
-function isValidTargetScore(value: unknown): value is number {
-  return (
-    typeof value === 'number' &&
-    Number.isInteger(value) &&
-    value >= MIN_TARGET_SCORE &&
-    value <= MAX_TARGET_SCORE
-  );
-}
 
 /** Room codes get read aloud and typed in by hand, so the alphabet leaves out the
  * pairs that get confused when spoken or squinted at: I/1, L/1, O/0. Four
@@ -101,9 +85,13 @@ export class ShelemRoom extends Room<GameState> {
     this.roomId = await generateRoomCode();
 
     const state = new GameState();
-    if (isValidTargetScore(options.targetScore)) {
-      state.matchTargetScore = options.targetScore;
-    }
+    // The create-table screen validates the same config before sending it, so a
+    // rejection here means a client that isn't ours — fail the create loudly rather
+    // than quietly seating people at a table with rules nobody chose.
+    const validated = validateTableConfig(options.config ?? {});
+    if (!validated.ok) throw new Error(`Invalid table settings: ${validated.error}`);
+    state.config.applyConfig(validated.config);
+
     for (let seat = 0; seat < 4; seat++) {
       const player = new PlayerInfo();
       player.seat = seat;
@@ -112,7 +100,7 @@ export class ShelemRoom extends Room<GameState> {
     this.state = state;
 
     this.onMessage('startGame', (client) => this.handleStartGame(client));
-    this.onMessage('setTableOption', (client, message) => this.handleSetTableOption(client, message));
+    this.onMessage('setTableConfig', (client, message) => this.handleSetTableConfig(client, message));
     this.onMessage('playAgain', (client) => this.handlePlayAgain(client));
     this.onMessage('bid', (client, message) => this.handleBid(client, message));
     this.onMessage('discardWidow', (client, message) => this.handleDiscardWidow(client, message));
@@ -140,27 +128,29 @@ export class ShelemRoom extends Room<GameState> {
     }
   }
 
-  /** Table settings, changeable by the host right up until the game starts — a
-   * table's target score is something everyone should be able to see and agree on
-   * before the first deal, not a value baked in at creation that only the creator
-   * ever saw. */
-  private handleSetTableOption(client: Client, message: { targetScore?: number }) {
-    if (this.state.phase !== 'lobby') return;
+  /** The rules are normally settled before the room exists, on the create-table
+   * screen. This exists for the other time a table needs them: after a rematch, when
+   * the newly drawn host is sent back to that same screen with the room already up.
+   *
+   * Setting the rules and leaving the configure phase are one message rather than two
+   * so they can't come apart: a rejected config that still let the table advance would
+   * start the match under rules nobody chose. Either the whole config is accepted and
+   * the table moves to the lobby, or nothing happens and the host is told why. */
+  private handleSetTableConfig(client: Client, message: unknown) {
+    if (this.state.phase !== 'configuring') return;
     if (client.sessionId !== this.state.hostSessionId) {
-      client.send('actionRejected', { action: 'setTableOption', reason: 'Only the host can change table settings' });
+      client.send('actionRejected', { action: 'setTableConfig', reason: 'Only the host can change table settings' });
       return;
     }
 
-    if (message.targetScore !== undefined) {
-      if (!isValidTargetScore(message.targetScore)) {
-        client.send('actionRejected', {
-          action: 'setTableOption',
-          reason: `Target score must be a whole number between ${MIN_TARGET_SCORE} and ${MAX_TARGET_SCORE}`,
-        });
-        return;
-      }
-      this.state.matchTargetScore = message.targetScore;
+    const validated = validateTableConfig(message);
+    if (!validated.ok) {
+      client.send('actionRejected', { action: 'setTableConfig', reason: validated.error });
+      return;
     }
+
+    this.state.config.applyConfig(validated.config);
+    this.state.phase = 'lobby';
   }
 
   /** Filling the last seat only makes the table ready — it doesn't deal. Any seated
@@ -250,10 +240,11 @@ export class ShelemRoom extends Room<GameState> {
     this.state.phase = 'widow';
     this.state.currentTurnSeat = declarerSeat;
 
-    // Sar-Shelem is played without the widow exchange: the declarer is shown the
-    // four cards and they are then buried as their discard, unchosen. The reveal
-    // goes only to them — the defenders learn nothing about which cards are out.
-    if (winningBid.type === 'sarShelem') {
+    // Sar-Shelem is normally played without the widow exchange: the declarer is shown
+    // the four cards and they are then buried as their discard, unchosen. The reveal
+    // goes only to them — the defenders learn nothing about which cards are out. A
+    // table can turn the exchange on, in which case it plays like any other contract.
+    if (winningBid.type === 'sarShelem' && !this.state.config.sarShelemTakesWidow) {
       this.clientFor(declarerSeat)?.send('sarShelemWidow', this.widow);
       return;
     }
@@ -271,6 +262,7 @@ export class ShelemRoom extends Room<GameState> {
   private handleConfirmSarShelemWidow(client: Client) {
     if (this.state.phase !== 'widow') return;
     if (this.state.winningBidType !== 'sarShelem') return;
+    if (this.state.config.sarShelemTakesWidow) return;
     const seat = this.seatBySessionId.get(client.sessionId);
     if (seat === undefined || seat !== this.state.declarerSeat) return;
 
@@ -315,8 +307,9 @@ export class ShelemRoom extends Room<GameState> {
 
   private handleDiscardWidow(client: Client, message: { cards?: { suit: Suit; rank: Rank }[] }) {
     if (this.state.phase !== 'widow') return;
-    // A Sar-Shelem declarer never chooses a discard; theirs is buried for them.
-    if (this.state.winningBidType === 'sarShelem') return;
+    // A Sar-Shelem declarer never chooses a discard; theirs is buried for them —
+    // unless this table plays Sar-Shelem with the exchange.
+    if (this.state.winningBidType === 'sarShelem' && !this.state.config.sarShelemTakesWidow) return;
     const seat = this.seatBySessionId.get(client.sessionId);
     if (seat === undefined || seat !== this.state.declarerSeat) return;
 
@@ -457,6 +450,7 @@ export class ShelemRoom extends Room<GameState> {
       bid,
       this.state.declarerPointsCollected,
       this.state.defenderPointsCollected,
+      this.state.config,
     );
 
     const declarerTeam = teamForSeat(this.state.declarerSeat as Seat);
@@ -488,7 +482,7 @@ export class ShelemRoom extends Room<GameState> {
     const [pile0, pile1] = this.teamPiles;
     this.collectedDeck = Math.random() < 0.5 ? pile0.concat(pile1) : pile1.concat(pile0);
 
-    if (isMatchComplete({ team0: this.state.team0Score, team1: this.state.team1Score }, this.state.matchTargetScore)) {
+    if (isMatchComplete({ team0: this.state.team0Score, team1: this.state.team1Score }, this.state.config.targetScore)) {
       this.state.phase = 'matchComplete';
       return;
     }
@@ -519,10 +513,11 @@ export class ShelemRoom extends Room<GameState> {
     this.resetForRematch();
   }
 
-  /** Back to the lobby with the same people in the same seats — they can still
-   * swap there if they want, which is why seating isn't reshuffled here. A fresh
-   * match starts from a fully randomised deck (see docs/game-rules.md): there's no
-   * previous hand for this one to inherit, so the carried-over deck is dropped. */
+  /** Back to the same people in the same seats — they can still swap in the lobby if
+   * they want, which is why seating isn't reshuffled here. A fresh match starts from a
+   * fully randomised deck (see docs/game-rules.md): there's no previous hand for this
+   * one to inherit, so the carried-over deck is dropped. The rules of the finished
+   * match carry over as the starting point for the new host's configure screen. */
   private resetForRematch() {
     this.state.team0Score = 0;
     this.state.team1Score = 0;
@@ -555,7 +550,10 @@ export class ShelemRoom extends Room<GameState> {
     const seated = this.state.players.filter((p) => p.sessionId !== '');
     this.state.hostSessionId = seated[Math.floor(Math.random() * seated.length)].sessionId;
 
-    this.state.phase = 'lobby';
+    // Rules are fixed for the length of a match, so a new match is the one moment they
+    // can change: the new host goes back through the configure screen while the other
+    // three wait, and only then does the table drop into the lobby.
+    this.state.phase = 'configuring';
   }
 
   // ---- Seat swap (lobby only) ----
@@ -603,10 +601,12 @@ export class ShelemRoom extends Room<GameState> {
    * The deck for the next deal. Normally last hand's cards given a light shuffle, which
    * is what carries suit grouping forward. Only the very first hand of a match starts
    * from a fresh, fully randomised deck — there's no previous hand to inherit from.
+   * A table set to `random` shuffle mode starts every hand from one instead.
    */
   private nextDeck(): Card[] {
     const collected = this.collectedDeck;
     this.collectedDeck = null;
+    if (this.state.config.shuffleMode === 'random') return shuffle(createDeck());
     if (collected && collected.length === 52) {
       return tableShuffle(collected);
     }

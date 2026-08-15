@@ -1,0 +1,254 @@
+/* Shown both before a table exists and, after a rematch, over the top of one. It uses
+   the ivory card treatment of the pre-connection screen in both cases rather than the
+   on-felt translucent panels — this is a form to be read and filled in, not a status
+   readout glanced at mid-hand, and one palette means one set of controls to style. */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+  background: rgba(4, 20, 16, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-gold-500);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-panel);
+  padding: 28px 32px;
+  max-width: 420px;
+  width: 100%;
+  margin: auto;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-emerald-700);
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.subtitle {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0 0 22px;
+}
+
+.group {
+  border: none;
+  padding: 0;
+  margin: 0 0 18px;
+}
+
+/* The fieldsets are grouped for screen readers; sighted users get the presets and
+   the disclosure button as the visible structure, so the legends stay off-screen. */
+.legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.presets {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.preset {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+  appearance: none;
+  padding: 9px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #d7c99a;
+  background: transparent;
+  color: var(--color-emerald-700);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.preset:hover {
+  background: rgba(15, 92, 74, 0.07);
+}
+
+.presetActive,
+.presetActive:hover {
+  background: var(--color-emerald-700);
+  border-color: var(--color-emerald-700);
+  color: white;
+}
+
+.presetName {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.presetScore {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.rowLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.number {
+  width: 104px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid #d7c99a;
+  font-family: inherit;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* A full-width row rather than a button-shaped control: it toggles a section of the
+   same form, so it reads as a heading you can open, not an action. */
+.disclosure {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  appearance: none;
+  border: none;
+  border-top: 1px solid #e5dcc0;
+  background: transparent;
+  padding: 12px 0;
+  margin-bottom: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-emerald-700);
+  cursor: pointer;
+  text-align: left;
+}
+
+/* Says the rules differ from the traditional ones while the section is closed —
+   otherwise a collapsed panel can hide a table nobody expects. */
+.modified {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-ink-900);
+  background: var(--color-gold-300);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.check input {
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-emerald-700);
+  flex-shrink: 0;
+}
+
+.hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+  opacity: 0.85;
+}
+
+.segmented {
+  display: flex;
+  border: 1px solid #d7c99a;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.segment {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-emerald-700);
+  cursor: pointer;
+}
+
+.segmentActive {
+  background: var(--color-emerald-700);
+  color: white;
+}
+
+.error {
+  color: var(--color-danger);
+  font-size: 13px;
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.primaryBtn {
+  width: 100%;
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--color-emerald-700);
+  color: white;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.primaryBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.secondaryBtn {
+  width: 100%;
+  padding: 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-emerald-700);
+  background: transparent;
+  color: var(--color-emerald-700);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}

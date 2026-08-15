@@ -1,4 +1,4 @@
-import type { Bid, Card, Rank, Seat, Suit } from '@shelem/shared';
+import type { Bid, Card, Rank, Seat, Suit, TableConfig } from '@shelem/shared';
 
 export interface PlayerInfoJSON {
   sessionId: string;
@@ -40,7 +40,7 @@ export interface HandResultJSON {
 
 export interface GameStateJSON {
   players: PlayerInfoJSON[];
-  phase: 'lobby' | 'dealing' | 'bidding' | 'widow' | 'playing' | 'handComplete' | 'matchComplete';
+  phase: 'configuring' | 'lobby' | 'dealing' | 'bidding' | 'widow' | 'playing' | 'handComplete' | 'matchComplete';
   dealerSeat: number;
   currentTurnSeat: number;
   declarerSeat: number;
@@ -55,8 +55,10 @@ export interface GameStateJSON {
   lastTrickPoints: number;
   team0Score: number;
   team1Score: number;
-  matchTargetScore: number;
   handHistory: HandResultJSON[];
+  /** The server's schema mirror of the shared TableConfig — same fields, so the
+   * shared type stands in for it directly. */
+  config: TableConfig;
   declarerPointsCollected: number;
   defenderPointsCollected: number;
   pendingSeatSwap?: SeatSwapRequestJSON;

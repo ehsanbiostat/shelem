@@ -1,4 +1,5 @@
 export * from './types.js';
+export * from './config.js';
 export * from './deck.js';
 export * from './bidding.js';
 export * from './scoring.js';
