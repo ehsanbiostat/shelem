@@ -17,24 +17,16 @@ export function teamForSeat(seat: Seat): Team {
   return (seat % 2) as Team;
 }
 
-export type NumericBid = { type: 'numeric'; amount: number };
-export type ShelemBid = { type: 'shelem' };
-export type SarShelemBid = { type: 'sarShelem' };
-export type PassBid = { type: 'pass' };
-
-export type Bid = NumericBid | ShelemBid | SarShelemBid | PassBid;
-
-export interface BidEvent {
-  seat: Seat;
-  bid: Bid;
-}
-
-export type GamePhase =
+/**
+ * The phases every game on the platform passes through, whatever it is. Each game
+ * widens this with its own — see ShelemPhase and HokmPhase — so the shared table
+ * plumbing (lobby, seat swap, rematch) can reason about a phase without knowing
+ * which game it belongs to.
+ */
+export type CommonPhase =
   | 'configuring' // between matches: the new host is setting the rules for the next one
   | 'lobby' // waiting for 4 seats to fill; seat-swap requests allowed here
   | 'dealing'
-  | 'bidding'
-  | 'widow' // declarer picking up widow and discarding
   | 'playing'
   | 'handComplete'
   | 'matchComplete';

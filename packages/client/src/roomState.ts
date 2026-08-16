@@ -1,4 +1,8 @@
-import type { Bid, Card, Rank, Seat, Suit, TableConfig } from '@shelem/shared';
+import type { Card, Rank, Seat, Suit } from '@shelem/shared';
+import type { shelem } from '@shelem/shared';
+
+type Bid = shelem.Bid;
+type TableConfig = shelem.TableConfig;
 
 export interface PlayerInfoJSON {
   sessionId: string;

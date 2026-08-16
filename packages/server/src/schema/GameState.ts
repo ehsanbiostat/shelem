@@ -1,9 +1,9 @@
 import { ArraySchema, Schema, type } from '@colyseus/schema';
-import {
-  DEFAULT_TABLE_CONFIG,
-  type ShuffleMode,
-  type TableConfig as SharedTableConfig,
-} from '@shelem/shared';
+import { shelem } from '@shelem/shared';
+
+const { DEFAULT_TABLE_CONFIG } = shelem;
+type ShuffleMode = shelem.ShuffleMode;
+type SharedTableConfig = shelem.TableConfig;
 
 /** Public per-player info. Actual hand contents are never put in synced state —
  * see ShelemRoom's private hand tracking — only the count is public. */

@@ -1,5 +1,8 @@
-import type { Bid, Seat } from '@shelem/shared';
-import { BID_CAP, BID_FLOOR, BID_INCREMENT, isValidBid } from '@shelem/shared';
+import type { Seat } from '@shelem/shared';
+import { shelem } from '@shelem/shared';
+
+type Bid = shelem.Bid;
+const { BID_CAP, BID_FLOOR, BID_INCREMENT, isValidBid } = shelem;
 import styles from './BiddingPanel.module.css';
 
 export interface BidHistoryItem {

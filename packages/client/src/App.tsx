@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Room } from 'colyseus.js';
 import { MotionConfig, useReducedMotion } from 'framer-motion';
-import type { Bid, Card as CardModel, Seat as SeatIndex, TableConfig, Team } from '@shelem/shared';
-import { DEFAULT_TABLE_CONFIG, legalCards, teamForSeat, validateTableConfig } from '@shelem/shared';
+import type { Card as CardModel, Seat as SeatIndex, Team } from '@shelem/shared';
+import { legalCards, shelem, teamForSeat } from '@shelem/shared';
+
+type Bid = shelem.Bid;
+type TableConfig = shelem.TableConfig;
+const { DEFAULT_TABLE_CONFIG, validateTableConfig } = shelem;
 import styles from './App.module.css';
 import { colyseusClient } from './colyseusClient';
 import { sortHand } from './cardSort';

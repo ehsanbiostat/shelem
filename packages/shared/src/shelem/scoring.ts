@@ -1,5 +1,6 @@
+import type { Card } from '../core/types.js';
 import type { TableConfig } from './config.js';
-import type { Bid, Card } from './types.js';
+import type { Bid } from './types.js';
 
 export const TRICK_BONUS = 5;
 export const TRICKS_PER_HAND = 13; // 12 played + the buried widow-discard trick

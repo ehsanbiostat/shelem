@@ -1,7 +1,5 @@
 import { Room, Client, matchMaker } from 'colyseus';
 import {
-  type Bid,
-  type BidEvent,
   type Card,
   type Rank,
   type Seat,
@@ -9,17 +7,23 @@ import {
   createDeck,
   shuffle,
   tableShuffle,
+  determineTrickWinner,
+  legalCards,
+  teamForSeat,
+  shelem,
+} from '@shelem/shared';
+
+type Bid = shelem.Bid;
+type BidEvent = shelem.BidEvent;
+const {
   deal,
   isValidBid,
   resolveBidding,
-  determineTrickWinner,
-  legalCards,
   trickPoints,
   resolveHandScore,
   isMatchComplete,
-  teamForSeat,
   validateTableConfig,
-} from '@shelem/shared';
+} = shelem;
 import { GameState, PlayerInfo, BidRecord, TrickPlay, SeatSwapRequest, HandResult } from '../schema/GameState.js';
 
 interface JoinOptions {
