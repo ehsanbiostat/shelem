@@ -6,6 +6,7 @@ import { legalCards, shelem } from '@shelem/shared';
 import styles from '../../App.module.css';
 import { sortHand } from '../../cardSort';
 import { useCountdownTicks, useServerClockOffset, useTurnCountdown } from '../../useTurnCountdown';
+import { countdownTickSecond } from '@shelem/shared';
 import { isOccupied, seatOf, teamOf, toCard, type BaseStateJSON } from '../../roomState';
 import { Table } from '../../components/Table.js';
 import type { DealBlock } from '../../components/DealingOverlay.js';
@@ -131,11 +132,16 @@ export function ShelemGame({ room, state: baseState, rawHand, onMessage, onLeave
   const playerNames: Record<number, string> = {};
   state.players.forEach((p) => (playerNames[p.seat] = p.name || `Seat ${p.seat + 1}`));
   // Before the early return below: a hook cannot sit after a conditional return.
+  const onTheClock = mySeat !== null && state.currentTurnSeat === mySeat;
   useCountdownTicks({
     remainingMs: turn.remainingMs,
     running: turn.running,
-    isMyTurn: mySeat !== null && state.currentTurnSeat === mySeat,
+    isMyTurn: onTheClock,
   });
+
+  // The same function that decides which beat to sound, so the numeral on screen
+  // and the tick in your ears can never disagree about which second it is.
+  const countdownSecond = onTheClock && turn.running ? countdownTickSecond(turn.remainingMs) : null;
 
   const isHost = room.sessionId === state.hostSessionId;
   const hostSeat = seatOf(state.hostSessionId, state.players) ?? -1;
@@ -277,6 +283,7 @@ export function ShelemGame({ room, state: baseState, rawHand, onMessage, onLeave
         awaitingChoice={state.phase === 'bidding'}
         maxFanCards={MAX_HAND}
         turnFraction={turn.fraction}
+        countdownSecond={countdownSecond}
         centerVariant={
           state.phase === 'lobby' || state.phase === 'configuring' || state.phase === 'bidding' ? 'wide' : 'trick'
         }
