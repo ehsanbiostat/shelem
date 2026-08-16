@@ -7,7 +7,7 @@ Everything below was explicitly discussed and deliberately deferred, not overloo
 - **In-app communication** — text chat, emoji reactions, and especially **video chat** (the single most-requested deferred feature; Trickster's video chat was called out specifically as something to add next).
 - **Persistence layer** — move game/match state off in-memory-only storage (e.g. Redis or Postgres) so matches survive server restarts/deploys.
 - **User accounts** — signup/login, persistent profiles, stats history. Needed as a prerequisite for ranked play, friends lists, or clubs.
-- **Bots** — AI players to fill empty seats. Requires real Shelem-playing logic (bidding strategy, widow/discard strategy, trick-taking play) — a substantial standalone project, not a small add-on.
+- **Shelem bots** — Hokm has them (see [Bots](bots.md)); Shelem does not. Roughly 4–5× the work, and the risk is bidding rather than card play: a bot that bids 160 and collapses ruins the hand for its *human partner*. It also needs the widow discard, where buried cards still score for the declaring team, and the opening lead that sets trump.
 - **Matchmaking / quick match** — public queue for random opponents, likely paired with bot fill-in for partially-full tables. Depends on bots and/or a larger userbase existing first.
 - **Ranked play / ELO / leaderboards** — depends on accounts.
 - **Native mobile apps** — likely as a wrapper around the web app (e.g. Capacitor) rather than a rewrite, once the web product is proven.

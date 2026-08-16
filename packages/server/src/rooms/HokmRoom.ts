@@ -13,6 +13,7 @@ import {
   legalCards,
   hokm,
 } from '@shelem/shared';
+import type { TrickCardPlay } from '@shelem/shared';
 import {
   HokmGameState,
   HakemReveal,
@@ -20,6 +21,8 @@ import {
 } from '../schema/HokmGameState.js';
 import { TrickPlay } from '../schema/BaseGameState.js';
 import { BaseTableRoom, cardsEqual, HAND_REVIEW_MS, type JoinOptions } from './BaseTableRoom.js';
+
+type BotView = hokm.BotView;
 
 // Destructured rather than called through the namespace so the room reads as a list
 // of rules being applied, not of lookups.
@@ -30,6 +33,8 @@ const {
   nextHakemSeat,
   isHokmMatchComplete,
   validateHokmConfig,
+  chooseTrump,
+  chooseCard,
   HOKM_TRICKS_TO_WIN,
 } = hokm;
 
@@ -59,6 +64,14 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
   // keeps its piles — see `nextDeck`.
   private teamPiles: [Card[], Card[]] = [[], []];
   private collectedDeck: Card[] | null = null;
+  // Every card played this hand, in order, with the seat that played it. Public
+  // information — the whole table watched each one land — but the synced state
+  // only keeps the current and previous trick, and a bot's void inference needs
+  // the lot. Server-side only because nothing on screen wants it.
+  private playLog: TrickCardPlay[] = [];
+
+  /** Hokm has bot logic (see takeBotTurn), so a host may seat one. */
+  protected botsSupported = true;
 
   protected createState(options: JoinOptions): HokmGameState {
     const state = new HokmGameState();
@@ -112,6 +125,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
   protected startHand() {
     this.resolvingTrick = false;
     this.teamPiles = [[], []];
+    this.playLog = [];
     this.state.currentTrick.clear();
     this.state.lastTrick.clear();
     this.state.lastTrickWinnerSeat = -1;
@@ -194,61 +208,68 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     for (let seat = 0; seat < 4; seat++) {
       this.sendHand(seat as Seat);
     }
+    this.scheduleBotTurn();
   }
 
+  /** A person naming trump. Resolves them to a seat and hands off to the same
+   * code a bot goes through — the rules live in one place, not two. */
   private handleDeclareTrump(client: Client, message: { suit?: string }) {
-    if (this.state.phase !== 'declaringTrump') return;
     const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined || seat !== this.state.hakemSeat) {
-      client.send('actionRejected', { action: 'declareTrump', reason: 'Only the Hâkem names trump' });
-      return;
-    }
+    if (seat === undefined) return;
+    const rejection = this.declareTrump(seat, message.suit as Suit | undefined);
+    if (rejection) client.send('actionRejected', { action: 'declareTrump', reason: rejection });
+  }
 
-    const suit = message.suit as Suit | undefined;
-    if (!suit || !SUITS.includes(suit)) {
-      client.send('actionRejected', { action: 'declareTrump', reason: 'Trump must be one of the four suits' });
-      return;
-    }
+  /** Names trump for a seat, whoever is behind it. Returns a reason when the move
+   * is refused, so the caller can decide whether anyone needs telling. */
+  private declareTrump(seat: Seat, suit: Suit | undefined): string | null {
+    if (this.state.phase !== 'declaringTrump') return null;
+    if (seat !== this.state.hakemSeat) return 'Only the Hâkem names trump';
+    if (!suit || !SUITS.includes(suit)) return 'Trump must be one of the four suits';
 
     this.state.trumpSuit = suit;
 
-    for (let seat = 0; seat < 4; seat++) {
-      this.hands[seat] = this.hands[seat].concat(this.pendingRest[seat]);
-      this.pendingRest[seat] = [];
-      this.sendHand(seat as Seat);
+    for (let s = 0; s < 4; s++) {
+      this.hands[s] = this.hands[s].concat(this.pendingRest[s]);
+      this.pendingRest[s] = [];
+      this.sendHand(s as Seat);
     }
 
     this.state.phase = 'playing';
     // The Hâkem leads to the first trick — the third of the three privileges.
     this.state.currentTurnSeat = this.state.hakemSeat;
+    this.scheduleBotTurn();
+    return null;
   }
 
   // ---- Playing ----
 
   private handlePlayCard(client: Client, message: { suit?: Suit; rank?: Rank }) {
-    if (this.state.phase !== 'playing') return;
-    if (this.resolvingTrick) return;
     const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined || seat !== this.state.currentTurnSeat) return;
+    if (seat === undefined) return;
     if (!message.suit || !message.rank) return;
+    const rejection = this.playCard(seat, { suit: message.suit, rank: message.rank });
+    if (rejection) client.send('actionRejected', { action: 'playCard', reason: rejection });
+  }
 
-    const card: Card = { suit: message.suit, rank: message.rank };
+  /** Plays a card for a seat, whoever is behind it. Returns a reason when the move
+   * is refused. A bot reaches this by the same door a person does, so it is held
+   * to exactly the same rules rather than a second copy of them. */
+  private playCard(seat: Seat, card: Card): string | null {
+    if (this.state.phase !== 'playing') return null;
+    if (this.resolvingTrick) return null;
+    if (seat !== this.state.currentTurnSeat) return null;
+
     const hand = this.hands[seat];
     const index = hand.findIndex((c) => cardsEqual(c, card));
-    if (index === -1) {
-      client.send('actionRejected', { action: 'playCard', reason: 'Card not in hand' });
-      return;
-    }
+    if (index === -1) return 'Card not in hand';
 
     // Unlike Shelem, trump is already known by the time a card is played — the
     // Hâkem named it — so leading carries no special meaning beyond setting the suit.
     if (this.state.currentTrick.length > 0) {
       const leadSuit = this.state.currentTrick[0].suit as Suit;
       const legal = legalCards(hand, leadSuit, this.state.trumpSuit as Suit);
-      if (!legal.some((c) => cardsEqual(c, card))) {
-        client.send('actionRejected', { action: 'playCard', reason: 'Illegal move' });
-        return;
-      }
+      if (!legal.some((c) => cardsEqual(c, card))) return 'Illegal move';
     }
 
     hand.splice(index, 1);
@@ -262,7 +283,8 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
 
     if (this.state.currentTrick.length < 4) {
       this.state.currentTurnSeat = ((seat + 1) % 4) as Seat;
-      return;
+      this.scheduleBotTurn();
+      return null;
     }
 
     // Hold the completed trick on everyone's screen for a beat before clearing it —
@@ -274,6 +296,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
       this.resolvingTrick = false;
       this.resolveTrick();
     }, 1500);
+    return null;
   }
 
   private resolveTrick() {
@@ -289,6 +312,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     else this.state.team1Tricks += 1;
 
     this.teamPiles[winnerTeam].push(...plays.map((p) => p.card));
+    this.playLog.push(...plays);
 
     // Fresh TrickPlay instances rather than the originals: a Colyseus schema
     // instance belongs to exactly one array, so re-pushing the same objects here
@@ -305,6 +329,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
 
     this.state.currentTrick.clear();
     this.state.currentTurnSeat = winnerSeat;
+    this.scheduleBotTurn();
 
     // Seven ends it. The remaining six tricks are never played — the hand is already
     // decided, and nothing in the scoring depends on them.
@@ -376,6 +401,46 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     return this.state.teamOfSeat[seat] as Team;
   }
 
+  // ---- Bots ----
+
+  /**
+   * Makes the move this bot owes. Dispatched by phase, because the phase is what
+   * decides whether a seat owes a trump call or a card.
+   *
+   * The decision itself is a pure function in `@shelem/shared` and costs
+   * microseconds; everything expensive about a bot is deliberately absent (see
+   * hokm/bot.ts). The result goes through `declareTrump`/`playCard`, the same
+   * code a person's message reaches, so a bot cannot make a move a person could
+   * not — including playing a card it doesn't hold.
+   */
+  protected takeBotTurn(seat: Seat) {
+    if (this.state.phase === 'declaringTrump') {
+      this.declareTrump(seat, chooseTrump(this.hands[seat]));
+      return;
+    }
+
+    if (this.state.phase === 'playing') {
+      this.playCard(seat, chooseCard(this.botView(seat)));
+    }
+  }
+
+  /** What this seat is entitled to know. Assembled from the room's own state and
+   * that seat's hand — never from another seat's cards. */
+  private botView(seat: Seat): BotView {
+    const trick: TrickCardPlay[] = this.state.currentTrick.map((p) => ({
+      seat: p.seat as Seat,
+      card: { suit: p.suit as Suit, rank: p.rank as Rank },
+    }));
+    return {
+      seat,
+      hand: this.hands[seat],
+      trick,
+      trumpSuit: this.state.trumpSuit as Suit,
+      teamOfSeat: [...this.state.teamOfSeat] as Team[],
+      played: [...this.playLog, ...trick],
+    };
+  }
+
   protected resetGameForRematch() {
     this.state.handHistory.clear();
     this.state.hakemDraw.clear();
@@ -387,6 +452,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
 
     this.collectedDeck = null;
     this.teamPiles = [[], []];
+    this.playLog = [];
     this.pendingRest = [[], [], [], []];
     this.resolvingTrick = false;
   }

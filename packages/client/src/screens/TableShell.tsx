@@ -12,6 +12,11 @@ export interface TableShellProps {
   onLeave: () => void;
   onSeatSwapRequest: (toSeat: number) => void;
   onSeatSwapResponse: (accept: boolean) => void;
+  /** Only the host may seat bots, and only at a game that can play them. When
+   * false the controls aren't drawn at all rather than drawn and refused. */
+  canManageBots?: boolean;
+  onAddBot?: (seat: number) => void;
+  onRemoveBot?: (seat: number) => void;
   error: string | null;
   children: ReactNode;
 }
@@ -31,12 +36,18 @@ export function TableShell({
   onLeave,
   onSeatSwapRequest,
   onSeatSwapResponse,
+  canManageBots = false,
+  onAddBot,
+  onRemoveBot,
   error,
   children,
 }: TableShellProps) {
   const [muted, setMutedState] = useState(isMuted);
 
+  // People only: a bot is not somebody you ask to swap seats with.
   const seated = state.players.filter((p) => p.sessionId !== '');
+  const emptySeats = state.players.filter((p) => p.sessionId === '' && !p.isBot);
+  const botSeats = state.players.filter((p) => p.isBot);
   const pendingSwapForMe =
     state.pendingSeatSwap && state.pendingSeatSwap.toSeat === mySeat ? state.pendingSeatSwap : null;
 
@@ -68,6 +79,24 @@ export function TableShell({
       </div>
 
       {children}
+
+      {/* Bots are how a table gets going without waiting for four people — and
+          how one person practises alone. Host-only, and only while the table is
+          still filling: once cards are out, a bot is holding a hand. */}
+      {state.phase === 'lobby' && canManageBots && (emptySeats.length > 0 || botSeats.length > 0) && (
+        <div className={styles.swapRequest}>
+          {emptySeats.map((p) => (
+            <button key={`add-${p.seat}`} onClick={() => onAddBot?.(p.seat)}>
+              Add bot to seat {p.seat + 1}
+            </button>
+          ))}
+          {botSeats.map((p) => (
+            <button key={`remove-${p.seat}`} onClick={() => onRemoveBot?.(p.seat)}>
+              Remove {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {state.phase === 'lobby' && (
         <div className={styles.swapRequest}>

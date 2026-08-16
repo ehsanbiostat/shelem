@@ -41,6 +41,30 @@ export function cardsEqual(a: Card, b: Card): boolean {
 }
 
 /**
+ * A seat has somebody in it — a human who joined, or a bot.
+ *
+ * Every occupancy test used to read `sessionId !== ''`, which a bot can never
+ * satisfy because it never connects. This is the one place that distinction is
+ * made, so a table of one human and three bots counts as full everywhere it
+ * needs to.
+ */
+export function isOccupied(player: PlayerInfo): boolean {
+  return player.sessionId !== '' || player.isBot;
+}
+
+/** How many bots a table will take. Three, because the fourth seat is what the
+ * bots are there to play against — a table with no people in it has nobody to
+ * play for. */
+export const MAX_BOTS = 3;
+
+/** How long a bot appears to think before acting. Randomised so a table of bots
+ * doesn't move in lockstep, and long enough that a human can follow what
+ * happened — the point is pacing, not computation. The decision itself takes
+ * well under a millisecond (see hokm/bot.ts); this is the wait, not the work. */
+const BOT_THINK_MIN_MS = 500;
+const BOT_THINK_MAX_MS = 1400;
+
+/**
  * The half of a table that has nothing to do with which game is played on it: the
  * room code, who sits where, who hosts, swapping seats before the deal, holding a
  * seat open for a player who dropped, and agreeing to play again.
@@ -80,6 +104,78 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
    * — scores, host, rematch votes, phase — is handled by `resetForRematch` below. */
   protected abstract resetGameForRematch(): void;
 
+  /**
+   * Whether this game can actually play a bot's turn. Off by default so a game
+   * without bot logic can't be given one and then sit there waiting for a move
+   * that will never come — a bot at a table that can't drive it is worse than no
+   * bot at all.
+   */
+  protected botsSupported = false;
+
+  /**
+   * Make the move this bot owes right now. Only the game knows what that is — a
+   * Shelem bid, a Hokm trump call, a card — so only the game can dispatch it.
+   *
+   * Implementations must route the decision through the same handler a human's
+   * message reaches, so a bot cannot make a move a person could not: the
+   * validation is the same code, not a copy of it.
+   */
+  protected takeBotTurn(_seat: Seat): void {
+    // Games that set botsSupported override this; nothing else can reach it.
+  }
+
+  /**
+   * The seat whose think-timer is currently pending, so a burst of state changes
+   * can't queue the same bot twice.
+   *
+   * A seat rather than a boolean, and that distinction is load-bearing: a plain
+   * flag also blocked the *next* seat from being scheduled, so a trick resolving
+   * while some earlier timer was still outstanding left the table frozen with a
+   * bot to play and nothing due to wake it.
+   */
+  private botTurnPendingFor: Seat | null = null;
+
+  /** How long a bot pauses before acting, as [min, max] ms. A field rather than a
+   * constant so tests can turn the pacing down — at a realistic delay a single
+   * hand takes the better part of a minute, which is right at a table and useless
+   * in a test suite. */
+  protected botThinkMs: [number, number] = [BOT_THINK_MIN_MS, BOT_THINK_MAX_MS];
+
+  /**
+   * Wake the bot whose turn it is, if it is a bot's turn. Games call this after
+   * anything that hands the turn on.
+   *
+   * The delay is `this.clock`, not a bare setTimeout, so it dies with the room
+   * rather than firing into a disposed table. On waking it re-checks that the
+   * turn is *still* this bot's and that the phase hasn't moved — a reconnect, a
+   * rematch or a hand ending can all overtake a pending think.
+   */
+  protected scheduleBotTurn() {
+    const seat = this.state.currentTurnSeat as Seat;
+    if (seat < 0 || !this.state.players[seat]?.isBot) return;
+    if (this.botTurnPendingFor === seat) return;
+
+    const phase = this.state.phase;
+    const hand = this.state.handNumber;
+    this.botTurnPendingFor = seat;
+    const [minMs, maxMs] = this.botThinkMs;
+    const delay = minMs + Math.random() * (maxMs - minMs);
+
+    this.clock.setTimeout(() => {
+      if (this.botTurnPendingFor === seat) this.botTurnPendingFor = null;
+      // The table can move on underneath a pending think — a hand ending, a
+      // rematch, a reconnect — so nothing is assumed to still be true.
+      if (this.state.phase !== phase || this.state.handNumber !== hand) return;
+      if (this.state.currentTurnSeat !== seat) return;
+      if (!this.state.players[seat]?.isBot) return;
+
+      // Whatever this does hands the turn on, and the game schedules the next bot
+      // from the same place it would tell a human it was their go. Re-scheduling
+      // from here as well would double-drive the table.
+      this.takeBotTurn(seat);
+    }, delay);
+  }
+
   async onCreate(options: JoinOptions) {
     this.roomId = await generateRoomCode();
 
@@ -96,17 +192,28 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
     this.onMessage('playAgain', (client) => this.handlePlayAgain(client));
     this.onMessage('requestSeatSwap', (client, message) => this.handleRequestSeatSwap(client, message));
     this.onMessage('respondSeatSwap', (client, message) => this.handleRespondSeatSwap(client, message));
+    this.onMessage('addBot', (client, message) => this.handleAddBot(client, message));
+    this.onMessage('removeBot', (client, message) => this.handleRemoveBot(client, message));
 
     this.registerGameMessages();
   }
 
   onJoin(client: Client, options: JoinOptions) {
-    const seat = this.state.players.findIndex((p) => p.sessionId === '');
+    // A genuinely empty seat first; failing that, a bot's — so a host can fill up
+    // with bots to get started and a friend arriving late still gets in, rather
+    // than being turned away from a table that is only notionally full. Only
+    // while the table is still in the lobby: once cards are out, a bot is holding
+    // a hand and cannot simply be handed over.
+    let seat = this.state.players.findIndex((p) => !isOccupied(p));
+    if (seat === -1 && this.state.phase === 'lobby') {
+      seat = this.state.players.findIndex((p) => p.isBot);
+    }
     if (seat === -1) {
       throw new Error('Table is full');
     }
 
     const player = this.state.players[seat];
+    player.isBot = false;
     player.sessionId = client.sessionId;
     player.name = options.name?.trim() || `Player ${seat + 1}`;
     player.connected = true;
@@ -149,10 +256,51 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
   private handleStartGame(client: Client) {
     if (this.state.phase !== 'lobby') return;
     if (!this.seatBySessionId.has(client.sessionId)) return;
-    const allSeated = this.state.players.every((p) => p.sessionId !== '');
+    const allSeated = this.state.players.every(isOccupied);
     if (!allSeated) return;
 
     this.startHand();
+  }
+
+  /** Seats a bot. Host-only and lobby-only, for the same reason the table's rules
+   * are: setting the table up belongs to whoever made it. */
+  private handleAddBot(client: Client, message: { seat?: number }) {
+    if (this.state.phase !== 'lobby') return;
+    if (!this.botsSupported) {
+      client.send('actionRejected', { action: 'addBot', reason: 'This game does not have bots yet' });
+      return;
+    }
+    if (client.sessionId !== this.state.hostSessionId) {
+      client.send('actionRejected', { action: 'addBot', reason: 'Only the host can add bots' });
+      return;
+    }
+    if (typeof message.seat !== 'number' || message.seat < 0 || message.seat > 3) return;
+
+    const player = this.state.players[message.seat];
+    if (isOccupied(player)) return;
+    if (this.state.players.filter((p) => p.isBot).length >= MAX_BOTS) {
+      client.send('actionRejected', { action: 'addBot', reason: `A table takes at most ${MAX_BOTS} bots` });
+      return;
+    }
+
+    player.isBot = true;
+    // Numbered by seat rather than by how many bots there are, so a bot's name is
+    // stable when another is removed from beside it.
+    player.name = `Bot ${message.seat + 1}`;
+    player.connected = true;
+  }
+
+  private handleRemoveBot(client: Client, message: { seat?: number }) {
+    if (this.state.phase !== 'lobby') return;
+    if (client.sessionId !== this.state.hostSessionId) return;
+    if (typeof message.seat !== 'number' || message.seat < 0 || message.seat > 3) return;
+
+    const player = this.state.players[message.seat];
+    if (!player.isBot) return;
+
+    player.isBot = false;
+    player.name = '';
+    player.connected = true;
   }
 
   /** A rematch needs every seat, including any that are currently disconnected —
@@ -165,7 +313,10 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
     if (seat === undefined) return;
 
     this.state.players[seat].wantsRematch = true;
-    if (!this.state.players.every((p) => p.sessionId !== '' && p.wantsRematch)) return;
+    // A bot has no opinion about playing again, so waiting on one would mean a
+    // table of bots could never start a second match. Every *person* still has to
+    // agree, which is the point of the vote.
+    if (!this.state.players.every((p) => p.isBot || (p.sessionId !== '' && p.wantsRematch))) return;
 
     this.resetForRematch();
   }
@@ -204,7 +355,11 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
     const fromSeat = this.seatBySessionId.get(client.sessionId);
     if (fromSeat === undefined || typeof message.toSeat !== 'number') return;
     if (message.toSeat < 0 || message.toSeat > 3 || message.toSeat === fromSeat) return;
-    if (this.state.players[message.toSeat].sessionId === '') return;
+    // Only with another person. A bot has no preference about where it sits, and
+    // "swapping" with one is really just moving seats — which the host can do by
+    // removing the bot and re-adding it elsewhere.
+    const target = this.state.players[message.toSeat];
+    if (target.sessionId === '' || target.isBot) return;
 
     const request = new SeatSwapRequest();
     request.fromSeat = fromSeat;

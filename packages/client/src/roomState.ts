@@ -13,6 +13,16 @@ export interface PlayerInfoJSON {
   connected: boolean;
   handSize: number;
   wantsRematch: boolean;
+  /** Played by the server rather than a person. A bot never connects, so it has
+   * no sessionId — this is the only thing separating an occupied bot seat from
+   * an empty one. */
+  isBot: boolean;
+}
+
+/** Somebody is in this seat: a human who joined, or a bot. Mirrors the server's
+ * own `isOccupied` — see BaseTableRoom.ts. */
+export function isOccupied(player: PlayerInfoJSON): boolean {
+  return player.sessionId !== '' || player.isBot;
 }
 
 export interface TrickPlayJSON {
