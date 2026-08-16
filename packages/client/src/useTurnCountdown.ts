@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Room } from 'colyseus.js';
+import { countdownTickSecond } from '@shelem/shared';
+import { countdownTickSound } from './sound';
 
 /**
  * How much the browser's clock is ahead of or behind the server's, in ms.
@@ -34,6 +36,48 @@ export function useServerClockOffset(room: Room | null): number {
   }, [room]);
 
   return offset;
+}
+
+/**
+ * Sounds the last five seconds of *your own* turn.
+ *
+ * Only your own, deliberately: the tick exists to tell you to act, and with four
+ * seats you would otherwise hear it three times as often for other people's
+ * slowness as for your own, about which you can do nothing.
+ *
+ * The tick fires on the *change* of second, tracked in a ref, because the
+ * countdown recomputes about sixty times a second — firing on the value itself
+ * would be sixty ticks a second rather than one. `countdownTickSecond` decides
+ * which second it is, and is unit-tested in @shelem/shared precisely because
+ * getting that boundary wrong is inaudible until it is maddening.
+ *
+ * Two things fall out of being driven by requestAnimationFrame, both wanted: a
+ * backgrounded tab makes no sound at all, and a bot's turn never ticks because a
+ * bot has no clock to run down.
+ */
+export function useCountdownTicks({
+  remainingMs,
+  running,
+  isMyTurn,
+}: {
+  remainingMs: number;
+  running: boolean;
+  isMyTurn: boolean;
+}) {
+  const lastSounded = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!running || !isMyTurn) {
+      lastSounded.current = null;
+      return;
+    }
+
+    const second = countdownTickSecond(remainingMs);
+    if (second !== null && second !== lastSounded.current) {
+      countdownTickSound(second);
+    }
+    lastSounded.current = second;
+  }, [remainingMs, running, isMyTurn]);
 }
 
 export interface TurnCountdown {

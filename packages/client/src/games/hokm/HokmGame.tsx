@@ -5,7 +5,7 @@ import type { Card as CardModel, Seat as SeatIndex, Suit, Team } from '@shelem/s
 import { hokm, legalCards } from '@shelem/shared';
 import styles from '../../App.module.css';
 import { sortHand } from '../../cardSort';
-import { useServerClockOffset, useTurnCountdown } from '../../useTurnCountdown';
+import { useCountdownTicks, useServerClockOffset, useTurnCountdown } from '../../useTurnCountdown';
 import { isOccupied, seatOf, teamOf, toCard, type BaseStateJSON } from '../../roomState';
 import { Table } from '../../components/Table.js';
 import type { DealBlock } from '../../components/DealingOverlay.js';
@@ -97,6 +97,13 @@ export function HokmGame({ room, state: baseState, rawHand, onLeave, error }: Ho
   const mySeat = seatOf(room.sessionId, state.players);
   const playerNames: Record<number, string> = {};
   state.players.forEach((p) => (playerNames[p.seat] = p.name || `Seat ${p.seat + 1}`));
+  // Before the early return below: a hook cannot sit after a conditional return.
+  useCountdownTicks({
+    remainingMs: turn.remainingMs,
+    running: turn.running,
+    isMyTurn: mySeat !== null && state.currentTurnSeat === mySeat,
+  });
+
   const isHost = room.sessionId === state.hostSessionId;
   const hostSeat = seatOf(state.hostSessionId, state.players) ?? -1;
 

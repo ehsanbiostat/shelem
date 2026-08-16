@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  COUNTDOWN_TICK_SECONDS,
+  countdownTickSecond,
   DEAL_ALLOWANCE_MS,
   DEFAULT_TURN_LIMIT_SECONDS,
   MAX_TURN_LIMIT_SECONDS,
@@ -68,5 +70,50 @@ describe('turnDurationMs', () => {
 
   it('is on by default, because a clock nobody enables solves nothing', () => {
     expect(DEFAULT_TURN_LIMIT_SECONDS).toBe(30);
+  });
+});
+
+describe('countdownTickSecond', () => {
+  it('names the second the way a person would', () => {
+    // 4.2 seconds left is "five", not "four" — you say the number you are counting
+    // down *from*.
+    expect(countdownTickSecond(4200)).toBe(5);
+    expect(countdownTickSecond(5000)).toBe(5);
+    expect(countdownTickSecond(3001)).toBe(4);
+    expect(countdownTickSecond(1)).toBe(1);
+  });
+
+  it('stays silent until the countdown window', () => {
+    expect(countdownTickSecond(5001)).toBeNull();
+    expect(countdownTickSecond(30_000)).toBeNull();
+  });
+
+  it('stays silent at and past zero', () => {
+    // By then the turn has been played; a tick would announce something that has
+    // already happened.
+    expect(countdownTickSecond(0)).toBeNull();
+    expect(countdownTickSecond(-500)).toBeNull();
+  });
+
+  it('sounds every second exactly once across a whole countdown', () => {
+    // The one that matters. The caller polls this ~60 times a second, so a
+    // boundary landing on the wrong side means a second ticks twice or is skipped
+    // — and neither is obvious by ear until it is annoying.
+    const fired: number[] = [];
+    let last: number | null = null;
+
+    for (let remaining = 7000; remaining >= -200; remaining -= 1) {
+      const second = countdownTickSecond(remaining);
+      if (second !== null && second !== last) fired.push(second);
+      last = second;
+    }
+
+    expect(fired).toEqual([5, 4, 3, 2, 1]);
+  });
+
+  it('covers the whole turn on a table set to the shortest limit', () => {
+    // Deliberate: at a five-second limit the entire turn is the last five seconds.
+    expect(COUNTDOWN_TICK_SECONDS).toBe(MIN_TURN_LIMIT_SECONDS);
+    expect(countdownTickSecond(MIN_TURN_LIMIT_SECONDS * 1000)).toBe(COUNTDOWN_TICK_SECONDS);
   });
 });
