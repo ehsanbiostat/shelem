@@ -48,6 +48,13 @@ async function waitForPhase(room: HokmRoom, phase: string, timeoutMs = 20000) {
   }
 }
 
+/**
+ * The Hâkem ceremony is deliberately *not* sped up for tests, unlike the bots'
+ * think-delay. It is a chain of one timer per revealed card, and collapsing the
+ * gap puts them all in the same clock tick, where they stop firing in order — the
+ * draw then appears to deal to seats in an impossible sequence. The pacing is
+ * load-bearing, so these tests budget for it instead.
+ */
 async function seatFour(config: Record<string, unknown> = { hakemSelection: 'random' }) {
   const room = await colyseus.createRoom<HokmRoom>('hokm', { config });
   const clients = [];
@@ -188,7 +195,7 @@ describe('finding the Hâkem', () => {
       await colyseus.cleanup();
     }
     throw new Error('never drew an Ace pair that needed reseating');
-  });
+  }, 60000);
 
   it('moves nobody when the Aces already landed opposite each other', async () => {
     for (let attempt = 0; attempt < 20; attempt++) {
@@ -206,7 +213,7 @@ describe('finding the Hâkem', () => {
       await colyseus.cleanup();
     }
     throw new Error('never drew an Ace pair that was already opposite');
-  });
+  }, 60000);
 });
 
 describe('naming trump', () => {
