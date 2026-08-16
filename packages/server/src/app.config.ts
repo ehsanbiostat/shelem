@@ -1,5 +1,6 @@
 import type { Server } from 'colyseus';
 import { ShelemRoom } from './rooms/ShelemRoom.js';
+import { HokmRoom } from './rooms/HokmRoom.js';
 
 /**
  * Which games this server hosts. Colyseus's room registry is the game registry —
@@ -12,6 +13,7 @@ import { ShelemRoom } from './rooms/ShelemRoom.js';
 export const gameRooms = {
   initializeGameServer(gameServer: Server) {
     gameServer.define('shelem', ShelemRoom);
+    gameServer.define('hokm', HokmRoom);
   },
 };
 
