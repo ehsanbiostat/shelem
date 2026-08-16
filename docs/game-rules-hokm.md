@@ -27,13 +27,15 @@ Traditionally, cards are dealt **face up** around the table until an **Ace** app
 
 | Setting | Hâkem | Partnerships |
 | --- | --- | --- |
-| `aceDealTeams` | first Ace | the second Ace finds their partner — the cards decide the teams |
+| `aceDealTeams` | first Ace | the second Ace finds their partner, who then **moves to sit opposite the Hâkem** — the cards decide the teams |
 | `aceDealSeats` *(default)* | first Ace | fixed by seat, opposite players |
 | `random` | drawn silently, no ceremony | fixed by seat |
 
 The cards turned face up are **not** removed from play. At a real table they go straight back in, and the deck is shuffled again before the hand is dealt.
 
-`aceDealTeams` is the traditional form, but it overrides the seating players deliberately arranged in the lobby, which is why the default keeps the ceremony and leaves the partnerships alone.
+Once the Hâkem's Ace lands they are **out of the draw** — the search for the partner deals only to the other three, exactly as it does at a table.
+
+Partners sit opposite each other, so on `aceDealTeams` the partner and whoever was sitting opposite the Hâkem trade places once both Aces are out. The Hâkem keeps their chair. This is why the mode is not the default: it overrides the seating players deliberately arranged in the lobby.
 
 ### Declaring trump
 

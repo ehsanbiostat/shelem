@@ -12,6 +12,13 @@ export class HakemReveal extends Schema {
   @type('number') seat = -1;
   @type('string') suit = '';
   @type('string') rank = '';
+  /** Who was sitting there when this card turned up, captured at the time.
+   *
+   * Not looked up from the seat later, because the draw can *move* people: on
+   * `aceDealTeams` the partner is reseated opposite the Hâkem once both Aces are
+   * out, and a seat-based lookup would then credit these cards to whoever ended up
+   * in that chair. */
+  @type('string') name = '';
 }
 
 /** The rules this Hokm table is playing under, chosen by whoever created it and then
@@ -66,6 +73,14 @@ export class HokmGameState extends BaseGameState {
   /** The face-up cards of the Hâkem draw, pushed one at a time so every seat
    * watches the same ceremony at the same pace. Empty on a table that skips it. */
   @type([HakemReveal]) hakemDraw = new ArraySchema<HakemReveal>();
+
+  /** The two seats that changed places so the Aces' partnership could sit opposite
+   * each other, or -1 when nobody moved. Two players' view of the table rotates at
+   * that moment, so it is worth saying why rather than letting it look like a
+   * glitch. After the swap these seats hold exactly the two who moved, so the
+   * client can name them itself. */
+  @type('number') swappedSeatA = -1;
+  @type('number') swappedSeatB = -1;
 
   @type([HokmHandResult]) handHistory = new ArraySchema<HokmHandResult>();
 

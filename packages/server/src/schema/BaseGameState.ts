@@ -67,12 +67,12 @@ export class BaseGameState extends Schema {
   /**
    * Which team each seat belongs to, by seat index.
    *
-   * Shelem fills this from `teamForSeat` and never touches it again — partners are
-   * whoever sits opposite, which is what the lobby's seat swap is for. It is state
-   * rather than a derivation because Hokm can be configured to draw partnerships
-   * from the cards (see `hakemSelection: 'aceDealTeams'`), and a client rendering
-   * the scoreboard has to be told which pairing it is looking at rather than
-   * assuming seat parity.
+   * Partners are always whoever sits opposite, so in practice this is seat parity
+   * — Hokm's `aceDealTeams` decides the *pairing* from the cards, but then reseats
+   * those two players facing each other rather than leaving them where they were
+   * (see HokmRoom.seatPartnerOpposite). It stays explicit state so the server
+   * remains the single place that decides it, and so the client can render teams
+   * without keeping its own copy of the parity rule.
    */
   @type(['number']) teamOfSeat = new ArraySchema<number>();
 

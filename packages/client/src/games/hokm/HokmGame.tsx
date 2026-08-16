@@ -255,6 +255,8 @@ export function HokmGame({ room, state: baseState, rawHand, onLeave, error }: Ho
               playerNames={playerNames}
               mySeat={mySeat}
               hakemSeat={state.hakemSeat}
+              swappedSeatA={state.swappedSeatA}
+              swappedSeatB={state.swappedSeatB}
             />
           ) : state.phase === 'declaringTrump' ? (
             <TrumpPicker

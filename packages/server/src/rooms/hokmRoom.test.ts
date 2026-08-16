@@ -149,24 +149,63 @@ describe('finding the Hâkem', () => {
     expect([...room.state.teamOfSeat]).toEqual([0, 1, 0, 1]);
   });
 
-  it('draws partnerships from the cards when the table asks it to', async () => {
-    const { room, clients } = await seatFour({ hakemSelection: 'aceDealTeams' });
-    clients[0].send('startGame');
-    await room.waitForNextPatch();
-    await waitForPhase(room, 'declaringTrump');
+  it('seats the Hâkem and their partner opposite each other', async () => {
+    // The bug this replaces: the two Ace-holders were made partners *where they
+    // sat*, so an adjacent pair stayed adjacent. The old test only checked they
+    // shared a team, which the bug satisfied perfectly.
+    //
+    // Retried across tables because the draw is random and the already-opposite
+    // case passes either way — only a non-parity draw can tell the two apart.
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const { room, clients } = await seatFour({ hakemSelection: 'aceDealTeams' });
+      clients[0].send('startGame');
+      await room.waitForNextPatch();
 
-    const teams = [...room.state.teamOfSeat];
-    expect(teams.filter((t) => t === 0)).toHaveLength(2);
-    expect(teams.filter((t) => t === 1)).toHaveLength(2);
+      await waitForPhase(room, 'declaringTrump');
 
-    // The draw ends on the Ace that found the partner. There may be more than two
-    // Aces in it — one landing back on the Hâkem settles nothing, so the deal goes
-    // on — but the first and the last are the pair, and they are on the same side.
-    const aces = room.state.hakemDraw.filter((r) => r.rank === 'A');
-    expect(aces.length).toBeGreaterThanOrEqual(2);
-    expect(aces[0].seat).toBe(room.state.hakemSeat);
-    expect(aces[aces.length - 1].seat).not.toBe(room.state.hakemSeat);
-    expect(teams[aces[0].seat]).toBe(teams[aces[aces.length - 1].seat]);
+      // By name, not by seat — the reseat moves people, and the whole point of
+      // capturing a name on each reveal is that a seat lookup would now be wrong.
+      const aces = room.state.hakemDraw.filter((r) => r.rank === 'A');
+      const hakemName = aces[0].name;
+      const partnerName = aces[aces.length - 1].name;
+      if (partnerName === hakemName) throw new Error('the Hâkem cannot be their own partner');
+
+      const seatOfName = (name: string) => room.state.players.findIndex((p) => p.name === name);
+      const hakemSeat = seatOfName(hakemName);
+      const partnerSeat = seatOfName(partnerName);
+
+      // The Hâkem never moves, so this also checks the reseat kept hakemSeat valid.
+      expect(hakemSeat).toBe(room.state.hakemSeat);
+      expect(partnerSeat).toBe((hakemSeat + 2) % 4);
+      expect([...room.state.teamOfSeat]).toEqual([0, 1, 0, 1]);
+
+      // Only a draw that actually had to move somebody proves the fix; keep going
+      // until one turns up.
+      if (room.state.swappedSeatA >= 0) {
+        expect(room.state.swappedSeatB).toBeGreaterThanOrEqual(0);
+        return;
+      }
+      await colyseus.cleanup();
+    }
+    throw new Error('never drew an Ace pair that needed reseating');
+  });
+
+  it('moves nobody when the Aces already landed opposite each other', async () => {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const { room, clients } = await seatFour({ hakemSelection: 'aceDealTeams' });
+      clients[0].send('startGame');
+      await room.waitForNextPatch();
+      await waitForPhase(room, 'declaringTrump');
+
+      if (room.state.swappedSeatA === -1) {
+        // Nothing announced, and the seating is untouched.
+        expect(room.state.swappedSeatB).toBe(-1);
+        expect(room.state.players.map((p) => p.name)).toEqual(['Ann', 'Bo', 'Cy', 'Di']);
+        return;
+      }
+      await colyseus.cleanup();
+    }
+    throw new Error('never drew an Ace pair that was already opposite');
   });
 });
 

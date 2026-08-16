@@ -47,11 +47,12 @@ describe('drawForHakem — aceDealSeats', () => {
     expect(draw.partnerSeat).toBeNull();
   });
 
-  it('leaves partnerships as they were seated — opposite players', () => {
+  it('finds no partner — the seating already settled that', () => {
     const deck = deckOf(low('clubs'), ace('spades'));
     const draw = drawForHakem(deck, 0, 'aceDealSeats');
 
-    expect(draw.teamOfSeat).toEqual([0, 1, 0, 1]);
+    expect(draw.hakemSeat).toBe(1);
+    expect(draw.partnerSeat).toBeNull();
   });
 
   it('wraps past the fourth seat when no Ace has turned up yet', () => {
@@ -73,44 +74,44 @@ describe('drawForHakem — aceDealTeams', () => {
     expect(draw.partnerSeat).toBe(3);
   });
 
-  it('pairs the two Ace-holders even when they are sitting side by side', () => {
+  it('names the partner even when they are sitting next to the Hâkem', () => {
+    // Where they then *sit* is the room's business — see seatPartnerOpposite.
     const deck = deckOf(ace('spades'), ace('hearts'));
     const draw = drawForHakem(deck, 0, 'aceDealTeams');
 
     expect(draw.hakemSeat).toBe(0);
     expect(draw.partnerSeat).toBe(1);
-    // Seats 0 and 1 are now partners, which seat parity would never have given.
-    expect(draw.teamOfSeat[0]).toBe(draw.teamOfSeat[1]);
-    expect(draw.teamOfSeat[2]).toBe(draw.teamOfSeat[3]);
-    expect(draw.teamOfSeat[0]).not.toBe(draw.teamOfSeat[2]);
   });
 
-  it('keeps dealing when a second Ace lands back on the Hâkem', () => {
-    // Seats 0,1,2,3,0(2nd Ace, same player),1 — the pairing has to wait for seat 1.
-    const deck = deckOf(ace('spades'), low('hearts'), low('clubs'), low('diamonds'), ace('hearts'), ace('clubs'));
+  it('deals no further card to the Hâkem once their Ace has landed', () => {
+    // The whole point: a player who has been chosen is out of the draw. Before
+    // this, cards kept going round all four seats and a second Ace to the Hâkem
+    // was merely ignored — which both looked wrong and wasted about a quarter of
+    // the partner search on somebody who could not be the partner.
+    const deck = deckOf(ace('spades'), low('hearts'), low('clubs'), low('diamonds'), low('spades', '4'), ace('hearts'));
     const draw = drawForHakem(deck, 0, 'aceDealTeams');
 
     expect(draw.hakemSeat).toBe(0);
-    expect(draw.partnerSeat).toBe(1);
+    const afterHakem = draw.reveals.slice(1);
+    expect(afterHakem.some((r) => r.seat === draw.hakemSeat)).toBe(false);
+    expect(afterHakem.map((r) => r.seat)).toEqual([1, 2, 3, 1, 2]);
+    expect(draw.partnerSeat).toBe(2);
   });
 
-  it('gives all four seats a team, two to a side', () => {
+  it('only ever turns up two Aces — the second one ends the draw', () => {
     const deck = deckOf(low('clubs'), ace('spades'), low('hearts'), ace('hearts'));
-    const { teamOfSeat } = drawForHakem(deck, 0, 'aceDealTeams');
+    const draw = drawForHakem(deck, 0, 'aceDealTeams');
 
-    expect(teamOfSeat).toHaveLength(4);
-    expect(teamOfSeat.filter((t) => t === 0)).toHaveLength(2);
-    expect(teamOfSeat.filter((t) => t === 1)).toHaveLength(2);
+    expect(draw.reveals.filter((r) => r.card.rank === 'A')).toHaveLength(2);
+    expect(draw.reveals[draw.reveals.length - 1].card.rank).toBe('A');
   });
 
-  it('puts the Hâkem and their partner on the same side, and the other two opposite', () => {
+  it('names a partner who is not the Hâkem', () => {
     const deck = deckOf(low('clubs'), ace('spades'), low('hearts'), ace('hearts'));
-    const { hakemSeat, partnerSeat, teamOfSeat } = drawForHakem(deck, 0, 'aceDealTeams');
+    const { hakemSeat, partnerSeat } = drawForHakem(deck, 0, 'aceDealTeams');
 
-    expect(teamOfSeat[hakemSeat]).toBe(teamOfSeat[partnerSeat!]);
-    const others = ([0, 1, 2, 3] as Seat[]).filter((s) => s !== hakemSeat && s !== partnerSeat);
-    expect(teamOfSeat[others[0]]).toBe(teamOfSeat[others[1]]);
-    expect(teamOfSeat[others[0]]).not.toBe(teamOfSeat[hakemSeat]);
+    expect(partnerSeat).not.toBeNull();
+    expect(partnerSeat).not.toBe(hakemSeat);
   });
 });
 
@@ -120,10 +121,10 @@ describe('drawForHakem — random', () => {
     expect(draw.reveals).toEqual([]);
   });
 
-  it('picks a seat from the rng and leaves partnerships to the seating', () => {
+  it('picks a seat from the rng and finds no partner', () => {
     expect(drawForHakem(createDeck(), 0, 'random', () => 0).hakemSeat).toBe(0);
     expect(drawForHakem(createDeck(), 0, 'random', () => 0.99).hakemSeat).toBe(3);
-    expect(drawForHakem(createDeck(), 0, 'random', () => 0.5).teamOfSeat).toEqual([0, 1, 0, 1]);
+    expect(drawForHakem(createDeck(), 0, 'random', () => 0.5).partnerSeat).toBeNull();
   });
 });
 
