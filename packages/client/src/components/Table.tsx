@@ -16,6 +16,9 @@ export interface TablePlayer {
   /** Short badge beside the name — Shelem puts each player's bid here. */
   badgeLabel?: string;
   badgeMuted?: boolean;
+  /** This seat's team's running figure for the hand. Both members of a team pass
+   * the same one — see SeatProps.handScore. */
+  handScore?: { value: string; team: 0 | 1 };
 }
 
 export interface TableProps {
@@ -127,6 +130,7 @@ export function Table({
                 hasRole={seat === roleSeat}
                 badgeLabel={player?.badgeLabel}
                 badgeMuted={player?.badgeMuted}
+                handScore={player?.handScore}
                 trumpSuit={trumpSuit}
                 empty={!player}
                 slot={slot}

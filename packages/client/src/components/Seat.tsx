@@ -56,6 +56,17 @@ export interface SeatProps {
   badgeLabel?: string;
   /** Draws `badgeLabel` in the quieter style, for a badge that isn't news (a Pass). */
   badgeMuted?: boolean;
+  /**
+   * This team's running figure for the hand, already worded by the game — card
+   * points in Shelem, tricks in Hokm.
+   *
+   * It is the *team's*, so both members of a team carry the same one and the table
+   * shows two values across four seats. The colour is what makes that legible
+   * rather than misleading: without it, four labels reading 95 · 40 · 95 · 40 read
+   * as four players' scores totalling 270. Team colours match the score panel's
+   * own dots, so it needs no legend of its own.
+   */
+  handScore?: { value: string; team: 0 | 1 };
   /** Shown against the seat holding the role, once trump is known. */
   trumpSuit?: Suit | null;
   empty: boolean;
@@ -148,6 +159,7 @@ function SeatImpl({
   hasRole,
   badgeLabel,
   badgeMuted = false,
+  handScore,
   trumpSuit,
   empty,
   slot,
@@ -155,9 +167,18 @@ function SeatImpl({
 }: SeatProps) {
   const identity = (
     <div className={styles.identity}>
+      {/* The score sits inside the name row rather than on a line of its own.
+          `.identity` grows toward the middle of the table (see its comment), so a
+          new row would eat playing area; another item on this row grows along the
+          table edge instead, where there is room. */}
       <div className={styles.name}>
         <span className={`${styles.connectedDot} ${connected ? '' : styles.offline}`} />
         {empty ? 'Waiting…' : name}
+        {!empty && handScore && (
+          <span className={`${styles.scoreBadge} ${handScore.team === 0 ? styles.scoreTeam0 : styles.scoreTeam1}`}>
+            {handScore.value}
+          </span>
+        )}
       </div>
       {isChoosing && <span className={styles.biddingBadge}>Thinking…</span>}
       {!isChoosing && badgeLabel && (

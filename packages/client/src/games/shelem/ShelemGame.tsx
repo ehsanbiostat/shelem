@@ -145,18 +145,39 @@ export function ShelemGame({ room, state: baseState, rawHand, onMessage, onLeave
             : 'Pass';
   });
 
+  // Live per-hand progress (declarer vs. defenders) mapped onto team 0/1, mirroring
+  // how the match score itself is split once the hand completes.
+  const declarerTeam = state.declarerSeat >= 0 ? teamOf(state, state.declarerSeat) : null;
+  const team0HandPoints =
+    declarerTeam === 0 ? state.declarerPointsCollected : declarerTeam === 1 ? state.defenderPointsCollected : 0;
+  const team1HandPoints =
+    declarerTeam === 1 ? state.declarerPointsCollected : declarerTeam === 0 ? state.defenderPointsCollected : 0;
+
+  // Only once cards are out. Before that the figure is meaningless, and during the
+  // auction this same slot is showing each player's bid — also a bare number, so
+  // the two must never be on screen together. It stays up through handComplete and
+  // matchComplete so the finished hand can be read during the review pause.
+  const showHandScore =
+    state.phase === 'playing' || state.phase === 'handComplete' || state.phase === 'matchComplete';
+
   const tablePlayers = state.players
     .filter((p) => p.sessionId !== '')
-    .map((p) => ({
-      seat: p.seat as SeatIndex,
-      name: p.name,
-      connected: p.connected,
-      handSize: p.handSize,
-      // Bid history is only meaningful while bidding is actually happening — once the
-      // round moves on, a lingering "Pass" badge next to someone's name is stale info.
-      badgeLabel: state.phase === 'bidding' ? bidLabelBySeat[p.seat] : undefined,
-      badgeMuted: bidLabelBySeat[p.seat] === 'Pass',
-    }));
+    .map((p) => {
+      const team = teamOf(state, p.seat);
+      return {
+        seat: p.seat as SeatIndex,
+        name: p.name,
+        connected: p.connected,
+        handSize: p.handSize,
+        // Bid history is only meaningful while bidding is actually happening — once the
+        // round moves on, a lingering "Pass" badge next to someone's name is stale info.
+        badgeLabel: state.phase === 'bidding' ? bidLabelBySeat[p.seat] : undefined,
+        badgeMuted: bidLabelBySeat[p.seat] === 'Pass',
+        handScore: showHandScore
+          ? { value: String(team === 0 ? team0HandPoints : team1HandPoints), team }
+          : undefined,
+      };
+    });
 
   // Teams aren't named "A"/"B" anywhere but the scoreboard — they're identified by
   // their two members' names there, and not labeled on the table at all.
@@ -166,14 +187,6 @@ export function ShelemGame({ room, state: baseState, rawHand, onMessage, onLeave
   }
   const team0Name = teamName(0);
   const team1Name = teamName(1);
-
-  // Live per-hand progress (declarer vs. defenders) mapped onto team 0/1, mirroring
-  // how the match score itself is split once the hand completes.
-  const declarerTeam = state.declarerSeat >= 0 ? teamOf(state, state.declarerSeat) : null;
-  const team0HandPoints =
-    declarerTeam === 0 ? state.declarerPointsCollected : declarerTeam === 1 ? state.defenderPointsCollected : 0;
-  const team1HandPoints =
-    declarerTeam === 1 ? state.declarerPointsCollected : declarerTeam === 0 ? state.defenderPointsCollected : 0;
 
   const scoreRows: ScoreRow[] = state.handHistory.map((result) => ({
     key: result.handNumber,

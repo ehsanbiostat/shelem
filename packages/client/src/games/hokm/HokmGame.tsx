@@ -100,17 +100,31 @@ export function HokmGame({ room, state: baseState, rawHand, onLeave, error }: Ho
     return <div className={styles.lobbyWaiting}>Connecting…</div>;
   }
 
+  // Only once cards are out: there is nothing to count during the draw or while
+  // trump is being chosen. Stays up through the review pause at the end of a hand.
+  const showHandScore =
+    state.phase === 'playing' || state.phase === 'handComplete' || state.phase === 'matchComplete';
+
   const tablePlayers = state.players
     .filter((p) => p.sessionId !== '')
-    .map((p) => ({
-      seat: p.seat as SeatIndex,
-      name: p.name,
-      connected: p.connected,
-      handSize: p.handSize,
-      // The Hâkem is worth marking from the moment they're known, since everything
-      // in the hand follows from who it is.
-      badgeLabel: p.seat === state.hakemSeat && state.hakemSeat >= 0 ? 'Hâkem' : undefined,
-    }));
+    .map((p) => {
+      const team = teamOf(state, p.seat);
+      const isHakem = state.hakemSeat >= 0 && p.seat === state.hakemSeat;
+      return {
+        seat: p.seat as SeatIndex,
+        name: p.name,
+        connected: p.connected,
+        handSize: p.handSize,
+        // The Hâkem is worth marking from the moment they're known — but only until
+        // trump exists, at which point the trump glyph is already sitting on this
+        // exact seat and says the same thing. Dropping it then keeps the label to
+        // three things, which is what it was deliberately pared down to.
+        badgeLabel: isHakem && !trumpSuit ? 'Hâkem' : undefined,
+        handScore: showHandScore
+          ? { value: String(team === 0 ? state.team0Tricks : state.team1Tricks), team }
+          : undefined,
+      };
+    });
 
   function teamName(team: Team): string {
     const members = tablePlayers.filter((p) => teamOf(state, p.seat) === team).map((p) => p.name);
