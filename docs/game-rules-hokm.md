@@ -1,6 +1,6 @@
 # Hokm — Game Rules
 
-The ruleset this platform implements for Hokm (حکم). Assembled from the sources listed at the bottom, which disagree with each other in a few places — **the open questions below need settling by the domain owner**, the same way [Shelem's rules](game-rules.md) were.
+The authoritative ruleset for Hokm (حکم), as clarified with the domain owner — the same way [Shelem's rules](game-rules.md) were. It was drafted from the sources listed at the bottom, which disagree with each other in places; where they did, the owner's ruling settled it (see [Settled by the domain owner](#settled-by-the-domain-owner)).
 
 ## Setup
 
@@ -37,7 +37,7 @@ The cards turned face up are **not** removed from play. At a real table they go 
 
 ### Declaring trump
 
-The Hâkem names trump **on their first five cards alone**, before the remaining eight are dealt to anyone. This is the game's central decision and the whole reason the deal is split in two: the other eight cards do not exist yet, for the Hâkem or for anyone else.
+All four players are dealt their opening five, and *then* the Hâkem names trump — **on those five cards alone**, before the remaining eight go out to anyone. This is the game's central decision and the whole reason the deal is split in two: the other eight cards do not exist yet, for the Hâkem or for anyone else. The other three sit holding five cards of their own while it happens.
 
 The Hâkem may name any of the four suits. There is no no-trump option (see [Deliberately not implemented](#deliberately-not-implemented)).
 
@@ -58,7 +58,7 @@ These are exactly Shelem's rules of play, and share the same implementation (`de
 
 A hand is decided on **tricks**, not card points. There are no card values in Hokm at all.
 
-The first team to take **7 tricks** wins the hand. The remaining six are never played — the hand is already decided and nothing in the scoring depends on them.
+The first team to take **7 tricks** wins the hand. The remaining six are never played — the hand is already decided and nothing in the scoring depends on them. A Kot is the **first seven** tricks, not all thirteen.
 
 | Outcome | Points |
 | --- | --- |
@@ -90,12 +90,12 @@ Two of these are worth explaining:
 - **The ladder must climb.** A Kot is a won hand with the opponents shut out, and a Hâkem Koti is that same sweep against the player who chose trump — each strictly harder than the last. A table that priced them the other way round would be paying more for the lesser result, so the validator refuses it. Pricing them all *equal* is allowed: that's a table that simply doesn't reward sweeps.
 - **Shuffle defaults to Random here, unlike Shelem.** Shelem's light shuffle exists to keep suits grouped so a trump-length bid stays reachable — see [the reasoning there](game-rules.md#shuffling--deliberately-light). Hokm has no auction, so that justification doesn't carry over. It stays available because a long suit still helps a Hâkem choose.
 
-## Open questions
+## Settled by the domain owner
 
-Two points the sources don't settle, flagged for the domain owner:
+Two points the sources genuinely disagreed on. Both are now decided, and both confirmed what was already implemented:
 
-1. **Does everyone get their first five before the Hâkem declares?** This implementation deals five to all four seats, then waits — which is what the shipping Hokm apps do, and what the 5-4-4 packet deal implies. Some descriptions read as though only the Hâkem is dealt to first, with the other three still empty-handed at the moment trump is called. The difference is real: it changes whether the other three are looking at cards they can't use yet.
-2. **Does a Kot need the first 7 tricks, or all 13?** This implements the first 7, which is what Pagat and every other English source describes. Some groups require sweeping all thirteen. Making that a table option is a small change if wanted.
+1. **All four players receive their opening five before the Hâkem declares.** Some descriptions read as though only the Hâkem is dealt to first, with the other three still empty-handed at the moment trump is called. They are not: everyone is looking at five cards while the Hâkem chooses. This is also what the 5-4-4 packet deal implies, and what shipping Hokm apps do.
+2. **A Kot is the first seven tricks, not all thirteen.** Some groups require sweeping all thirteen for the bonus. This table does not — seven to nil is a Kot, and the remaining six tricks are never played. Not offered as a table option either, since it isn't a rule this group varies.
 
 ## Deliberately not implemented
 

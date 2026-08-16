@@ -7,7 +7,7 @@ A web platform for playing Persian card games — built with the visual polish a
 Two games so far:
 
 - **[Shelem](docs/game-rules.md)** — four players in partnerships, bidding for the widow and playing for card points.
-- **[Hokm](docs/game-rules-hokm.md)** — four players in partnerships, where the Hâkem names trump on their first five cards and the hand is won on tricks.
+- **[Hokm](docs/game-rules-hokm.md)** — four players in partnerships, where the Hâkem names trump on their first five cards and the hand is won on seven tricks.
 
 ## Status
 
@@ -16,7 +16,7 @@ Early build. Both game engines (Shelem's bidding/widow/scoring, Hokm's Hâkem dr
 ## Docs
 
 - [Shelem Rules](docs/game-rules.md) — the exact Shelem ruleset this platform implements
-- [Hokm Rules](docs/game-rules-hokm.md) — the same for Hokm, including the two points still to be settled
+- [Hokm Rules](docs/game-rules-hokm.md) — the same for Hokm
 - [Product Scope](docs/product-scope.md) — what's in and out
 - [Architecture](docs/architecture.md) — tech stack, technical decisions, and the game/table boundary
 - [Roadmap](docs/roadmap.md) — deferred features planned for later versions
