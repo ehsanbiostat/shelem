@@ -4,11 +4,12 @@ Decisions made during initial project grilling. Anything not listed here as in-s
 
 ## Vision
 
-Replicate the setup, feel, and front-end quality of [Trickster Cards](https://www.trickstercards.com/game/) for Shelem specifically. This means matching their **UX structure and polish** (oval table, fanned hand, bidding UI, smooth deal/trick animations, responsive layout) — not copying their actual visual assets, branding, or card designs, which would be a copyright/trademark risk. Original art and branding.
+Replicate the setup, feel, and front-end quality of [Trickster Cards](https://www.trickstercards.com/game/) for Persian card games. This means matching their **UX structure and polish** (oval table, fanned hand, bidding UI, smooth deal/trick animations, responsive layout) — not copying their actual visual assets, branding, or card designs, which would be a copyright/trademark risk. Original art and branding.
 
 ## Platform
 
-- **One game**: Shelem only for v1. The long-term plan is a multi-game portal like Trickster, so the game engine should have a loose `Game`/room boundary that doesn't require a rewrite to add a second game later — but no generic multi-game framework should be built now.
+- **Two games**: Shelem and [Hokm](game-rules-hokm.md), under one portal named **Pasoor** (پاسور — the Persian word for a deck of playing cards). The landing page is a game picker; a table code is enough to join either, since the room itself says which game is being played.
+- v1 shipped Shelem alone, and the `Game`/room boundary the roadmap called for was drawn when Hokm was added rather than ahead of need — see [Architecture](architecture.md#the-game-boundary). A third game is a `define` and a folder, not a rewrite.
 - **Web-only**, responsive for both desktop/laptop and mobile browsers. No native iOS/Android apps in v1 (can wrap the web app later, e.g. with Capacitor, once the core product is proven).
 
 ## Identity & accounts
@@ -23,7 +24,7 @@ Replicate the setup, feel, and front-end quality of [Trickster Cards](https://ww
 - Host creates a table and receives a shareable link/code; the host also takes one of the 4 seats.
 - Players self-select their seat on joining (first-come, first-seated). Before the game starts, a player can send another player a request to swap seats; the swap happens if accepted.
 - Strictly **human-only** — no AI bots to fill empty seats. Play starts only once all 4 seats are filled by real players.
-- The table's rules — match target score, slam values, whether Sar-Shelem exchanges the widow, the double-negative penalty, and shuffle mode — are chosen by the creator on a create-table screen before the room exists, then fixed for the whole match. See [Table configuration](game-rules.md#table-configuration) for the full list and bounds. They're shown read-only to everyone at the table, not just the host, so all four players know what they've joined before the first deal. A rematch draws a new host and returns them to the same screen.
+- The table's rules are chosen by the creator on a create-table screen before the room exists, then fixed for the whole match. Each game has its own set — see [Shelem's](game-rules.md#table-configuration) and [Hokm's](game-rules-hokm.md#table-configuration) for the full lists and bounds. They're shown read-only to everyone at the table, not just the host, so all four players know what they've joined before the first deal. A rematch draws a new host and returns them to the same screen.
 
 ## Disconnect handling
 

@@ -12,8 +12,13 @@ Everything below was explicitly discussed and deliberately deferred, not overloo
 - **Ranked play / ELO / leaderboards** — depends on accounts.
 - **Native mobile apps** — likely as a wrapper around the web app (e.g. Capacitor) rather than a rewrite, once the web product is proven.
 
+## Done since v1
+
+- **Multi-game portal** — the platform is now Pasoor, with Shelem and [Hokm](game-rules-hokm.md). The boundary was drawn when the second game arrived rather than ahead of need, exactly as planned: `BaseTableRoom` owns the table, each game owns its rules. See [Architecture](architecture.md#the-game-boundary).
+
 ## Longer-term
 
-- **Multi-game portal** — additional games beyond Shelem, Trickster-style. The v1 architecture (Colyseus rooms, monorepo, shared types) is deliberately structured so this doesn't require a rewrite, but no generic multi-game framework is being built ahead of need.
+- **More games** — a third is a `gameServer.define`, a rules folder under `packages/shared/src/`, a room, and a board. No framework work.
+- **Hokm's no-trump modes** — Saras / Naras / Tak-Naras, deliberately deferred; they're a comparator swap on the existing trick engine. See [Deliberately not implemented](game-rules-hokm.md#deliberately-not-implemented).
 - **Monetization** — deliberately unsolved for now given the Iran-sanctions payment-processor problem. Revisit once there's an actual userbase and a clearer picture of who's playing (diaspora vs. Iran-based) and what payment rails are viable.
 - **Localization (Persian/RTL)** — v1 is English-only by explicit choice, not oversight. Revisit if/when it matters for the actual userbase.

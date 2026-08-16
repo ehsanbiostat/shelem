@@ -1,6 +1,6 @@
 # Shelem — Game Rules
 
-The authoritative ruleset for this platform's game engine, as clarified with the domain owner (differs in places from generic web summaries of "Shelem," which turned out to be imprecise).
+The authoritative ruleset for Shelem, as clarified with the domain owner (differs in places from generic web summaries of "Shelem," which turned out to be imprecise). The platform's other game has its own ruleset — see [Hokm](game-rules-hokm.md).
 
 ## Setup
 
