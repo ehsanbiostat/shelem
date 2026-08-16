@@ -11,6 +11,7 @@ import {
   tableShuffle,
   determineTrickWinner,
   legalCards,
+  teamForSeat,
   hokm,
 } from '@shelem/shared';
 import type { TrickCardPlay } from '@shelem/shared';
@@ -132,6 +133,8 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     this.state.team0Tricks = 0;
     this.state.team1Tricks = 0;
     this.state.trumpSuit = '';
+    this.state.swappedSeatA = -1;
+    this.state.swappedSeatB = -1;
     this.state.handNumber += 1;
 
     if (this.state.hakemSeat >= 0) {
@@ -149,9 +152,6 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     const draw = drawForHakem(shuffle(createDeck()), this.state.dealerSeat as Seat, this.state.config.hakemSelection);
 
     this.state.hakemSeat = draw.hakemSeat;
-    draw.teamOfSeat.forEach((team, seat) => {
-      this.state.teamOfSeat[seat] = team;
-    });
 
     if (draw.reveals.length === 0) {
       this.dealHand();
@@ -170,14 +170,54 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
         card.seat = reveal.seat;
         card.suit = reveal.card.suit;
         card.rank = reveal.card.rank;
+        // Captured now, because the reseat below can move this player afterwards.
+        card.name = this.state.players[reveal.seat].name;
         this.state.hakemDraw.push(card);
       }, HAKEM_REVEAL_MS * (index + 1));
     });
 
-    this.clock.setTimeout(
-      () => this.dealHand(),
-      HAKEM_REVEAL_MS * draw.reveals.length + HAKEM_SETTLE_MS,
-    );
+    // The chairs change once the cards have finished speaking, so the ceremony
+    // reads in order: cards turn up, the pairing is known, people move, deal.
+    //
+    // A full beat after the last reveal, not the same instant. Two timers due at
+    // the same millisecond have no guaranteed order, and when the reseat won that
+    // race the final Ace recorded the name of whoever the swap had *just* moved
+    // into that seat — crediting the partner's Ace to the wrong player. Leaving a
+    // beat removes the race, and reads better besides.
+    const lastRevealAt = HAKEM_REVEAL_MS * draw.reveals.length;
+    const reseatAt = lastRevealAt + HAKEM_REVEAL_MS;
+
+    this.clock.setTimeout(() => {
+      this.seatPartnerOpposite(draw.partnerSeat);
+    }, reseatAt);
+
+    this.clock.setTimeout(() => this.dealHand(), reseatAt + HAKEM_SETTLE_MS);
+  }
+
+  /**
+   * Sits the Hâkem's partner opposite them, which is where a partner belongs.
+   *
+   * The Aces choose two players; they are then very often sitting next to each
+   * other, and at a real table somebody changes chairs. Only the partner and
+   * whoever is currently opposite the Hâkem move — one swap, and the Hâkem keeps
+   * their seat, so `hakemSeat` stays valid.
+   *
+   * This is also what restores the invariant the rest of the table is built on:
+   * once partners face each other, teams are seat parity again.
+   */
+  private seatPartnerOpposite(partnerSeat: Seat | null) {
+    const hakemSeat = this.state.hakemSeat as Seat;
+    const opposite = ((hakemSeat + 2) % 4) as Seat;
+
+    if (partnerSeat !== null && partnerSeat !== opposite) {
+      this.swapSeats(partnerSeat, opposite);
+      this.state.swappedSeatA = partnerSeat;
+      this.state.swappedSeatB = opposite;
+    }
+
+    for (let seat = 0; seat < 4; seat++) {
+      this.state.teamOfSeat[seat] = teamForSeat(seat as Seat);
+    }
   }
 
   // ---- Dealing and naming trump ----
@@ -395,8 +435,10 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     }, HAND_REVIEW_MS);
   }
 
-  /** Which team a seat plays for. Read from state rather than seat parity because a
-   * table set to `aceDealTeams` draws its partnerships from the cards. */
+  /** Which team a seat plays for. Read from state rather than recomputed, so the
+   * server stays the one place that decides it — the Hâkem draw reseats partners
+   * opposite each other (see seatPartnerOpposite), which is what keeps it in step
+   * with seat parity. */
   private teamOf(seat: Seat): Team {
     return this.state.teamOfSeat[seat] as Team;
   }

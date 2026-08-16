@@ -11,6 +11,10 @@ export interface HakemDrawProps {
   mySeat: SeatIndex;
   /** Set once the draw has produced a Hâkem, so the result can be named. */
   hakemSeat: number;
+  /** The two seats that traded places to put the partnership opposite each other,
+   * or -1 when nobody moved. */
+  swappedSeatA: number;
+  swappedSeatB: number;
 }
 
 /**
@@ -23,8 +27,16 @@ export interface HakemDrawProps {
  * cards land in the same order, which only holds if the server is the one dealing
  * them out.
  */
-export function HakemDraw({ reveals, playerNames, mySeat, hakemSeat }: HakemDrawProps) {
+export function HakemDraw({
+  reveals,
+  playerNames,
+  mySeat,
+  hakemSeat,
+  swappedSeatA,
+  swappedSeatB,
+}: HakemDrawProps) {
   const latest = reveals[reveals.length - 1];
+  const swapped = swappedSeatA >= 0 && swappedSeatB >= 0;
 
   return (
     <div className={styles.draw}>
@@ -43,9 +55,10 @@ export function HakemDraw({ reveals, playerNames, mySeat, hakemSeat }: HakemDraw
               transition={{ duration: 0.22, ease: 'easeOut' }}
             >
               <Card card={toCard(reveal)} size="sm" />
-              <span className={styles.seatName}>
-                {reveal.seat === mySeat ? 'You' : (playerNames[reveal.seat] ?? `Seat ${reveal.seat + 1}`)}
-              </span>
+              {/* The name the server captured with the card, not a lookup by seat:
+                  the partnership reseat moves people, and a seat lookup would then
+                  credit these cards to whoever ended up in that chair. */}
+              <span className={styles.seatName}>{reveal.name || `Seat ${reveal.seat + 1}`}</span>
             </motion.div>
           );
         })}
@@ -54,6 +67,17 @@ export function HakemDraw({ reveals, playerNames, mySeat, hakemSeat }: HakemDraw
       {latest?.rank === 'A' && hakemSeat >= 0 && (
         <div className={styles.result}>
           {hakemSeat === mySeat ? 'You are' : `${playerNames[hakemSeat] ?? 'They'} is`} the Hâkem
+        </div>
+      )}
+
+      {/* Partners sit opposite each other, so when the Aces pick two people who
+          were sitting side by side, somebody changes chairs. Two players' whole
+          view of the table rotates at that moment — saying so is the difference
+          between a ceremony and a glitch. */}
+      {swapped && (
+        <div className={styles.swap}>
+          {playerNames[swappedSeatA] ?? `Seat ${swappedSeatA + 1}`} and{' '}
+          {playerNames[swappedSeatB] ?? `Seat ${swappedSeatB + 1}`} swap seats
         </div>
       )}
     </div>

@@ -58,3 +58,14 @@
   font-weight: 700;
   color: var(--color-gold-300);
 }
+
+/* The reseat announcement. Sits under the result line, quieter than it but still
+   plainly readable — two people's view of the table just rotated, and this is the
+   only thing telling them why. */
+.swap {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-ivory-100);
+  opacity: 0.85;
+}

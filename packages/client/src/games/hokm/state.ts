@@ -8,6 +8,9 @@ export interface HakemRevealJSON {
   seat: number;
   suit: string;
   rank: string;
+  /** Who held that seat when the card turned up. Captured server-side, because
+   * the draw can move people afterwards — see `swappedSeatA`. */
+  name: string;
 }
 
 export interface HokmHandResultJSON {
@@ -30,6 +33,10 @@ export interface HokmStateJSON extends BaseStateJSON {
   team0Tricks: number;
   team1Tricks: number;
   hakemDraw: HakemRevealJSON[];
+  /** The two seats that changed places so the Aces' partnership could sit
+   * opposite each other, or -1 when nobody had to move. */
+  swappedSeatA: number;
+  swappedSeatB: number;
   handHistory: HokmHandResultJSON[];
   config: HokmTableConfig;
 }

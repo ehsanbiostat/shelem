@@ -374,21 +374,42 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
     if (seat === undefined || seat !== pending.toSeat) return;
 
     if (message.accept) {
-      const a = this.state.players[pending.fromSeat];
-      const b = this.state.players[pending.toSeat];
-      const aSession = a.sessionId;
-      const aName = a.name;
-      const aConnected = a.connected;
-      a.sessionId = b.sessionId;
-      a.name = b.name;
-      a.connected = b.connected;
-      b.sessionId = aSession;
-      b.name = aName;
-      b.connected = aConnected;
-      this.seatBySessionId.set(a.sessionId, pending.fromSeat as Seat);
-      this.seatBySessionId.set(b.sessionId, pending.toSeat as Seat);
+      this.swapSeats(pending.fromSeat as Seat, pending.toSeat as Seat);
     }
     this.state.pendingSeatSwap = undefined;
+  }
+
+  /**
+   * Exchanges whoever is in two seats, and the `seatBySessionId` entries pointing
+   * at them.
+   *
+   * `isBot` moves with the rest. That was not true when this only served the
+   * lobby's swap request — a bot can't be a swap target, so it never came up — but
+   * the Hâkem draw reseats whoever the Aces chose, and that is very often a bot.
+   * Leaving it behind would strand a bot's name in a seat nothing drives.
+   */
+  protected swapSeats(a: Seat, b: Seat) {
+    if (a === b) return;
+    const first = this.state.players[a];
+    const second = this.state.players[b];
+
+    const held = {
+      sessionId: first.sessionId,
+      name: first.name,
+      connected: first.connected,
+      isBot: first.isBot,
+    };
+    first.sessionId = second.sessionId;
+    first.name = second.name;
+    first.connected = second.connected;
+    first.isBot = second.isBot;
+    second.sessionId = held.sessionId;
+    second.name = held.name;
+    second.connected = held.connected;
+    second.isBot = held.isBot;
+
+    if (first.sessionId) this.seatBySessionId.set(first.sessionId, a);
+    if (second.sessionId) this.seatBySessionId.set(second.sessionId, b);
   }
 
   // ---- Shared helpers ----
