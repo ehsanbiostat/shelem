@@ -14,7 +14,9 @@ export interface LastTrickPanelProps {
   mySeat: SeatIndex;
   plays: LastTrickPlay[];
   winnerSeat: SeatIndex | -1;
-  points: number;
+  /** What the trick was worth, already worded by the game. Shelem counts card
+   * points; Hokm counts nothing beyond the trick itself, so it passes nothing. */
+  worth?: string;
   playerNames: Record<number, string>;
 }
 
@@ -26,7 +28,7 @@ export interface LastTrickPanelProps {
  * Entirely local: opening it sends nothing to the server and no one else can see
  * that it's open. Nothing here is hidden information either — all four players
  * watched these cards land — so it's a review, not a peek. */
-export function LastTrickPanel({ mySeat, plays, winnerSeat, points, playerNames }: LastTrickPanelProps) {
+export function LastTrickPanel({ mySeat, plays, winnerSeat, worth, playerNames }: LastTrickPanelProps) {
   const [open, setOpen] = useState(false);
 
   if (plays.length === 0) return null;
@@ -59,7 +61,8 @@ export function LastTrickPanel({ mySeat, plays, winnerSeat, points, playerNames 
 
       {winnerSeat >= 0 && (
         <div className={styles.outcome}>
-          Won by <strong>{winnerSeat === mySeat ? 'you' : playerNames[winnerSeat]}</strong> · {points} pts
+          Won by <strong>{winnerSeat === mySeat ? 'you' : playerNames[winnerSeat]}</strong>
+          {worth ? ` · ${worth}` : ''}
         </div>
       )}
     </Overlay>

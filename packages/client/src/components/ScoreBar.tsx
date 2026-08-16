@@ -1,21 +1,28 @@
 import { useState } from 'react';
 import styles from './ScoreBar.module.css';
 import { Overlay } from './Overlay.js';
-import type { HandResultJSON } from '../roomState.js';
+
+/** One finished hand, already described by whichever game played it. The label is
+ * the game's to write — Shelem credits the declarer and their bid, Hokm the Hâkem
+ * and the trump — so the panel itself needs to know nothing about either. */
+export interface ScoreRow {
+  key: number;
+  label: string;
+  team0Delta: number;
+  team1Delta: number;
+}
 
 export interface ScoreBarProps {
   team0Name: string;
   team1Name: string;
   team0Score: number;
   team1Score: number;
-  team0HandPoints: number;
-  team1HandPoints: number;
+  /** The hand in progress, as the game measures it: card points in Shelem, tricks
+   * in Hokm. Both sides pre-formatted, since the units differ. */
+  currentHand?: { label: string; team0: string; team1: string };
   matchTargetScore: number;
-  handNumber: number;
   /** Every hand scored so far, oldest first. Shown newest-first below. */
-  handHistory: HandResultJSON[];
-  /** Seat → display name, to credit each past hand to whoever declared it. */
-  playerNames: Record<number, string>;
+  handHistory: ScoreRow[];
   /** Held open by the game rather than the player — the end-of-hand pause and the
    * end of a match. Not dismissible while set. */
   heldOpen?: boolean;
@@ -23,7 +30,7 @@ export interface ScoreBarProps {
   rematch?: { ready: number; total: number; iAmReady: boolean; onPlayAgain: () => void };
 }
 
-function signed(delta: number): string {
+export function signed(delta: number): string {
   return delta > 0 ? `+${delta}` : String(delta);
 }
 
@@ -37,12 +44,9 @@ export function ScoreBar({
   team1Name,
   team0Score,
   team1Score,
-  team0HandPoints,
-  team1HandPoints,
+  currentHand,
   matchTargetScore,
-  handNumber,
   handHistory,
-  playerNames,
   heldOpen = false,
   rematch,
 }: ScoreBarProps) {
@@ -92,23 +96,23 @@ export function ScoreBar({
           <span className={styles.num}>{team1Score}</span>
         </div>
 
-        <div className={`${styles.row} ${styles.minorRow}`}>
-          <span className={styles.label}>Current hand</span>
-          <span className={styles.num}>+{team0HandPoints}</span>
-          <span className={styles.num}>+{team1HandPoints}</span>
-        </div>
+        {currentHand && (
+          <div className={`${styles.row} ${styles.minorRow}`}>
+            <span className={styles.label}>{currentHand.label}</span>
+            <span className={styles.num}>{currentHand.team0}</span>
+            <span className={styles.num}>{currentHand.team1}</span>
+          </div>
+        )}
 
         {handHistory.length > 0 && (
           <div className={styles.history}>
             {/* Newest hand first — the one that just finished is the one being
-                looked for. Each is credited to whoever declared it. */}
-            {[...handHistory].reverse().map((result) => (
-              <div key={result.handNumber} className={`${styles.row} ${styles.minorRow}`}>
-                <span className={styles.label}>
-                  {result.handNumber} ({playerNames[result.declarerSeat] ?? '—'})
-                </span>
-                <span className={styles.num}>{signed(result.team0Delta)}</span>
-                <span className={styles.num}>{signed(result.team1Delta)}</span>
+                looked for. Each is credited by the game that played it. */}
+            {[...handHistory].reverse().map((row) => (
+              <div key={row.key} className={`${styles.row} ${styles.minorRow}`}>
+                <span className={styles.label}>{row.label}</span>
+                <span className={styles.num}>{signed(row.team0Delta)}</span>
+                <span className={styles.num}>{signed(row.team1Delta)}</span>
               </div>
             ))}
           </div>

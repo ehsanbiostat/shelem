@@ -1,8 +1,10 @@
 import type { Card, Rank, Seat, Suit } from '@shelem/shared';
-import type { shelem } from '@shelem/shared';
 
-type Bid = shelem.Bid;
-type TableConfig = shelem.TableConfig;
+/**
+ * Hand-written mirrors of the server's synced schema, as it arrives from
+ * `state.toJSON()`. Split the same way the server's schema is: what every table
+ * has here, and each game's own additions alongside that game's screens.
+ */
 
 export interface PlayerInfoJSON {
   sessionId: string;
@@ -11,12 +13,6 @@ export interface PlayerInfoJSON {
   connected: boolean;
   handSize: number;
   wantsRematch: boolean;
-}
-
-export interface BidRecordJSON {
-  seat: number;
-  bidType: 'numeric' | 'shelem' | 'sarShelem' | 'pass';
-  amount: number;
 }
 
 export interface TrickPlayJSON {
@@ -30,41 +26,30 @@ export interface SeatSwapRequestJSON {
   toSeat: number;
 }
 
-export interface HandResultJSON {
-  handNumber: number;
-  declarerSeat: number;
-  bidType: 'numeric' | 'shelem' | 'sarShelem';
-  bidAmount: number;
-  declarerMadeBid: boolean;
-  team0Delta: number;
-  team1Delta: number;
-  team0Total: number;
-  team1Total: number;
-}
+/** The phases every game passes through. Each game's state widens this with its own. */
+export type CommonPhaseJSON =
+  | 'configuring'
+  | 'lobby'
+  | 'dealing'
+  | 'playing'
+  | 'handComplete'
+  | 'matchComplete';
 
-export interface GameStateJSON {
+/** Mirrors BaseGameState — see packages/server/src/schema/BaseGameState.ts. */
+export interface BaseStateJSON {
   players: PlayerInfoJSON[];
-  phase: 'configuring' | 'lobby' | 'dealing' | 'bidding' | 'widow' | 'playing' | 'handComplete' | 'matchComplete';
+  phase: string;
   dealerSeat: number;
   currentTurnSeat: number;
-  declarerSeat: number;
-  bidHistory: BidRecordJSON[];
-  winningBidType: string;
-  winningBidAmount: number;
   trumpSuit: string;
   currentTrick: TrickPlayJSON[];
-  tricksPlayedThisHand: number;
   lastTrick: TrickPlayJSON[];
   lastTrickWinnerSeat: number;
-  lastTrickPoints: number;
   team0Score: number;
   team1Score: number;
-  handHistory: HandResultJSON[];
-  /** The server's schema mirror of the shared TableConfig — same fields, so the
-   * shared type stands in for it directly. */
-  config: TableConfig;
-  declarerPointsCollected: number;
-  defenderPointsCollected: number;
+  /** Which team each seat plays for. Read this rather than assuming seat parity —
+   * a Hokm table can draw its partnerships from the cards. */
+  teamOfSeat: number[];
   pendingSeatSwap?: SeatSwapRequestJSON;
   handNumber: number;
   hostSessionId: string;
@@ -74,15 +59,14 @@ export function toCard(item: { suit: string; rank: string }): Card {
   return { suit: item.suit as Suit, rank: item.rank as Rank };
 }
 
-export function winningBidFrom(state: GameStateJSON): Bid | null {
-  if (!state.winningBidType) return null;
-  if (state.winningBidType === 'numeric') return { type: 'numeric', amount: state.winningBidAmount };
-  if (state.winningBidType === 'shelem') return { type: 'shelem' };
-  if (state.winningBidType === 'sarShelem') return { type: 'sarShelem' };
-  return null;
-}
-
 export function seatOf(sessionId: string, players: PlayerInfoJSON[]): Seat | null {
   const player = players.find((p) => p.sessionId === sessionId);
   return player ? (player.seat as Seat) : null;
+}
+
+/** The team a seat plays for, as the server currently has it. Falls back to seat
+ * parity for the moment before the first state arrives. */
+export function teamOf(state: BaseStateJSON, seat: number): 0 | 1 {
+  const team = state.teamOfSeat?.[seat];
+  return (team === 0 || team === 1 ? team : seat % 2) as 0 | 1;
 }

@@ -17,7 +17,7 @@ const host = '0.0.0.0';
 // service as up; it doesn't affect WS traffic, which is a separate event.
 const httpServer = createServer((_req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Shelem server is running.');
+  res.end('Pasoor server is running.');
 });
 
 const gameServer = new Server({
@@ -27,4 +27,4 @@ const gameServer = new Server({
 gameRooms.initializeGameServer(gameServer);
 
 gameServer.listen(port, host);
-console.log(`Shelem server listening on ws://${host}:${port}`);
+console.log(`Pasoor server listening on ws://${host}:${port}`);

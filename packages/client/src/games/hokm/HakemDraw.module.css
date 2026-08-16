@@ -1,0 +1,60 @@
+.draw {
+  text-align: center;
+  color: var(--color-ivory-100);
+}
+
+.big {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.hint {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-bottom: 12px;
+}
+
+/* A draw can run long — the first Ace takes ~10 cards on average and sometimes far
+   more — so the strip wraps and scrolls rather than trying to fit every card on
+   one line. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-height: calc(var(--u) * 26);
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.seatName {
+  font-size: 9.5px;
+  opacity: 0.7;
+  max-width: calc(var(--u) * 8);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The card that settles it — ringed so the moment reads at a glance rather than
+   having to be picked out of the row. */
+.ace {
+  outline: 2px solid var(--color-gold-500);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.result {
+  margin-top: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-gold-300);
+}

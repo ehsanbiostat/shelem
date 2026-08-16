@@ -42,11 +42,21 @@ export interface SeatProps {
   name: string;
   connected: boolean;
   handSize: number;
+  /** The most cards this seat's fan will ever draw. Shelem hands hold 12, Hokm's 13
+   * — the fan is capped so it can't overflow the table edge if a hand grows past it. */
+  maxFanCards: number;
   isTurn: boolean;
-  isBiddingTurn: boolean;
-  isDeclarer: boolean;
-  bidLabel?: string;
-  /** Set once the declarer's lead has fixed trump; shown only on their seat. */
+  /** This seat is being waited on for a decision that isn't a card — a Shelem bid,
+   * a Hokm trump call. Shows a "thinking" badge in place of any other. */
+  isChoosing: boolean;
+  /** This seat holds the hand's special role: Shelem's declarer, Hokm's Hâkem.
+   * It's where the trump glyph goes. */
+  hasRole: boolean;
+  /** Short badge beside the name — the bid this seat made, in Shelem. */
+  badgeLabel?: string;
+  /** Draws `badgeLabel` in the quieter style, for a badge that isn't news (a Pass). */
+  badgeMuted?: boolean;
+  /** Shown against the seat holding the role, once trump is known. */
   trumpSuit?: Suit | null;
   empty: boolean;
   slot: SeatSlot;
@@ -61,9 +71,17 @@ export interface SeatProps {
  * the same horizontal row; for the side seats that whole row is then rotated as
  * one rigid block so its top edge points the same way that seat's (also rotated)
  * name reads — never a mismatched mix. */
-function CardFan({ handSize, orientation }: { handSize: number; orientation: 'top' | 'left' | 'right' }) {
+function CardFan({
+  handSize,
+  maxFanCards,
+  orientation,
+}: {
+  handSize: number;
+  maxFanCards: number;
+  orientation: 'top' | 'left' | 'right';
+}) {
   const { width, height, u } = useTableMetrics();
-  const count = Math.min(handSize, 12);
+  const count = Math.min(handSize, maxFanCards);
   // Negated because an opponent's fan is our own fan seen from the other side of
   // the table — i.e. rotated 180°. That rotation flips both halves of the arc:
   // the bulge (handled by negating `curve` below) *and* the direction each card
@@ -124,10 +142,12 @@ function SeatImpl({
   name,
   connected,
   handSize,
+  maxFanCards,
   isTurn,
-  isBiddingTurn,
-  isDeclarer,
-  bidLabel,
+  isChoosing,
+  hasRole,
+  badgeLabel,
+  badgeMuted = false,
   trumpSuit,
   empty,
   slot,
@@ -139,11 +159,11 @@ function SeatImpl({
         <span className={`${styles.connectedDot} ${connected ? '' : styles.offline}`} />
         {empty ? 'Waiting…' : name}
       </div>
-      {isBiddingTurn && <span className={styles.biddingBadge}>Bidding…</span>}
-      {!isBiddingTurn && bidLabel && (
-        <span className={`${styles.bidLabelBadge} ${bidLabel === 'Pass' ? styles.bidLabelPass : ''}`}>{bidLabel}</span>
+      {isChoosing && <span className={styles.biddingBadge}>Thinking…</span>}
+      {!isChoosing && badgeLabel && (
+        <span className={`${styles.bidLabelBadge} ${badgeMuted ? styles.bidLabelPass : ''}`}>{badgeLabel}</span>
       )}
-      {isDeclarer && trumpSuit && (
+      {hasRole && trumpSuit && (
         <span className={`${styles.trumpBadge} ${styles[trumpSuit]}`} title={`Trump: ${trumpSuit}`}>
           {SUIT_SYMBOL[trumpSuit]}
         </span>
@@ -152,7 +172,9 @@ function SeatImpl({
   );
 
   const fan =
-    !empty && handSize > 0 && slot !== 'bottom' ? <CardFan handSize={handSize} orientation={slot} /> : null;
+    !empty && handSize > 0 && slot !== 'bottom' ? (
+      <CardFan handSize={handSize} maxFanCards={maxFanCards} orientation={slot} />
+    ) : null;
 
   return (
     <div className={`${styles.seat} ${styles[slot]} ${isTurn ? styles.activeTurn : ''} ${hideFan ? styles.fanHidden : ''}`}>

@@ -1,7 +1,7 @@
 import type { Card as CardModel } from '@shelem/shared';
 import styles from './WidowReveal.module.css';
-import { Card } from './Card.js';
-import { Overlay } from './Overlay.js';
+import { Card } from '../../components/Card.js';
+import { Overlay } from '../../components/Overlay.js';
 
 export interface WidowRevealProps {
   cards: CardModel[];

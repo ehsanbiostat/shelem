@@ -2,6 +2,11 @@
   "name": "shelem",
   "compatibility_date": "2026-08-02",
   "assets": {
-    "directory": "dist"
+    "directory": "dist",
+    // The app has real routes now (/shelem/new, /t/ABCD), and a table URL is meant
+    // to be pasted to other players and refreshed. Without this, any path but "/"
+    // is a 404 on a cold load — the asset simply doesn't exist on disk — so every
+    // unmatched path has to fall through to index.html and let the router decide.
+    "not_found_handling": "single-page-application"
   }
 }

@@ -5,23 +5,31 @@ import styles from './Table.module.css';
 import { Seat } from './Seat.js';
 import { TableMetricsContext, useMeasureTableMetrics } from '../tableMetrics.js';
 import { screenSlotFor } from '../screenSlot.js';
-import { DealingOverlay } from './DealingOverlay.js';
-import { WidowPile } from './WidowPile.js';
+import { DealingOverlay, type DealBlock } from './DealingOverlay.js';
+import { WidowPile } from '../games/shelem/WidowPile.js';
 
 export interface TablePlayer {
   seat: SeatIndex;
   name: string;
   connected: boolean;
   handSize: number;
-  bidLabel?: string;
+  /** Short badge beside the name — Shelem puts each player's bid here. */
+  badgeLabel?: string;
+  badgeMuted?: boolean;
 }
 
 export interface TableProps {
   mySeat: SeatIndex;
   players: TablePlayer[];
   currentTurnSeat: SeatIndex;
-  declarerSeat: SeatIndex | -1;
-  biddingInProgress: boolean;
+  /** The seat holding this hand's special role — Shelem's declarer, Hokm's Hâkem.
+   * -1 before one exists. Where the trump glyph goes. */
+  roleSeat: SeatIndex | -1;
+  /** The table is waiting on someone for a decision that isn't a card: a Shelem
+   * bid, a Hokm trump call. Puts a "thinking" badge on whoever's turn it is. */
+  awaitingChoice: boolean;
+  /** The most cards any hand holds in this game — caps the opponents' fans. */
+  maxFanCards: number;
   center: ReactNode;
   /** How much of the felt `center` gets. `'trick'` (the default) keeps clear of
    * the opponents' fans, which is what the played-card pile needs. `'wide'`
@@ -46,8 +54,9 @@ export interface TableProps {
    * top of it — and during a discard the label is the one piece of information on
    * the table you definitely already have. */
   /** Plays the deal when set, then calls `onDealDone`. Lives here rather than in
-   * App because the animation is expressed in table coordinates. */
-  dealing?: { dealerSeat: SeatIndex } | null;
+   * the game screen because the animation is expressed in table coordinates.
+   * `blocks` is the shape of this game's deal — see DealingOverlay. */
+  dealing?: { dealerSeat: SeatIndex; blocks: DealBlock[] } | null;
   onDealDone?: () => void;
   /** The four widow cards, parked in front of the dealer for the auction and flown
    * to the winning bidder. Null outside bidding and the widow phase. Expressed in
@@ -67,8 +76,9 @@ export function Table({
   mySeat,
   players,
   currentTurnSeat,
-  declarerSeat,
-  biddingInProgress,
+  roleSeat,
+  awaitingChoice,
+  maxFanCards,
   center,
   centerVariant = 'trick',
   bottomOverlay,
@@ -111,10 +121,12 @@ export function Table({
                 name={player?.name ?? ''}
                 connected={player?.connected ?? false}
                 handSize={slot === 'bottom' ? 0 : (player?.handSize ?? 0)}
+                maxFanCards={maxFanCards}
                 isTurn={isTurn}
-                isBiddingTurn={biddingInProgress && isTurn}
-                isDeclarer={seat === declarerSeat}
-                bidLabel={player?.bidLabel}
+                isChoosing={awaitingChoice && isTurn}
+                hasRole={seat === roleSeat}
+                badgeLabel={player?.badgeLabel}
+                badgeMuted={player?.badgeMuted}
                 trumpSuit={trumpSuit}
                 empty={!player}
                 slot={slot}
@@ -154,6 +166,7 @@ export function Table({
           <DealingOverlay
             mySeat={mySeat}
             dealerSeat={dealing.dealerSeat}
+            blocks={dealing.blocks}
             onDone={onDealDone ?? (() => {})}
           />
         )}
