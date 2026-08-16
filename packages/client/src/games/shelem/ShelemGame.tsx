@@ -5,7 +5,7 @@ import type { Card as CardModel, Seat as SeatIndex, Team } from '@shelem/shared'
 import { legalCards, shelem } from '@shelem/shared';
 import styles from '../../App.module.css';
 import { sortHand } from '../../cardSort';
-import { seatOf, teamOf, toCard, type BaseStateJSON } from '../../roomState';
+import { isOccupied, seatOf, teamOf, toCard, type BaseStateJSON } from '../../roomState';
 import { Table } from '../../components/Table.js';
 import type { DealBlock } from '../../components/DealingOverlay.js';
 import { TrickArea } from '../../components/TrickArea.js';
@@ -161,7 +161,7 @@ export function ShelemGame({ room, state: baseState, rawHand, onMessage, onLeave
     state.phase === 'playing' || state.phase === 'handComplete' || state.phase === 'matchComplete';
 
   const tablePlayers = state.players
-    .filter((p) => p.sessionId !== '')
+    .filter(isOccupied)
     .map((p) => {
       const team = teamOf(state, p.seat);
       return {

@@ -5,7 +5,7 @@ import type { Card as CardModel, Seat as SeatIndex, Suit, Team } from '@shelem/s
 import { hokm, legalCards } from '@shelem/shared';
 import styles from '../../App.module.css';
 import { sortHand } from '../../cardSort';
-import { seatOf, teamOf, toCard, type BaseStateJSON } from '../../roomState';
+import { isOccupied, seatOf, teamOf, toCard, type BaseStateJSON } from '../../roomState';
 import { Table } from '../../components/Table.js';
 import type { DealBlock } from '../../components/DealingOverlay.js';
 import { TrickArea } from '../../components/TrickArea.js';
@@ -106,7 +106,7 @@ export function HokmGame({ room, state: baseState, rawHand, onLeave, error }: Ho
     state.phase === 'playing' || state.phase === 'handComplete' || state.phase === 'matchComplete';
 
   const tablePlayers = state.players
-    .filter((p) => p.sessionId !== '')
+    .filter(isOccupied)
     .map((p) => {
       const team = teamOf(state, p.seat);
       const isHakem = state.hakemSeat >= 0 && p.seat === state.hakemSeat;
@@ -163,6 +163,9 @@ export function HokmGame({ room, state: baseState, rawHand, onLeave, error }: Ho
       onLeave={onLeave}
       onSeatSwapRequest={(toSeat) => room.send('requestSeatSwap', { toSeat })}
       onSeatSwapResponse={(accept) => room.send('respondSeatSwap', { accept })}
+      canManageBots={isHost}
+      onAddBot={(seat) => room.send('addBot', { seat })}
+      onRemoveBot={(seat) => room.send('removeBot', { seat })}
       error={error}
     >
       {state.phase === 'playing' && trumpSuit && (

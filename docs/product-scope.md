@@ -23,7 +23,7 @@ Replicate the setup, feel, and front-end quality of [Trickster Cards](https://ww
 - **Private tables only**. No public matchmaking queue, no ranked/ELO play, no clubs.
 - Host creates a table and receives a shareable link/code; the host also takes one of the 4 seats.
 - Players self-select their seat on joining (first-come, first-seated). Before the game starts, a player can send another player a request to swap seats; the swap happens if accepted.
-- Strictly **human-only** — no AI bots to fill empty seats. Play starts only once all 4 seats are filled by real players.
+- **Bots may fill empty seats**, 1–3 of them, so a table can start with as few as one person — and so one person can practise alone. The host seats them in the lobby, and a person arriving late takes a bot's chair. Hokm only for now; see [Bots](bots.md). A dropped player is still *waited for* rather than replaced by a bot.
 - The table's rules are chosen by the creator on a create-table screen before the room exists, then fixed for the whole match. Each game has its own set — see [Shelem's](game-rules.md#table-configuration) and [Hokm's](game-rules-hokm.md#table-configuration) for the full lists and bounds. They're shown read-only to everyone at the table, not just the host, so all four players know what they've joined before the first deal. A rematch draws a new host and returns them to the same screen.
 
 ## Disconnect handling

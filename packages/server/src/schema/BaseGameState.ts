@@ -11,6 +11,15 @@ export class PlayerInfo extends Schema {
   /** Set when this seat has asked for a rematch at the end of a match. Per-seat
    * rather than a count so every client can show who is still to agree. */
   @type('boolean') wantsRematch = false;
+  /**
+   * This seat is played by the server rather than by a person.
+   *
+   * A bot has no `sessionId` — it never connects — so this is the only thing that
+   * distinguishes an occupied bot seat from an empty one. Synced because a player
+   * is entitled to know which of the other three are people: bots are named and
+   * marked as bots rather than passed off as human.
+   */
+  @type('boolean') isBot = false;
 }
 
 export class TrickPlay extends Schema {

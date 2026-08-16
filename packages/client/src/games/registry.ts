@@ -16,6 +16,10 @@ export interface GameEntry {
   path: string;
   /** localStorage key holding the last rules a table of this game was created with. */
   configKey: string;
+  /** Whether this game can actually play a bot's turn. The server refuses a bot at
+   * a game without one (see BaseTableRoom.botsSupported); this keeps the button
+   * from being offered in the first place. */
+  supportsBots: boolean;
 }
 
 export const GAMES: GameEntry[] = [
@@ -26,6 +30,7 @@ export const GAMES: GameEntry[] = [
     glyphs: '♠ ♥',
     path: '/shelem/new',
     configKey: 'shelem:tableConfig',
+    supportsBots: false,
   },
   {
     id: 'hokm',
@@ -34,6 +39,7 @@ export const GAMES: GameEntry[] = [
     glyphs: '♦ ♣',
     path: '/hokm/new',
     configKey: 'hokm:tableConfig',
+    supportsBots: true,
   },
 ];
 

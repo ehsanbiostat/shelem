@@ -11,12 +11,13 @@ Two games so far:
 
 ## Status
 
-Early build. Both game engines (Shelem's bidding/widow/scoring, Hokm's Hâkem draw/trump/trick counting) are implemented and tested against a real Colyseus server. The frontend is functional but its final visual design is still undecided. See [docs/](docs/) for the full product scope, game rules, and architecture decisions.
+Early build. Both game engines (Shelem's bidding/widow/scoring, Hokm's Hâkem draw/trump/trick counting) are implemented and tested against a real Colyseus server. Hokm tables can be filled with [bots](docs/bots.md), so a game can start with one person. The frontend is functional but its final visual design is still undecided. See [docs/](docs/) for the full product scope, game rules, and architecture decisions.
 
 ## Docs
 
 - [Shelem Rules](docs/game-rules.md) — the exact Shelem ruleset this platform implements
 - [Hokm Rules](docs/game-rules-hokm.md) — the same for Hokm
+- [Bots](docs/bots.md) — how the computer players work, and why they are rules rather than a search
 - [Product Scope](docs/product-scope.md) — what's in and out
 - [Architecture](docs/architecture.md) — tech stack, technical decisions, and the game/table boundary
 - [Roadmap](docs/roadmap.md) — deferred features planned for later versions
