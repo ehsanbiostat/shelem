@@ -187,6 +187,53 @@ export function trickClearedSound() {
   noiseBurst(context.currentTime, { duration: 0.28, frequency: 2200, q: 0.7, gain: 0.075, sweepTo: 500 });
 }
 
+/**
+ * One beat of the last five seconds of your own turn.
+ *
+ * `secondsLeft` counts 5 down to 1. Urgency is carried by **pitch, not volume**: a
+ * cue that gets louder is merely annoying, while one that climbs reads as time
+ * running out — and this is the only sound in the game whose job is to nag, so it
+ * has the least licence to be loud. Peak gain stays under `playCardSound`'s.
+ *
+ * The final beat is deliberately a different object rather than a higher tick: a
+ * fifth above, longer, with a second partial under it. That is what lets you tell
+ * "one left" from "three left" without having counted the ones before it — which
+ * is the whole point, since a player who needs this cue is by definition not
+ * watching the table.
+ */
+export function countdownTickSound(secondsLeft: number) {
+  if (muted) return;
+  const context = audio();
+  if (!context) return;
+  const now = context.currentTime;
+
+  // 0 at five seconds out, 1 on the last beat.
+  const urgency = Math.min(1, Math.max(0, (5 - secondsLeft) / 4));
+  const isFinal = secondsLeft <= 1;
+
+  // A clean interval rather than a smooth sweep, so consecutive beats are audibly
+  // distinct steps instead of a slow glide nobody can place.
+  const frequency = 620 * Math.pow(1.5, urgency);
+
+  noiseBurst(now, {
+    duration: 0.03 + urgency * 0.015,
+    frequency: frequency * 2.4,
+    q: 2.2,
+    gain: 0.05 + urgency * 0.02,
+  });
+  tone(now, {
+    frequency,
+    duration: isFinal ? 0.24 : 0.06 + urgency * 0.03,
+    gain: 0.07 + urgency * 0.035,
+  });
+
+  if (isFinal) {
+    // A fifth underneath, so the last beat has a body the others don't and reads
+    // as an ending rather than just another tick.
+    tone(now, { frequency: frequency / 1.5, duration: 0.26, gain: 0.06 });
+  }
+}
+
 /** The hand being dealt. Two rising notes — a perfect fifth (A4 → E5), which
  * resolves rather than hanging, so it reads as "we're under way" and not as a
  * notification. Deliberately the only cue with any melody to it. */

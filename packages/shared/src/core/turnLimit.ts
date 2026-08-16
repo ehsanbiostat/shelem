@@ -55,6 +55,35 @@ export const DEAL_ALLOWANCE_MS = 2500;
  */
 export const TURN_GRACE_MS = 750;
 
+/**
+ * How far out the audible countdown starts.
+ *
+ * Note this equals `MIN_TURN_LIMIT_SECONDS`, so a table set to the shortest limit
+ * ticks for the whole turn. That is correct rather than a bug — at five seconds
+ * the entire turn *is* the last five seconds — but it is deliberate, not an
+ * accident of two constants happening to match.
+ */
+export const COUNTDOWN_TICK_SECONDS = 5;
+
+/**
+ * Which second of the audible countdown we are on: 5 down to 1, or null when it
+ * shouldn't be sounding at all.
+ *
+ * Ceiling rather than floor, so the value is "seconds remaining" as a person would
+ * say it — 4200ms left is "5", and the last whole second before zero is "1".
+ * Nothing sounds at zero: by then the turn has been played and a tick would be
+ * announcing something that already happened.
+ *
+ * Pure and separate from the sound itself because this is where the mistakes live
+ * — the caller polls it roughly sixty times a second, so a boundary that lands on
+ * the wrong side means a second ticked twice or skipped entirely.
+ */
+export function countdownTickSecond(remainingMs: number): number | null {
+  if (remainingMs <= 0) return null;
+  const second = Math.ceil(remainingMs / 1000);
+  return second <= COUNTDOWN_TICK_SECONDS ? second : null;
+}
+
 /** Returns an error message when the limit is unusable, or null when it's fine. */
 export function validateTurnLimit(seconds: unknown): string | null {
   if (typeof seconds !== 'number' || !Number.isInteger(seconds)) {
