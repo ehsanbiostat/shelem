@@ -29,7 +29,7 @@ Replicate the setup, feel, and front-end quality of [Trickster Cards](https://ww
 ## Disconnect handling
 
 - If a player disconnects or refreshes, they auto-rejoin their same seat via their stored session token.
-- If it's their turn and they're disconnected, the game simply waits — no turn timer, no auto-play/auto-pass, no auto-kick in v1.
+- If it's their turn and they're disconnected, **the turn clock still runs** and the turn is played for them when it expires, so the other three carry on. Their seat is still held for them to come back to — nobody is kicked. On a table with the clock turned off, the game waits as it always did.
 
 ## Localization
 

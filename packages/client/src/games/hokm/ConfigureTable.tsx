@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { hokm } from '@shelem/shared';
+import { hokm, TURN_LIMIT_PRESETS } from '@shelem/shared';
 import styles from '../shelem/ConfigureTable.module.css';
 
 const {
@@ -17,8 +17,9 @@ type ShuffleMode = HokmTableConfig['shuffleMode'];
 /** The form's own shape. Numbers are held as strings while they're being typed, so a
  * half-entered "1" on the way to 11 isn't treated as a value of 1 — it just fails
  * validation until the rest arrives. */
-interface Draft extends Omit<HokmTableConfig, 'targetScore' | 'handValue' | 'kotValue' | 'hakemKotiValue'> {
+interface Draft extends Omit<HokmTableConfig, 'targetScore' | 'handValue' | 'kotValue' | 'hakemKotiValue' | 'turnLimitSeconds'> {
   targetScore: string;
+  turnLimitSeconds: string;
   handValue: string;
   kotValue: string;
   hakemKotiValue: string;
@@ -28,6 +29,7 @@ function toDraft(config: HokmTableConfig): Draft {
   return {
     ...config,
     targetScore: String(config.targetScore),
+    turnLimitSeconds: String(config.turnLimitSeconds),
     handValue: String(config.handValue),
     kotValue: String(config.kotValue),
     hakemKotiValue: String(config.hakemKotiValue),
@@ -40,6 +42,7 @@ function toConfig(draft: Draft): HokmTableConfig {
   return {
     ...draft,
     targetScore: Number(draft.targetScore),
+    turnLimitSeconds: Number(draft.turnLimitSeconds),
     handValue: Number(draft.handValue),
     kotValue: Number(draft.kotValue),
     hakemKotiValue: Number(draft.hakemKotiValue),
@@ -226,6 +229,30 @@ export function ConfigureTable({ initial, title, subtitle, submitLabel, onSubmit
               />
             </label>
             <p className={styles.hint}>The opponents do the same to the Hâkem — traditionally the dearest result.</p>
+
+
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Turn limit</span>
+              <div className={styles.segmented}>
+                {TURN_LIMIT_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    className={`${styles.segment} ${
+                      Number(draft.turnLimitSeconds) === preset.seconds ? styles.segmentActive : ''
+                    }`}
+                    onClick={() => set('turnLimitSeconds', String(preset.seconds))}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className={styles.hint}>
+              {Number(draft.turnLimitSeconds) === 0
+                ? 'No clock — the table waits for whoever is to act, however long that takes.'
+                : `A player who doesn't act in ${draft.turnLimitSeconds}s has the turn played for them. Naming trump gets twice as long.`}
+            </p>
 
             <div className={styles.row}>
               <span className={styles.rowLabel}>Shuffle</span>

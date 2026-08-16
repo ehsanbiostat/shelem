@@ -33,6 +33,9 @@ export interface TableProps {
   awaitingChoice: boolean;
   /** The most cards any hand holds in this game — caps the opponents' fans. */
   maxFanCards: number;
+  /** How much of the current turn's clock is left, 1 down to 0, or -1 when no
+   * clock is running. Drawn on whichever seat is being waited on. */
+  turnFraction?: number;
   center: ReactNode;
   /** How much of the felt `center` gets. `'trick'` (the default) keeps clear of
    * the opponents' fans, which is what the played-card pile needs. `'wide'`
@@ -82,6 +85,7 @@ export function Table({
   roleSeat,
   awaitingChoice,
   maxFanCards,
+  turnFraction = -1,
   center,
   centerVariant = 'trick',
   bottomOverlay,
@@ -135,6 +139,7 @@ export function Table({
                 empty={!player}
                 slot={slot}
                 hideFan={!!dealing}
+                turnFraction={turnFraction}
               />
             </div>
           );

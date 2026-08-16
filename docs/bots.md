@@ -36,6 +36,8 @@ Exactly what its seat is entitled to: its own cards, the trick in progress, trum
 - `BaseTableRoom` owns the seating (`isOccupied`, `addBot`/`removeBot`) and the driver (`scheduleBotTurn`), because none of that is game-specific.
 - `HokmRoom.takeBotTurn` dispatches by phase and feeds the result through **the same handlers a person's message reaches**. A bot cannot make a move a person could not, because the validation is the same code rather than a copy of it.
 
+A bot is never on the clock — the turn timer covers people, and a bot answers on its own schedule anyway. When a *person's* clock runs out in Hokm, the bot plays that turn for them properly; Shelem, having no bot, falls back to safe legal defaults instead (see its [rules](game-rules.md#the-turn-clock)).
+
 Bots pause 500–1400ms before acting. That is pacing, not computation — a bot that answered instantly would read as wrong, and the room already holds a finished trick for 1500ms.
 
 They are named `Bot 1`–`Bot 3` and flagged as bots in synced state. Nobody should ever be unsure whether they are playing a person.

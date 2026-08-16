@@ -1,4 +1,5 @@
 import type { ShuffleMode } from '../core/types.js';
+import { DEFAULT_TURN_LIMIT_SECONDS, validateTurnLimit } from '../core/turnLimit.js';
 
 /**
  * How the Hâkem — and, on one setting, the partnerships themselves — are decided
@@ -33,6 +34,9 @@ export interface HokmTableConfig {
   hakemKotiValue: number;
   hakemSelection: HakemSelection;
   shuffleMode: ShuffleMode;
+  /** Seconds a player has to act before the turn is played for them. 0 turns the
+   * clock off entirely, which is how the game behaved before it existed. */
+  turnLimitSeconds: number;
 }
 
 /** The traditional ruleset, as documented in docs/game-rules-hokm.md. */
@@ -47,6 +51,7 @@ export const DEFAULT_HOKM_CONFIG: HokmTableConfig = {
   // justification doesn't carry over. It stays available because a long suit still
   // helps a Hâkem choose.
   shuffleMode: 'random',
+  turnLimitSeconds: DEFAULT_TURN_LIMIT_SECONDS,
 };
 
 /** Handy match lengths offered on the create-table screen. Shortcuts only — any
@@ -129,6 +134,9 @@ export function validateHokmConfig(input: unknown): HokmValidationResult {
   if (config.shuffleMode !== 'table' && config.shuffleMode !== 'random') {
     return { ok: false, error: 'Shuffle mode must be either table or random' };
   }
+
+  const turnLimit = validateTurnLimit(config.turnLimitSeconds);
+  if (turnLimit) return { ok: false, error: turnLimit };
 
   return { ok: true, config };
 }

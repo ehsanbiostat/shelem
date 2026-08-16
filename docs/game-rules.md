@@ -118,10 +118,19 @@ The one moment they can change is between matches: when all four agree to a rema
 | Double negative | On | On/off |
 | Double-negative threshold | 85 | Whole number, 0–100 |
 | Shuffle | Table | Table (light shuffle carrying the previous hand forward) or Random (fresh deck every hand) |
+| Turn limit | 30s | Off, or 5–120 seconds |
 
 Two bounds are load-bearing rather than arbitrary:
 
 - **Both slam values must exceed the highest numeric bid (160).** Shelem and Sar-Shelem outrank every numeric bid, and Sar-Shelem outranks Shelem — a slam worth less than a bid it outranks would make the ladder incoherent.
 - **The double-negative threshold is capped at 100**, the bid floor. That is what guarantees the penalty can never land on a made contract, since the smallest makeable numeric bid is 100 points.
+
+### The turn clock
+
+A player who doesn't act within the limit has the turn played for them, and the table moves on. Bidding and the widow discard are judgements rather than reflexes, so they get **twice** the limit; the opening bid also gets an allowance for the deal animation, which it would otherwise be timed through.
+
+Shelem has no bot, so a timed-out turn gets the most defensible *legal* action rather than a good one: **pass** when bidding, the **lowest legal card** in play, and the **four lowest cards** buried at the widow. That is honestly weaker than a real player and can misplay a contract — the alternative was waiting indefinitely. See [Bots](bots.md) for why Hokm does better here.
+
+The clock runs for a disconnected player too, which is the main reason it exists: before it, one dropped player could freeze a table for a day.
 
 The bidding limits themselves — floor 100, cap 160, increments of 5 — are **not** configurable. They are pinned to the 165 points in a hand, which is in turn fixed by the card values and the flat 5-point trick bonus; moving one without the others produces a bid ladder that doesn't fit the hand.

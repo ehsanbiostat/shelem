@@ -30,6 +30,8 @@ export class HokmTableConfig extends Schema {
   @type('number') kotValue = DEFAULT_HOKM_CONFIG.kotValue;
   @type('number') hakemKotiValue = DEFAULT_HOKM_CONFIG.hakemKotiValue;
   @type('string') hakemSelection: HakemSelection = DEFAULT_HOKM_CONFIG.hakemSelection;
+  /** Seconds a player has to act before the turn is played for them; 0 is off. */
+  @type('number') turnLimitSeconds = DEFAULT_HOKM_CONFIG.turnLimitSeconds;
   @type('string') shuffleMode: ShuffleMode = DEFAULT_HOKM_CONFIG.shuffleMode;
 
   /** Applied field by field rather than by replacing the whole child schema, so
@@ -41,6 +43,7 @@ export class HokmTableConfig extends Schema {
     this.hakemKotiValue = config.hakemKotiValue;
     this.hakemSelection = config.hakemSelection;
     this.shuffleMode = config.shuffleMode;
+    this.turnLimitSeconds = config.turnLimitSeconds;
     return this;
   }
 }

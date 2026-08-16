@@ -386,3 +386,51 @@
   opacity: 0;
   visibility: hidden;
 }
+
+/* The turn clock: the ring that marks whose go it is, drained as their time runs
+   out. An SVG rather than the .activeTurn box-shadow above, because a shadow is
+   all-or-nothing and this one has to be partly drawn.
+
+   Stretched over the pill with an absolute inset rather than sized in JS, and the
+   rect uses pathLength="1" so a single dash offset drains it correctly at any
+   width the player's name happens to produce. */
+.turnClock {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.turnClockTrack {
+  fill: none;
+  stroke: var(--color-gold-500);
+  stroke-width: 3;
+  /* Deliberately not rotated to start at twelve o'clock. The SVG is stretched to
+     the pill with preserveAspectRatio="none", so rotating inside it skews the
+     rounded rect into a stray diagonal instead of turning it. Where the arc begins
+     matters far less than it draining smoothly and being legible. */
+  transition: stroke 400ms ease;
+}
+
+/* While a clock is running, the static turn-ring steps back to being a track and
+   the draining arc is the bright thing. Left at full strength it reads as a full
+   ring with a second arc drawn over it — which is how it looked before, and it was
+   genuinely confusing. */
+.clocked .identity {
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.22), 0 0 16px 3px rgba(201, 162, 39, 0.28);
+}
+
+/* Colour is the coarse signal — you can read "running out" from across the table
+   long before you can judge the arc's length. */
+.turnClockLow {
+  stroke: #e0a83a;
+}
+
+.turnClockUrgent {
+  stroke: #d94a4a;
+}
+
+/* Digits stay upright on the rotated side seats, but a ring has no orientation to
+   fix — which is the concrete reason the clock is drawn as one. */

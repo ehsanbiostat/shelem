@@ -10,6 +10,7 @@ import {
   determineTrickWinner,
   legalCards,
   teamForSeat,
+  turnDurationMs,
   shelem,
 } from '@shelem/shared';
 import { GameState, BidRecord, TrickPlay, HandResult } from '../schema/GameState.js';
@@ -17,6 +18,7 @@ import { BaseTableRoom, cardsEqual, HAND_REVIEW_MS, type JoinOptions } from './B
 
 type Bid = shelem.Bid;
 type BidEvent = shelem.BidEvent;
+const { timeoutBid, timeoutCard, timeoutDiscard } = shelem;
 const {
   deal,
   isValidBid,
@@ -93,17 +95,27 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
 
   // ---- Bidding ----
 
+  /** A person bidding. Resolves them to a seat and hands off to the same code the
+   * turn clock goes through — the rules live in one place, not two. */
   private handleBid(client: Client, message: { bidType?: string; amount?: number }) {
-    if (this.state.phase !== 'bidding') return;
     const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined || seat !== this.state.currentTurnSeat) return;
-    if (this.passedSeats.has(seat)) return;
-
+    if (seat === undefined) return;
     const bid = this.parseBid(message);
-    if (!bid || !isValidBid(bid, this.currentHighestBid)) {
+    if (!bid) {
       client.send('actionRejected', { action: 'bid', reason: 'Invalid bid' });
       return;
     }
+    const rejection = this.applyBid(seat, bid);
+    if (rejection) client.send('actionRejected', { action: 'bid', reason: rejection });
+  }
+
+  /** Records a bid for a seat, whoever is behind it. Returns a reason when the
+   * move is refused, so the caller decides whether anyone needs telling. */
+  private applyBid(seat: Seat, bid: Bid): string | null {
+    if (this.state.phase !== 'bidding') return null;
+    if (seat !== this.state.currentTurnSeat) return null;
+    if (this.passedSeats.has(seat)) return null;
+    if (!isValidBid(bid, this.currentHighestBid)) return 'Invalid bid';
 
     this.bidEvents.push({ seat, bid });
     const record = new BidRecord();
@@ -122,7 +134,8 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
     const resolution = resolveBidding(this.bidEvents);
     if (!resolution.complete) {
       this.state.currentTurnSeat = this.nextActiveSeat(seat);
-      return;
+      this.scheduleTurn();
+      return null;
     }
 
     if (resolution.redeal) {
@@ -130,7 +143,7 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
       // than a fresh deck appearing from nowhere.
       this.collectedDeck = [...this.hands.flat(), ...this.widow];
       this.startHand();
-      return;
+      return null;
     }
 
     const declarerSeat = resolution.declarerSeat!;
@@ -140,6 +153,7 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
     this.state.winningBidAmount = winningBid.type === 'numeric' ? winningBid.amount : 0;
     this.state.phase = 'widow';
     this.state.currentTurnSeat = declarerSeat;
+    this.scheduleTurn();
 
     // Sar-Shelem is normally played without the widow exchange: the declarer is shown
     // the four cards and they are then buried as their discard, unchosen. The reveal
@@ -147,12 +161,13 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
     // table can turn the exchange on, in which case it plays like any other contract.
     if (winningBid.type === 'sarShelem' && !this.state.config.sarShelemTakesWidow) {
       this.clientFor(declarerSeat)?.send('sarShelemWidow', this.widow);
-      return;
+      return null;
     }
 
     this.hands[declarerSeat] = this.hands[declarerSeat].concat(this.widow);
     this.widow = [];
     this.sendHand(declarerSeat);
+    return null;
   }
 
   /** The declarer has seen the Sar-Shelem widow and is ready to play. The four
@@ -161,11 +176,16 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
    * contract reachable at all: a widow holding an ace would otherwise put all 165
    * out of reach before a card was played. */
   private handleConfirmSarShelemWidow(client: Client) {
+    const seat = this.seatBySessionId.get(client.sessionId);
+    if (seat === undefined) return;
+    this.confirmSarShelemWidow(seat);
+  }
+
+  private confirmSarShelemWidow(seat: Seat) {
     if (this.state.phase !== 'widow') return;
     if (this.state.winningBidType !== 'sarShelem') return;
     if (this.state.config.sarShelemTakesWidow) return;
-    const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined || seat !== this.state.declarerSeat) return;
+    if (seat !== this.state.declarerSeat) return;
 
     this.state.declarerPointsCollected += trickPoints(this.widow);
     this.teamPiles[teamForSeat(seat)].push(...this.widow);
@@ -173,6 +193,7 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
 
     this.state.phase = 'playing';
     this.state.currentTurnSeat = seat;
+    this.scheduleTurn();
   }
 
   private nextActiveSeat(from: Seat): Seat {
@@ -202,27 +223,26 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
   // ---- Widow / discard ----
 
   private handleDiscardWidow(client: Client, message: { cards?: { suit: Suit; rank: Rank }[] }) {
-    if (this.state.phase !== 'widow') return;
+    const seat = this.seatBySessionId.get(client.sessionId);
+    if (seat === undefined) return;
+    const rejection = this.discardWidow(seat, (message.cards ?? []) as Card[]);
+    if (rejection) client.send('actionRejected', { action: 'discardWidow', reason: rejection });
+  }
+
+  private discardWidow(seat: Seat, requested: Card[]): string | null {
+    if (this.state.phase !== 'widow') return null;
     // A Sar-Shelem declarer never chooses a discard; theirs is buried for them —
     // unless this table plays Sar-Shelem with the exchange.
-    if (this.state.winningBidType === 'sarShelem' && !this.state.config.sarShelemTakesWidow) return;
-    const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined || seat !== this.state.declarerSeat) return;
+    if (this.state.winningBidType === 'sarShelem' && !this.state.config.sarShelemTakesWidow) return null;
+    if (seat !== this.state.declarerSeat) return null;
 
-    const requested = message.cards ?? [];
-    if (requested.length !== 4) {
-      client.send('actionRejected', { action: 'discardWidow', reason: 'Must discard exactly 4 cards' });
-      return;
-    }
+    if (requested.length !== 4) return 'Must discard exactly 4 cards';
 
     const hand = this.hands[seat].slice();
     const discarded: Card[] = [];
     for (const wanted of requested) {
       const index = hand.findIndex((c) => cardsEqual(c, wanted));
-      if (index === -1) {
-        client.send('actionRejected', { action: 'discardWidow', reason: 'Card not in hand' });
-        return;
-      }
+      if (index === -1) return 'Card not in hand';
       discarded.push(hand.splice(index, 1)[0]);
     }
 
@@ -234,24 +254,30 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
     this.state.phase = 'playing';
     this.state.currentTurnSeat = seat;
     this.sendHand(seat);
+    this.scheduleTurn();
+    return null;
   }
 
   // ---- Playing ----
 
   private handlePlayCard(client: Client, message: { suit?: Suit; rank?: Rank }) {
-    if (this.state.phase !== 'playing') return;
-    if (this.resolvingTrick) return;
     const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined || seat !== this.state.currentTurnSeat) return;
+    if (seat === undefined) return;
     if (!message.suit || !message.rank) return;
+    const rejection = this.playCard(seat, { suit: message.suit, rank: message.rank });
+    if (rejection) client.send('actionRejected', { action: 'playCard', reason: rejection });
+  }
 
-    const card: Card = { suit: message.suit, rank: message.rank };
+  /** Plays a card for a seat, whoever is behind it — a person, or the turn clock
+   * running out. Returns a reason when the move is refused. */
+  private playCard(seat: Seat, card: Card): string | null {
+    if (this.state.phase !== 'playing') return null;
+    if (this.resolvingTrick) return null;
+    if (seat !== this.state.currentTurnSeat) return null;
+
     const hand = this.hands[seat];
     const index = hand.findIndex((c) => cardsEqual(c, card));
-    if (index === -1) {
-      client.send('actionRejected', { action: 'playCard', reason: 'Card not in hand' });
-      return;
-    }
+    if (index === -1) return 'Card not in hand';
 
     const isLeading = this.state.currentTrick.length === 0;
     const trumpNotYetSet = this.state.trumpSuit === '';
@@ -259,10 +285,7 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
     if (!isLeading) {
       const leadSuit = this.state.currentTrick[0].suit as Suit;
       const legal = legalCards(hand, leadSuit, this.state.trumpSuit as Suit);
-      if (!legal.some((c) => cardsEqual(c, card))) {
-        client.send('actionRejected', { action: 'playCard', reason: 'Illegal move' });
-        return;
-      }
+      if (!legal.some((c) => cardsEqual(c, card))) return 'Illegal move';
     }
 
     hand.splice(index, 1);
@@ -282,18 +305,23 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
 
     if (this.state.currentTrick.length < 4) {
       this.state.currentTurnSeat = ((seat + 1) % 4) as Seat;
-      return;
+      this.scheduleTurn();
+      return null;
     }
 
     // Hold the completed trick on everyone's screen for a beat before clearing it —
     // otherwise the 4th card's own broadcast already carries the cleared trick, and
     // the last play never visibly appears. `resolvingTrick` blocks new plays (turn
     // hasn't advanced yet) until the pause completes.
+    // The trick is held on screen for a beat and nobody may act, so the clock
+    // comes off the table for the duration rather than draining through it.
     this.resolvingTrick = true;
+    this.scheduleTurn();
     this.clock.setTimeout(() => {
       this.resolvingTrick = false;
       this.resolveTrick();
     }, 1500);
+    return null;
   }
 
   private resolveTrick() {
@@ -332,6 +360,7 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
     this.state.tricksPlayedThisHand += 1;
     this.state.currentTrick.clear();
     this.state.currentTurnSeat = winnerSeat;
+    this.scheduleTurn();
 
     if (this.state.tricksPlayedThisHand >= TRICKS_PLAYED_PER_HAND) {
       this.completeHand();
@@ -390,10 +419,81 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
     // each client, so the whole table moves together.
     this.state.phase = 'handComplete';
     this.state.currentTurnSeat = -1;
+    this.scheduleTurn();
     this.clock.setTimeout(() => {
       this.state.dealerSeat = ((this.state.dealerSeat + 1) % 4) as Seat;
       this.startHand();
     }, HAND_REVIEW_MS);
+  }
+
+  /**
+   * How long this seat has for what it currently owes, or 0 for no clock.
+   *
+   * Only the phases where the room is genuinely *waiting on a person* get one.
+   * The beat a finished trick is held for, and the hand-result pause, are the
+   * table doing something the player cannot act through — a clock over those
+   * would charge them for time they never had.
+   */
+  protected turnLimitFor(seat: Seat): number {
+    const limit = this.state.config.turnLimitSeconds;
+
+    if (this.state.phase === 'bidding') {
+      // A bid is a judgement about the whole hand, so it gets the longer clock.
+      // The deal allowance goes only to the *opening* bid, which is the one asked
+      // while the client is still animating the deal — handing it to every bidder
+      // would quietly make the whole auction longer than the table asked for.
+      return turnDurationMs(limit, {
+        deliberate: true,
+        firstOfHand: this.state.bidHistory.length === 0,
+      });
+    }
+    if (this.state.phase === 'widow') {
+      // Only the declarer owes anything here; choosing four cards to bury is a
+      // real decision, not a reflex.
+      if (seat !== this.state.declarerSeat) return 0;
+      return turnDurationMs(limit, { deliberate: true });
+    }
+    if (this.state.phase === 'playing') {
+      if (this.resolvingTrick) return 0;
+      return turnDurationMs(limit);
+    }
+    return 0;
+  }
+
+  /**
+   * Shelem has no bot, so a timed-out turn gets the most defensible *legal*
+   * action rather than a good one — see shelem/timeout.ts, which is deliberate
+   * about not pretending otherwise.
+   *
+   * Routed through the same handlers a person's message reaches, so a timeout
+   * cannot make a move a player could not.
+   */
+  protected takeTimeoutAction(seat: Seat) {
+    if (this.state.phase === 'bidding') {
+      this.applyBid(seat, timeoutBid());
+      return;
+    }
+
+    if (this.state.phase === 'widow') {
+      if (seat !== this.state.declarerSeat) return;
+      // A Sar-Shelem declarer without the exchange has nothing to choose — their
+      // four cards are buried for them, and all that is owed is acknowledgement.
+      if (this.state.winningBidType === 'sarShelem' && !this.state.config.sarShelemTakesWidow) {
+        this.confirmSarShelemWidow(seat);
+      } else {
+        this.discardWidow(seat, timeoutDiscard(this.hands[seat]));
+      }
+      return;
+    }
+
+    if (this.state.phase === 'playing') {
+      const leadSuit =
+        this.state.currentTrick.length > 0 ? (this.state.currentTrick[0].suit as Suit) : null;
+      // Before the opening lead there is no trump yet; the suit led decides it, so
+      // any card is legal and the lead suit is what matters.
+      const trumpSuit = (this.state.trumpSuit || 'spades') as Suit;
+      this.playCard(seat, timeoutCard(this.hands[seat], leadSuit, trumpSuit));
+    }
   }
 
   /** A fresh match starts from a fully randomised deck (see docs/game-rules.md):
@@ -464,6 +564,7 @@ export class ShelemRoom extends BaseTableRoom<GameState> {
 
     const firstBidder = ((this.state.dealerSeat + 1) % 4) as Seat;
     this.state.currentTurnSeat = firstBidder;
+    this.scheduleTurn();
 
     for (let seat = 0; seat < 4; seat++) {
       this.state.players[seat].handSize = this.hands[seat].length;
