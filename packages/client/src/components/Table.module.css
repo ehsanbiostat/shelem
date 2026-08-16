@@ -11,12 +11,28 @@
  * depends on being correct. Measuring the actual rendered box with
  * ResizeObserver sidesteps that whole class of bug instead of depending on a
  * specific containment code path resolving correctly on every engine. */
+/* `clip`, not `hidden`, and this is load-bearing rather than a tidy-up.
+ *
+ * Both clip identically, but `hidden` still makes this a *scroll container* — it
+ * only takes the scrollbars away. The felt overflows on purpose: the hand fan runs
+ * off the bottom edge (Hand.module.css) and each opponent's fan is parked just past
+ * its own edge (the `-6u` offsets below), so scrollHeight exceeds clientHeight by
+ * ~96px in a normal hand. That is fine while nothing scrolls it — but clicking a
+ * card focuses that <button>, and a browser scrolls the nearest scrollable ancestor
+ * to bring a focused element into view. Playing a card off the low edge of your own
+ * fan therefore scrolled the entire table up by 80px, which pushed the top seat
+ * (parked just above the edge) completely out of sight and took the score chip in
+ * the top-left corner with it. It stayed that way for the rest of the hand, because
+ * nothing ever scrolled it back.
+ *
+ * `clip` is not a scroll container at all, so there is nothing for focus to scroll
+ * and the overflow stays purely visual. Chrome 90+, Safari 16+, Firefox 81+. */
 .tableWrap {
   position: relative;
   flex: 1;
   min-height: 0;
   width: 100%;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .felt {
