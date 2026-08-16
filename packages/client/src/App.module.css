@@ -123,6 +123,17 @@
   flex: none;
 }
 
+/* The wordmark in the table header doubles as the way back to the game shelf. */
+.wordmarkLink {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.wordmarkLink:hover {
+  text-decoration: underline;
+}
+
 .headerRight {
   display: flex;
   align-items: center;

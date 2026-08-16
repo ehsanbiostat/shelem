@@ -1,0 +1,69 @@
+/* Two tiles side by side inside the lobby card, which is 380px at its widest — so
+   each has ~170px to work with on the narrowest phone the card is designed for.
+   A grid rather than a flex pair so a third game wraps onto a second row on its
+   own, without this file needing to know how many games there are. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 14px 14px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid #d7c99a;
+  background: transparent;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease;
+}
+
+.tile:hover:not(:disabled) {
+  border-color: var(--color-emerald-700);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.tile:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.glyphs {
+  font-size: 15px;
+  letter-spacing: 0.15em;
+  color: var(--color-gold-500);
+  line-height: 1;
+}
+
+.name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-emerald-700);
+}
+
+.blurb {
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.meta {
+  font-size: 10.5px;
+  color: var(--color-text-muted);
+  opacity: 0.75;
+}
+
+/* Reads as the button the whole tile actually is — the tile is the click target,
+   so this is a label rather than a nested control. */
+.action {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-emerald-700);
+}

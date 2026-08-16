@@ -6,7 +6,19 @@ Technical decisions for v1, made against the constraints in [Product Scope](prod
 
 [Colyseus](https://colyseus.io/) — an open-source Node.js/TypeScript multiplayer game-server framework — over a bespoke WebSocket server.
 
-Why: it's built around exactly this domain — authoritative "rooms" holding server-side game state, per-client filtered state (so hidden cards never reach the wrong client), and built-in reconnection support (matches the "auto-rejoin same seat" product decision). Each future game becomes a new Room class, which fits the multi-game roadmap without requiring a bespoke framework to be built in-house.
+Why: it's built around exactly this domain — authoritative "rooms" holding server-side game state, per-client filtered state (so hidden cards never reach the wrong client), and built-in reconnection support (matches the "auto-rejoin same seat" product decision). Each game is a Room class, which is what let a second game be added without a bespoke framework — see below.
+
+## The game boundary
+
+Colyseus's own room registry **is** the game registry: `gameServer.define('shelem', ShelemRoom)` and `gameServer.define('hokm', HokmRoom)` in `packages/server/src/app.config.ts`, and nothing else. Adding a game needs no framework beyond that.
+
+The boundary sits in three places, and was drawn when the second game arrived rather than ahead of need:
+
+- **`BaseTableRoom`** owns everything about a table that has nothing to do with the game on it: room codes, seating, host election, seat swaps, the 24-hour reconnection hold, the rematch vote, and the private `hand` message. A game supplies its state, its config validation, its message handlers, and what happens when a hand starts.
+- **`BaseGameState`** is the synced state every table has. Each game extends it — a Colyseus schema can't be shaped conditionally, so one state carrying both games' fields would have every Shelem client syncing Hokm's. `teamOfSeat` lives here as real state rather than a `seat % 2` derivation, because Hokm can be configured to draw partnerships from the cards.
+- **`packages/shared/src/`** splits into `core/` (the card model, the deck, follow-suit legality, trick resolution — exported flat, since every consumer wants it) and one namespace per game. `determineTrickWinner` and `legalCards` are shared verbatim between Shelem and Hokm; everything about bidding, dealing and scoring is not.
+
+On the client, `useTableConnection` holds one room at a time above the router, and `room.name` picks the board. That is deliberate: a table code is enough to join with, so a player never has to say which game they're joining.
 
 ## Frontend: React + TypeScript + Framer Motion
 

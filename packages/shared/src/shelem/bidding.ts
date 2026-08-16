@@ -1,4 +1,5 @@
-import type { Bid, BidEvent, Seat } from './types.js';
+import type { Seat } from '../core/types.js';
+import type { Bid, BidEvent } from './types.js';
 
 export const BID_FLOOR = 100;
 export const BID_CAP = 160;

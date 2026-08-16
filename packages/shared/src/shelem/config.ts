@@ -1,15 +1,8 @@
+import type { ShuffleMode } from '../core/types.js';
 import { BID_CAP, BID_FLOOR } from './bidding.js';
 import { DOUBLE_NEGATIVE_THRESHOLD, SLAM_STAKE, TOTAL_HAND_POINTS } from './scoring.js';
 
-/**
- * How the deck for each hand after the first is produced.
- *
- * - `table` — last hand's cards, gathered up and given a light shuffle, which is what
- *   carries suit grouping from one hand into the next (see docs/game-rules.md). The
- *   default, and the way the game is played at a real table.
- * - `random` — a fresh, fully randomised deck every hand.
- */
-export type ShuffleMode = 'table' | 'random';
+export type { ShuffleMode };
 
 /**
  * The rules a table is played under, chosen by whoever creates it and then fixed for

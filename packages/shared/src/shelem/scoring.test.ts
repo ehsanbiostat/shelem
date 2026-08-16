@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_TABLE_CONFIG } from './config.js';
-import { createDeck } from './deck.js';
+import { createDeck } from '../core/deck.js';
 import {
   cardPoints,
   DOUBLE_NEGATIVE_THRESHOLD,

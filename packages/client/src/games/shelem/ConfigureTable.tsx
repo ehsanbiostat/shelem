@@ -1,14 +1,16 @@
 import { useMemo, useState } from 'react';
-import {
+import { shelem } from '@shelem/shared';
+
+const {
   DEFAULT_TABLE_CONFIG,
   MAX_TARGET_SCORE,
   MIN_SLAM_VALUE,
   MIN_TARGET_SCORE,
   TARGET_SCORE_PRESETS,
   validateTableConfig,
-  type ShuffleMode,
-  type TableConfig,
-} from '@shelem/shared';
+} = shelem;
+type ShuffleMode = shelem.ShuffleMode;
+type TableConfig = shelem.TableConfig;
 import styles from './ConfigureTable.module.css';
 
 /** The form's own shape. Numbers are held as strings while they're being typed, so a

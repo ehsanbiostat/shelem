@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Card as CardModel, Seat as SeatIndex } from '@shelem/shared';
 import styles from './WidowPile.module.css';
-import { Card } from './Card.js';
-import { useTableMetrics } from '../tableMetrics.js';
-import { widowSpot } from '../widowSpot.js';
-import { fanOffsets } from '../fanGeometry.js';
-import { dealBlockSound } from '../sound.js';
+import { Card } from '../../components/Card.js';
+import { useTableMetrics } from '../../tableMetrics.js';
+import { widowSpot } from '../../widowSpot.js';
+import { fanOffsets } from '../../fanGeometry.js';
+import { dealBlockSound } from '../../sound.js';
 
 /** How long the pile takes to cross the table to the winning bidder. Slower than
  * one card of the deal (0.4s) because it travels further and is the only thing

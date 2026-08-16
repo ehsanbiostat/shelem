@@ -1,7 +1,5 @@
-import { Room, Client, matchMaker } from 'colyseus';
+import { Client } from 'colyseus';
 import {
-  type Bid,
-  type BidEvent,
   type Card,
   type Rank,
   type Seat,
@@ -9,67 +7,35 @@ import {
   createDeck,
   shuffle,
   tableShuffle,
+  determineTrickWinner,
+  legalCards,
+  teamForSeat,
+  shelem,
+} from '@shelem/shared';
+import { GameState, BidRecord, TrickPlay, HandResult } from '../schema/GameState.js';
+import { BaseTableRoom, cardsEqual, HAND_REVIEW_MS, type JoinOptions } from './BaseTableRoom.js';
+
+type Bid = shelem.Bid;
+type BidEvent = shelem.BidEvent;
+const {
   deal,
   isValidBid,
   resolveBidding,
-  determineTrickWinner,
-  legalCards,
   trickPoints,
   resolveHandScore,
   isMatchComplete,
-  teamForSeat,
   validateTableConfig,
-} from '@shelem/shared';
-import { GameState, PlayerInfo, BidRecord, TrickPlay, SeatSwapRequest, HandResult } from '../schema/GameState.js';
+} = shelem;
 
-interface JoinOptions {
-  name?: string;
-  /** The table's rules, sent by the create-table screen. Validated by
-   * validateTableConfig; anything missing falls back to the default ruleset. */
-  config?: unknown;
-}
+/** Shelem: 12 played tricks, the 13th being the declarer's buried widow discard. */
+const TRICKS_PLAYED_PER_HAND = 12;
 
-/** How long the completed hand's scores stay up before the next one is dealt.
- * Server-driven so all four players get the same pause at the same moment. */
-const HAND_REVIEW_MS = 5000;
-
-/** Room codes get read aloud and typed in by hand, so the alphabet leaves out the
- * pairs that get confused when spoken or squinted at: I/1, L/1, O/0. Four
- * characters from the remaining 31 is ~920k codes, which is far more than a
- * private-table game will ever hold open at once, and short enough to say down a
- * phone line in one go. */
-const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-const CODE_LENGTH = 4;
-
-/** Four characters collide often enough to matter, so this checks the codes
- * actually in use rather than trusting randomness. The attempt cap means a
- * pathologically full server fails loudly instead of spinning forever. */
-async function generateRoomCode(): Promise<string> {
-  const taken = new Set((await matchMaker.query({})).map((room) => room.roomId));
-  for (let attempt = 0; attempt < 100; attempt++) {
-    let code = '';
-    for (let i = 0; i < CODE_LENGTH; i++) {
-      code += CODE_ALPHABET[Math.floor(Math.random() * CODE_ALPHABET.length)];
-    }
-    if (!taken.has(code)) return code;
-  }
-  throw new Error('Could not allocate a free room code');
-}
-
-function cardsEqual(a: Card, b: Card): boolean {
-  return a.suit === b.suit && a.rank === b.rank;
-}
-
-export class ShelemRoom extends Room<GameState> {
-  maxClients = 4;
-
-  // Server-only, never synced: actual hand contents, hidden until legitimately revealed.
-  private hands: Card[][] = [[], [], [], []];
+export class ShelemRoom extends BaseTableRoom<GameState> {
+  // Server-only, never synced.
   private widow: Card[] = [];
   private bidEvents: BidEvent[] = [];
   private currentHighestBid: Bid | null = null;
   private passedSeats = new Set<Seat>();
-  private seatBySessionId = new Map<string, Seat>();
   // True for the brief pause after a trick's 4th card is played, while it's still
   // shown on screen — blocks the next trick's lead until resolveTrick() runs.
   private resolvingTrick = false;
@@ -81,9 +47,7 @@ export class ShelemRoom extends Room<GameState> {
   // The previous hand's cards, awaiting the next deal. Null before the first hand.
   private collectedDeck: Card[] | null = null;
 
-  async onCreate(options: JoinOptions) {
-    this.roomId = await generateRoomCode();
-
+  protected createState(options: JoinOptions): GameState {
     const state = new GameState();
     // The create-table screen validates the same config before sending it, so a
     // rejection here means a client that isn't ours — fail the create loudly rather
@@ -91,41 +55,15 @@ export class ShelemRoom extends Room<GameState> {
     const validated = validateTableConfig(options.config ?? {});
     if (!validated.ok) throw new Error(`Invalid table settings: ${validated.error}`);
     state.config.applyConfig(validated.config);
+    return state;
+  }
 
-    for (let seat = 0; seat < 4; seat++) {
-      const player = new PlayerInfo();
-      player.seat = seat;
-      state.players.push(player);
-    }
-    this.state = state;
-
-    this.onMessage('startGame', (client) => this.handleStartGame(client));
+  protected registerGameMessages() {
     this.onMessage('setTableConfig', (client, message) => this.handleSetTableConfig(client, message));
-    this.onMessage('playAgain', (client) => this.handlePlayAgain(client));
     this.onMessage('bid', (client, message) => this.handleBid(client, message));
     this.onMessage('discardWidow', (client, message) => this.handleDiscardWidow(client, message));
     this.onMessage('confirmSarShelemWidow', (client) => this.handleConfirmSarShelemWidow(client));
     this.onMessage('playCard', (client, message) => this.handlePlayCard(client, message));
-    this.onMessage('requestSeatSwap', (client, message) => this.handleRequestSeatSwap(client, message));
-    this.onMessage('respondSeatSwap', (client, message) => this.handleRespondSeatSwap(client, message));
-  }
-
-  onJoin(client: Client, options: JoinOptions) {
-    const seat = this.state.players.findIndex((p) => p.sessionId === '');
-    if (seat === -1) {
-      throw new Error('Table is full');
-    }
-
-    const player = this.state.players[seat];
-    player.sessionId = client.sessionId;
-    player.name = options.name?.trim() || `Player ${seat + 1}`;
-    player.connected = true;
-    this.seatBySessionId.set(client.sessionId, seat as Seat);
-
-    // First player to sit down is whoever created the table, and becomes host.
-    if (this.state.hostSessionId === '') {
-      this.state.hostSessionId = client.sessionId;
-    }
   }
 
   /** The rules are normally settled before the room exists, on the create-table
@@ -151,43 +89,6 @@ export class ShelemRoom extends Room<GameState> {
 
     this.state.config.applyConfig(validated.config);
     this.state.phase = 'lobby';
-  }
-
-  /** Filling the last seat only makes the table ready — it doesn't deal. Any seated
-   * player can then kick off the first hand once everyone's actually ready to play,
-   * rather than the room dealing out from under a player who just joined. */
-  private handleStartGame(client: Client) {
-    if (this.state.phase !== 'lobby') return;
-    if (!this.seatBySessionId.has(client.sessionId)) return;
-    const allSeated = this.state.players.every((p) => p.sessionId !== '');
-    if (!allSeated) return;
-
-    this.startHand();
-  }
-
-  async onLeave(client: Client) {
-    const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined) return;
-
-    const player = this.state.players[seat];
-    player.connected = false;
-
-    try {
-      // No auto-kick / timeout in v1: wait a long time (24h) for the same player to
-      // reconnect into their seat; the game simply pauses on their turn until then.
-      await this.allowReconnection(client, 24 * 60 * 60);
-      player.connected = true;
-      // The synced schema state resends itself automatically on reconnect, but a
-      // player's own hand is deliberately kept out of that (see the comment on
-      // `hands`) and only ever pushed via a one-off message — which reconnecting
-      // does NOT replay on its own, so without this the client comes back with an
-      // empty hand until their next server-initiated update.
-      this.sendHand(seat);
-    } catch {
-      // Reconnection window expired without anyone reclaiming the seat. The room is
-      // left as-is (v1 has no bot fill-in or seat-vacating flow) — a future version
-      // can add host controls to reset the table.
-    }
   }
 
   // ---- Bidding ----
@@ -272,11 +173,6 @@ export class ShelemRoom extends Room<GameState> {
 
     this.state.phase = 'playing';
     this.state.currentTurnSeat = seat;
-  }
-
-  private clientFor(seat: Seat): Client | undefined {
-    const sessionId = this.state.players[seat].sessionId;
-    return sessionId ? this.clients.find((c) => c.sessionId === sessionId) : undefined;
   }
 
   private nextActiveSeat(from: Seat): Seat {
@@ -376,6 +272,8 @@ export class ShelemRoom extends Room<GameState> {
     play.rank = card.rank;
     this.state.currentTrick.push(play);
 
+    // Shelem has no trump declaration — the suit of the declarer's opening lead is
+    // trump, and that is the only way it is ever set.
     if (isLeading && trumpNotYetSet) {
       this.state.trumpSuit = card.suit;
     }
@@ -435,7 +333,7 @@ export class ShelemRoom extends Room<GameState> {
     this.state.currentTrick.clear();
     this.state.currentTurnSeat = winnerSeat;
 
-    if (this.state.tricksPlayedThisHand >= 12) {
+    if (this.state.tricksPlayedThisHand >= TRICKS_PLAYED_PER_HAND) {
       this.completeHand();
     }
   }
@@ -498,45 +396,19 @@ export class ShelemRoom extends Room<GameState> {
     }, HAND_REVIEW_MS);
   }
 
-  /** A rematch needs every seat, including any that are currently disconnected —
-   * a player who drops mid-match shouldn't have the table restarted without them.
-   * Votes are one-way for the same reason: this is agreement to play on, and
-   * letting someone withdraw turns it into a thing to keep re-checking. */
-  private handlePlayAgain(client: Client) {
-    if (this.state.phase !== 'matchComplete') return;
-    const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined) return;
-
-    this.state.players[seat].wantsRematch = true;
-    if (!this.state.players.every((p) => p.sessionId !== '' && p.wantsRematch)) return;
-
-    this.resetForRematch();
-  }
-
-  /** Back to the same people in the same seats — they can still swap in the lobby if
-   * they want, which is why seating isn't reshuffled here. A fresh match starts from a
-   * fully randomised deck (see docs/game-rules.md): there's no previous hand for this
-   * one to inherit, so the carried-over deck is dropped. The rules of the finished
-   * match carry over as the starting point for the new host's configure screen. */
-  private resetForRematch() {
-    this.state.team0Score = 0;
-    this.state.team1Score = 0;
+  /** A fresh match starts from a fully randomised deck (see docs/game-rules.md):
+   * there's no previous hand for this one to inherit, so the carried-over deck is
+   * dropped. */
+  protected resetGameForRematch() {
     this.state.handHistory.clear();
-    this.state.handNumber = 0;
     this.state.declarerPointsCollected = 0;
     this.state.defenderPointsCollected = 0;
     this.state.declarerSeat = -1;
     this.state.winningBidType = '';
     this.state.winningBidAmount = 0;
-    this.state.trumpSuit = '';
-    this.state.currentTrick.clear();
-    this.state.lastTrick.clear();
-    this.state.lastTrickWinnerSeat = -1;
     this.state.lastTrickPoints = 0;
     this.state.bidHistory.clear();
     this.state.tricksPlayedThisHand = 0;
-    this.state.currentTurnSeat = -1;
-    this.state.players.forEach((p) => (p.wantsRematch = false));
 
     this.collectedDeck = null;
     this.teamPiles = [[], []];
@@ -544,55 +416,6 @@ export class ShelemRoom extends Room<GameState> {
     this.bidEvents = [];
     this.passedSeats = new Set();
     this.resolvingTrick = false;
-
-    // A new match gets a new host, drawn at random from the seated players, so
-    // the same person doesn't own the settings match after match.
-    const seated = this.state.players.filter((p) => p.sessionId !== '');
-    this.state.hostSessionId = seated[Math.floor(Math.random() * seated.length)].sessionId;
-
-    // Rules are fixed for the length of a match, so a new match is the one moment they
-    // can change: the new host goes back through the configure screen while the other
-    // three wait, and only then does the table drop into the lobby.
-    this.state.phase = 'configuring';
-  }
-
-  // ---- Seat swap (lobby only) ----
-
-  private handleRequestSeatSwap(client: Client, message: { toSeat?: number }) {
-    if (this.state.phase !== 'lobby') return;
-    const fromSeat = this.seatBySessionId.get(client.sessionId);
-    if (fromSeat === undefined || typeof message.toSeat !== 'number') return;
-    if (message.toSeat < 0 || message.toSeat > 3 || message.toSeat === fromSeat) return;
-    if (this.state.players[message.toSeat].sessionId === '') return;
-
-    const request = new SeatSwapRequest();
-    request.fromSeat = fromSeat;
-    request.toSeat = message.toSeat;
-    this.state.pendingSeatSwap = request;
-  }
-
-  private handleRespondSeatSwap(client: Client, message: { accept?: boolean }) {
-    const pending = this.state.pendingSeatSwap;
-    if (!pending) return;
-    const seat = this.seatBySessionId.get(client.sessionId);
-    if (seat === undefined || seat !== pending.toSeat) return;
-
-    if (message.accept) {
-      const a = this.state.players[pending.fromSeat];
-      const b = this.state.players[pending.toSeat];
-      const aSession = a.sessionId;
-      const aName = a.name;
-      const aConnected = a.connected;
-      a.sessionId = b.sessionId;
-      a.name = b.name;
-      a.connected = b.connected;
-      b.sessionId = aSession;
-      b.name = aName;
-      b.connected = aConnected;
-      this.seatBySessionId.set(a.sessionId, pending.fromSeat as Seat);
-      this.seatBySessionId.set(b.sessionId, pending.toSeat as Seat);
-    }
-    this.state.pendingSeatSwap = undefined;
   }
 
   // ---- Hand lifecycle ----
@@ -613,7 +436,7 @@ export class ShelemRoom extends Room<GameState> {
     return shuffle(createDeck());
   }
 
-  private startHand() {
+  protected startHand() {
     const deck = this.nextDeck();
     const { hands, widow } = deal(deck, this.state.dealerSeat as Seat);
     this.hands = hands;
@@ -646,13 +469,5 @@ export class ShelemRoom extends Room<GameState> {
       this.state.players[seat].handSize = this.hands[seat].length;
       this.sendHand(seat as Seat);
     }
-  }
-
-  private sendHand(seat: Seat) {
-    const player = this.state.players[seat];
-    player.handSize = this.hands[seat].length;
-    if (!player.sessionId) return;
-    const client = this.clients.find((c) => c.sessionId === player.sessionId);
-    client?.send('hand', this.hands[seat]);
   }
 }

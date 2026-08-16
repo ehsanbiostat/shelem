@@ -1,4 +1,7 @@
-import { DEFAULT_TABLE_CONFIG, type TableConfig } from '@shelem/shared';
+import { shelem } from '@shelem/shared';
+
+const { DEFAULT_TABLE_CONFIG } = shelem;
+type TableConfig = shelem.TableConfig;
 import styles from './RulesSummary.module.css';
 
 /** Every rule that differs from the traditional ruleset, phrased the way a player
