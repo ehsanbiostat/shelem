@@ -289,6 +289,56 @@
   font-weight: 600;
 }
 
+/* The team's running figure for the hand, shown on both of that team's seats.
+   Built on the same pill as the bid badges above so the seat keeps one visual
+   idiom, and sized a touch tighter because it sits inline after the name rather
+   than on its own line.
+
+   The colour is not decoration. This is a *team* number on a *player's* label, so
+   the same figure appears twice on the table; without a shared colour binding the
+   two together, four labels reading 95 · 40 · 95 · 40 read as four separate
+   players' scores. The two colours are the same variables ScoreBar.module.css
+   uses for its .dotA/.dotB, so the felt and the score panel identify a team
+   identically and the panel's header doubles as this badge's legend. */
+.scoreBadge {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-ivory-100);
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+  /* A hand score changes on every trick; without a fixed digit width the name
+     beside it shifts sideways each time, which reads as the label twitching. */
+  min-width: 1.6em;
+  text-align: center;
+}
+
+.scoreTeam0 {
+  background: var(--color-sapphire-500);
+}
+
+.scoreTeam1 {
+  background: var(--color-ruby-500);
+}
+
+/* Digits are not language either — same reasoning as the trump glyph below. On a
+   side seat the name is set vertical-rl and turned 180°, which stands a number on
+   its end; a live score is the one thing on the table that cannot afford to be
+   hard to read at a glance.
+
+   Note this can't be the trump badge's `transform: none` trick. That badge is a
+   direct child of .identity, so it opts out of the rule that rotates it. This one
+   sits *inside* .name (see Seat.tsx for why), and the rotation is on .name itself
+   — a transform applies to the whole subtree, so there is nothing here to cancel.
+   Turning the badge back through another 180° is what undoes the parent's. */
+.left .identity .scoreBadge,
+.right .identity .scoreBadge {
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+}
+
 /* There's no narrow-screen breakpoint here any more. It existed to drop the
  * least essential text badges — the dealer and declarer tags — on a small board,
  * since text intentionally doesn't shrink with `--u` (it would become
