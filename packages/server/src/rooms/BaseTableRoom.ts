@@ -1,5 +1,5 @@
-import { Room, Client, matchMaker } from 'colyseus';
-import { type Card, type Seat, teamForSeat } from '@shelem/shared';
+import { Room, Client, matchMaker, type Delayed } from 'colyseus';
+import { type Card, type Seat, teamForSeat, TURN_GRACE_MS } from '@shelem/shared';
 import { PlayerInfo, SeatSwapRequest, type BaseGameState } from '../schema/BaseGameState.js';
 
 export interface JoinOptions {
@@ -125,15 +125,39 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
   }
 
   /**
-   * The seat whose think-timer is currently pending, so a burst of state changes
-   * can't queue the same bot twice.
+   * Play this seat's turn for them because their clock ran out. Only the game
+   * knows what is owed.
+   *
+   * A game with bots should delegate to `takeBotTurn`; one without needs its own
+   * defensible defaults (see shelem/timeout.ts). Like a bot's move, it must go
+   * through the same handler a person's message reaches.
+   */
+  protected takeTimeoutAction(_seat: Seat): void {
+    // Only reached when a turn limit is set and the game armed a clock for it.
+  }
+
+  /**
+   * How long this seat has, in ms, for whatever it currently owes. 0 means no
+   * clock. The game decides, because only it knows whether the seat is being asked
+   * for a card or for a judgement worth twice the time.
+   */
+  protected turnLimitFor(_seat: Seat): number {
+    return 0;
+  }
+
+  /**
+   * The seat with a pending turn-timer, so a burst of state changes can't queue
+   * the same one twice.
    *
    * A seat rather than a boolean, and that distinction is load-bearing: a plain
    * flag also blocked the *next* seat from being scheduled, so a trick resolving
    * while some earlier timer was still outstanding left the table frozen with a
    * bot to play and nothing due to wake it.
    */
-  private botTurnPendingFor: Seat | null = null;
+  private turnPendingFor: Seat | null = null;
+  /** The pending timer itself, so acting in time can cancel it rather than leaving
+   * it to fire into a turn that has already been taken. */
+  private turnTimer: Delayed | null = null;
 
   /** How long a bot pauses before acting, as [min, max] ms. A field rather than a
    * constant so tests can turn the pacing down — at a realistic delay a single
@@ -142,38 +166,86 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
   protected botThinkMs: [number, number] = [BOT_THINK_MIN_MS, BOT_THINK_MAX_MS];
 
   /**
-   * Wake the bot whose turn it is, if it is a bot's turn. Games call this after
-   * anything that hands the turn on.
+   * Wake whoever owes the current turn. Games call this after anything that hands
+   * the turn on — it is the one place that answers "somebody owes a move here".
+   *
+   * The same question, two answers: a bot acts after a short think, and a person
+   * gets their table's turn limit before the move is made for them. That is why
+   * this is one mechanism rather than two — the set of moments a bot needs waking
+   * is exactly the set of moments a clock should start.
    *
    * The delay is `this.clock`, not a bare setTimeout, so it dies with the room
-   * rather than firing into a disposed table. On waking it re-checks that the
-   * turn is *still* this bot's and that the phase hasn't moved — a reconnect, a
-   * rematch or a hand ending can all overtake a pending think.
+   * rather than firing into a disposed table. On waking it re-checks that the turn
+   * is *still* this seat's and that the phase hasn't moved — a reconnect, a
+   * rematch or a hand ending can all overtake a pending timer.
    */
-  protected scheduleBotTurn() {
+  protected scheduleTurn() {
     const seat = this.state.currentTurnSeat as Seat;
-    if (seat < 0 || !this.state.players[seat]?.isBot) return;
-    if (this.botTurnPendingFor === seat) return;
+    if (seat < 0 || !this.state.players[seat]) {
+      this.clearTurnTimer();
+      return;
+    }
+
+    const isBot = this.state.players[seat].isBot;
+    // A bot answers on its own schedule, so a clock over its seat would be
+    // measuring nothing.
+    const limitMs = isBot ? 0 : this.turnLimitFor(seat);
+
+    // Asked *before* the already-pending check, because this call may be telling
+    // us the seat now owes nothing — the trick it completed is being held on
+    // screen, say. Checking "already scheduled" first would let the clock arm but
+    // never disarm, and the countdown would keep draining through a pause nobody
+    // can act in.
+    if (!isBot && limitMs <= 0) {
+      this.clearTurnTimer();
+      return;
+    }
+
+    if (this.turnPendingFor === seat) return;
+
+    this.clearTurnTimer();
 
     const phase = this.state.phase;
     const hand = this.state.handNumber;
-    this.botTurnPendingFor = seat;
-    const [minMs, maxMs] = this.botThinkMs;
-    const delay = minMs + Math.random() * (maxMs - minMs);
+    this.turnPendingFor = seat;
 
-    this.clock.setTimeout(() => {
-      if (this.botTurnPendingFor === seat) this.botTurnPendingFor = null;
-      // The table can move on underneath a pending think — a hand ending, a
+    let delay: number;
+    if (isBot) {
+      const [minMs, maxMs] = this.botThinkMs;
+      delay = minMs + Math.random() * (maxMs - minMs);
+    } else {
+      // Shown one number, enforced at a slightly later one. A player who acts on
+      // the last tick still has to get the message across the network, and
+      // punishing them for their own latency is how a fair clock feels unfair.
+      delay = limitMs + TURN_GRACE_MS;
+      this.state.turnEndsAt = Date.now() + limitMs;
+      this.state.turnLimitMs = limitMs;
+    }
+
+    this.turnTimer = this.clock.setTimeout(() => {
+      this.turnTimer = null;
+      if (this.turnPendingFor === seat) this.turnPendingFor = null;
+      // The table can move on underneath a pending timer — a hand ending, a
       // rematch, a reconnect — so nothing is assumed to still be true.
       if (this.state.phase !== phase || this.state.handNumber !== hand) return;
       if (this.state.currentTurnSeat !== seat) return;
-      if (!this.state.players[seat]?.isBot) return;
 
-      // Whatever this does hands the turn on, and the game schedules the next bot
-      // from the same place it would tell a human it was their go. Re-scheduling
+      // Whatever this does hands the turn on, and the game schedules the next one
+      // from the same place it would tell a person it was their go. Re-scheduling
       // from here as well would double-drive the table.
-      this.takeBotTurn(seat);
+      if (this.state.players[seat]?.isBot) this.takeBotTurn(seat);
+      else this.takeTimeoutAction(seat);
     }, delay);
+  }
+
+  /** Stops the clock and takes the countdown off the table. Called whenever the
+   * turn moves on, including when somebody acts in time. */
+  private clearTurnTimer() {
+    this.turnTimer?.clear();
+    this.turnTimer = null;
+    this.turnPendingFor = null;
+    this.state.turnEndsAt = 0;
+    this.state.turnLimitMs = 0;
   }
 
   async onCreate(options: JoinOptions) {
@@ -193,6 +265,12 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
     this.onMessage('requestSeatSwap', (client, message) => this.handleRequestSeatSwap(client, message));
     this.onMessage('respondSeatSwap', (client, message) => this.handleRespondSeatSwap(client, message));
     this.onMessage('addBot', (client, message) => this.handleAddBot(client, message));
+    // Lets a client work out how far its own clock is from the server's, so the
+    // deadline in `turnEndsAt` means the same thing on both ends. Cheap enough to
+    // answer whenever asked, and the only thing the countdown needs from the wire.
+    this.onMessage('timeSync', (client, message: { t0?: number }) => {
+      client.send('timeSync', { t0: message?.t0 ?? 0, serverTime: Date.now() });
+    });
     this.onMessage('removeBot', (client, message) => this.handleRemoveBot(client, message));
 
     this.registerGameMessages();

@@ -32,6 +32,12 @@ function houseRules(config: HokmTableConfig): string[] {
     rules.push('Each hand dealt from the last, lightly shuffled');
   }
 
+  if (config.turnLimitSeconds !== DEFAULT_HOKM_CONFIG.turnLimitSeconds) {
+    rules.push(
+      config.turnLimitSeconds === 0 ? 'No turn limit' : `${config.turnLimitSeconds}s per turn`,
+    );
+  }
+
   return rules;
 }
 

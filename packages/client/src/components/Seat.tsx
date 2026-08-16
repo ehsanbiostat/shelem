@@ -73,6 +73,12 @@ export interface SeatProps {
   slot: SeatSlot;
   /** Hides this seat's cards (not its name) while the deal animation plays. */
   hideFan?: boolean;
+  /**
+   * How much of this seat's turn clock is left, 1 down to 0. -1 when no clock is
+   * running, which is not the same as 0 — nothing to draw, rather than nothing
+   * left.
+   */
+  turnFraction?: number;
 }
 
 /** Opponents are represented by a fanned arc of face-down cards hugging the table
@@ -164,9 +170,33 @@ function SeatImpl({
   empty,
   slot,
   hideFan = false,
+  turnFraction = -1,
 }: SeatProps) {
+  const clockRunning = isTurn && turnFraction >= 0;
+
   const identity = (
     <div className={styles.identity}>
+      {/* The turn clock, drawn as the ring that already marks whose go it is
+          rather than as another thing on a label kept deliberately spare.
+          `pathLength="1"` normalises the perimeter, so one dash offset drains the
+          ring correctly whatever width the name makes the pill — no measuring.
+          A ring also needs no upright exemption on the rotated side seats, which
+          is why it beats digits there. */}
+      {clockRunning && (
+        <svg className={styles.turnClock} aria-hidden="true" preserveAspectRatio="none">
+          <rect
+            className={`${styles.turnClockTrack} ${turnFraction < 0.2 ? styles.turnClockUrgent : turnFraction < 0.4 ? styles.turnClockLow : ''}`}
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            rx="999"
+            pathLength={1}
+            strokeDasharray={1}
+            strokeDashoffset={1 - turnFraction}
+          />
+        </svg>
+      )}
       {/* The score sits inside the name row rather than on a line of its own.
           `.identity` grows toward the middle of the table (see its comment), so a
           new row would eat playing area; another item on this row grows along the
@@ -198,7 +228,11 @@ function SeatImpl({
     ) : null;
 
   return (
-    <div className={`${styles.seat} ${styles[slot]} ${isTurn ? styles.activeTurn : ''} ${hideFan ? styles.fanHidden : ''}`}>
+    <div
+      className={`${styles.seat} ${styles[slot]} ${isTurn ? styles.activeTurn : ''} ${
+        clockRunning ? styles.clocked : ''
+      } ${hideFan ? styles.fanHidden : ''}`}
+    >
       {slot === 'top' && fan}
       {slot === 'left' && fan}
       {identity}

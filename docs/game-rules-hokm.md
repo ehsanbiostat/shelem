@@ -86,6 +86,9 @@ Everything above describes the default ruleset. As with Shelem, the person creat
 | Hâkem Koti scores | 3 | Whole number, 1–100, and never below a Kot |
 | Choosing the Hâkem | Ace (`aceDealSeats`) | `aceDealTeams` / `aceDealSeats` / `random` |
 | Shuffle | Random | Random (fresh deck every hand) or Table (light shuffle carrying the previous hand forward) |
+| Turn limit | 30s | Off, or 5–120 seconds |
+
+**Turn limit** — a player who doesn't act in time has the turn played for them by the bot, so the table keeps moving. Naming trump gets twice the limit, plus an allowance for the deal animation. The clock runs for a disconnected player too, which is the main reason it exists. Bots are exempt: they answer on their own schedule, so a clock over their seat would measure nothing.
 
 Two of these are worth explaining:
 

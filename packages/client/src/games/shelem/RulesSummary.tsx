@@ -28,6 +28,12 @@ function houseRules(config: TableConfig): string[] {
     rules.push('Random shuffle every hand');
   }
 
+  if (config.turnLimitSeconds !== DEFAULT_TABLE_CONFIG.turnLimitSeconds) {
+    rules.push(
+      config.turnLimitSeconds === 0 ? 'No turn limit' : `${config.turnLimitSeconds}s per turn`,
+    );
+  }
+
   return rules;
 }
 

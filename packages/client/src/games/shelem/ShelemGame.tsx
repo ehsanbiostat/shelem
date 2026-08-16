@@ -5,6 +5,7 @@ import type { Card as CardModel, Seat as SeatIndex, Team } from '@shelem/shared'
 import { legalCards, shelem } from '@shelem/shared';
 import styles from '../../App.module.css';
 import { sortHand } from '../../cardSort';
+import { useServerClockOffset, useTurnCountdown } from '../../useTurnCountdown';
 import { isOccupied, seatOf, teamOf, toCard, type BaseStateJSON } from '../../roomState';
 import { Table } from '../../components/Table.js';
 import type { DealBlock } from '../../components/DealingOverlay.js';
@@ -122,6 +123,9 @@ export function ShelemGame({ room, state: baseState, rawHand, onMessage, onLeave
     setDealing(null);
     gameStartSound();
   }, []);
+
+  const serverOffset = useServerClockOffset(room);
+  const turn = useTurnCountdown(state.turnEndsAt, state.turnLimitMs, serverOffset);
 
   const mySeat = seatOf(room.sessionId, state.players);
   const playerNames: Record<number, string> = {};
@@ -265,6 +269,7 @@ export function ShelemGame({ room, state: baseState, rawHand, onMessage, onLeave
         roleSeat={state.declarerSeat as SeatIndex | -1}
         awaitingChoice={state.phase === 'bidding'}
         maxFanCards={MAX_HAND}
+        turnFraction={turn.fraction}
         centerVariant={
           state.phase === 'lobby' || state.phase === 'configuring' || state.phase === 'bidding' ? 'wide' : 'trick'
         }

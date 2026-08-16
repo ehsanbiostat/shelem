@@ -26,6 +26,8 @@ export class TableConfig extends Schema {
   @type('boolean') sarShelemTakesWidow = DEFAULT_TABLE_CONFIG.sarShelemTakesWidow;
   @type('boolean') doubleNegativeEnabled = DEFAULT_TABLE_CONFIG.doubleNegativeEnabled;
   @type('number') doubleNegativeThreshold = DEFAULT_TABLE_CONFIG.doubleNegativeThreshold;
+  /** Seconds a player has to act before the turn is played for them; 0 is off. */
+  @type('number') turnLimitSeconds = DEFAULT_TABLE_CONFIG.turnLimitSeconds;
   @type('string') shuffleMode: ShuffleMode = DEFAULT_TABLE_CONFIG.shuffleMode;
 
   /** Applied field by field rather than by replacing the whole child schema, so
@@ -38,6 +40,7 @@ export class TableConfig extends Schema {
     this.doubleNegativeEnabled = config.doubleNegativeEnabled;
     this.doubleNegativeThreshold = config.doubleNegativeThreshold;
     this.shuffleMode = config.shuffleMode;
+    this.turnLimitSeconds = config.turnLimitSeconds;
     return this;
   }
 }

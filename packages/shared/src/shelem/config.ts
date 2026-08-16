@@ -1,4 +1,5 @@
 import type { ShuffleMode } from '../core/types.js';
+import { DEFAULT_TURN_LIMIT_SECONDS, validateTurnLimit } from '../core/turnLimit.js';
 import { BID_CAP, BID_FLOOR } from './bidding.js';
 import { DOUBLE_NEGATIVE_THRESHOLD, SLAM_STAKE, TOTAL_HAND_POINTS } from './scoring.js';
 
@@ -26,6 +27,9 @@ export interface TableConfig {
   /** Collect fewer points than this on a failed contract and the loss doubles. */
   doubleNegativeThreshold: number;
   shuffleMode: ShuffleMode;
+  /** Seconds a player has to act before the turn is played for them. 0 turns the
+   * clock off entirely, which is how the game behaved before it existed. */
+  turnLimitSeconds: number;
 }
 
 /** The traditional ruleset, as documented in docs/game-rules.md. */
@@ -37,6 +41,7 @@ export const DEFAULT_TABLE_CONFIG: TableConfig = {
   doubleNegativeEnabled: true,
   doubleNegativeThreshold: DOUBLE_NEGATIVE_THRESHOLD,
   shuffleMode: 'table',
+  turnLimitSeconds: DEFAULT_TURN_LIMIT_SECONDS,
 };
 
 /** Handy match lengths offered on the create-table screen. 330 is a single Shelem,
@@ -133,6 +138,9 @@ export function validateTableConfig(input: unknown): ValidationResult {
   if (config.shuffleMode !== 'table' && config.shuffleMode !== 'random') {
     return { ok: false, error: 'Shuffle mode must be either table or random' };
   }
+
+  const turnLimit = validateTurnLimit(config.turnLimitSeconds);
+  if (turnLimit) return { ok: false, error: turnLimit };
 
   return { ok: true, config };
 }

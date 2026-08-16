@@ -63,6 +63,12 @@ export interface BaseStateJSON {
   pendingSeatSwap?: SeatSwapRequestJSON;
   handNumber: number;
   hostSessionId: string;
+  /** When the current turn expires, as *server* epoch ms — compare it against the
+   * server's clock, not the browser's. 0 when no clock is running. */
+  turnEndsAt: number;
+  /** How long this turn was given, so the countdown can be drawn as a proportion
+   * rather than guessing what a full ring looks like. */
+  turnLimitMs: number;
 }
 
 export function toCard(item: { suit: string; rank: string }): Card {

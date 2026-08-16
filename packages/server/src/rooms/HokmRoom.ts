@@ -12,6 +12,7 @@ import {
   determineTrickWinner,
   legalCards,
   teamForSeat,
+  turnDurationMs,
   hokm,
 } from '@shelem/shared';
 import type { TrickCardPlay } from '@shelem/shared';
@@ -251,7 +252,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     for (let seat = 0; seat < 4; seat++) {
       this.sendHand(seat as Seat);
     }
-    this.scheduleBotTurn();
+    this.scheduleTurn();
   }
 
   /** A person naming trump. Resolves them to a seat and hands off to the same
@@ -281,7 +282,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     this.state.phase = 'playing';
     // The Hâkem leads to the first trick — the third of the three privileges.
     this.state.currentTurnSeat = this.state.hakemSeat;
-    this.scheduleBotTurn();
+    this.scheduleTurn();
     return null;
   }
 
@@ -326,7 +327,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
 
     if (this.state.currentTrick.length < 4) {
       this.state.currentTurnSeat = ((seat + 1) % 4) as Seat;
-      this.scheduleBotTurn();
+      this.scheduleTurn();
       return null;
     }
 
@@ -334,7 +335,10 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     // otherwise the 4th card's own broadcast already carries the cleared trick, and
     // the last play never visibly appears. `resolvingTrick` blocks new plays (turn
     // hasn't advanced yet) until the pause completes.
+    // The trick is held on screen for a beat and nobody may act, so the clock
+    // comes off the table for the duration rather than draining through it.
     this.resolvingTrick = true;
+    this.scheduleTurn();
     this.clock.setTimeout(() => {
       this.resolvingTrick = false;
       this.resolveTrick();
@@ -372,7 +376,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
 
     this.state.currentTrick.clear();
     this.state.currentTurnSeat = winnerSeat;
-    this.scheduleBotTurn();
+    this.scheduleTurn();
 
     // Seven ends it. The remaining six tricks are never played — the hand is already
     // decided, and nothing in the scoring depends on them.
@@ -424,6 +428,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     ) {
       this.state.phase = 'matchComplete';
       this.state.currentTurnSeat = -1;
+      this.scheduleTurn();
       return;
     }
 
@@ -432,6 +437,7 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     // each client, so the whole table moves together.
     this.state.phase = 'handComplete';
     this.state.currentTurnSeat = -1;
+    this.scheduleTurn();
     this.clock.setTimeout(() => {
       this.state.dealerSeat = ((this.state.dealerSeat + 1) % 4) as Seat;
       this.startHand();
@@ -467,6 +473,35 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     if (this.state.phase === 'playing') {
       this.playCard(seat, chooseCard(this.botView(seat)));
     }
+  }
+
+  /**
+   * How long this seat has for what it currently owes, or 0 for no clock.
+   *
+   * Only the phases where the room is genuinely *waiting on a person* get one.
+   * Everything else — the Hâkem ceremony, the beat a finished trick is held for,
+   * the hand-result pause — is the table doing something the player cannot act
+   * through, and running a clock over it would charge them for time they never
+   * had.
+   */
+  protected turnLimitFor(_seat: Seat): number {
+    const limit = this.state.config.turnLimitSeconds;
+
+    if (this.state.phase === 'declaringTrump') {
+      // Naming trump off five cards is the one real judgement in Hokm.
+      return turnDurationMs(limit, { deliberate: true, firstOfHand: true });
+    }
+    if (this.state.phase === 'playing') {
+      if (this.resolvingTrick) return 0;
+      return turnDurationMs(limit);
+    }
+    return 0;
+  }
+
+  /** Hokm has a real bot, so a timed-out turn is played properly rather than
+   * merely legally. */
+  protected takeTimeoutAction(seat: Seat) {
+    this.takeBotTurn(seat);
   }
 
   /** What this seat is entitled to know. Assembled from the room's own state and

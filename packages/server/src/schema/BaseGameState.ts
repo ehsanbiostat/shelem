@@ -80,6 +80,20 @@ export class BaseGameState extends Schema {
 
   @type('number') handNumber = 0;
 
+  /**
+   * When the current turn expires, as server epoch ms. 0 when no clock is running
+   * — no limit set, nobody to act, or a bot's seat.
+   *
+   * A deadline rather than a ticking number, deliberately. Syncing a countdown
+   * would push a patch a second per table to every client for no information they
+   * can't derive themselves; the client draws it with requestAnimationFrame from
+   * this one value, and the server alone decides when it has passed.
+   */
+  @type('number') turnEndsAt = 0;
+  /** How long this turn was given, in ms, so the client can draw the countdown as
+   * a proportion rather than guessing what "full" looks like. */
+  @type('number') turnLimitMs = 0;
+
   /** Whoever created the table (first to take a seat). Only they may change the
    * table's settings, and only while it's still being configured. Keyed by session
    * id rather than seat so a seat swap doesn't hand the role to someone else. */

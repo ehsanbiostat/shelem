@@ -5,6 +5,7 @@ import type { Card as CardModel, Seat as SeatIndex, Suit, Team } from '@shelem/s
 import { hokm, legalCards } from '@shelem/shared';
 import styles from '../../App.module.css';
 import { sortHand } from '../../cardSort';
+import { useServerClockOffset, useTurnCountdown } from '../../useTurnCountdown';
 import { isOccupied, seatOf, teamOf, toCard, type BaseStateJSON } from '../../roomState';
 import { Table } from '../../components/Table.js';
 import type { DealBlock } from '../../components/DealingOverlay.js';
@@ -89,6 +90,9 @@ export function HokmGame({ room, state: baseState, rawHand, onLeave, error }: Ho
     setDealing(null);
     gameStartSound();
   }, []);
+
+  const serverOffset = useServerClockOffset(room);
+  const turn = useTurnCountdown(state.turnEndsAt, state.turnLimitMs, serverOffset);
 
   const mySeat = seatOf(room.sessionId, state.players);
   const playerNames: Record<number, string> = {};
@@ -181,6 +185,7 @@ export function HokmGame({ room, state: baseState, rawHand, onLeave, error }: Ho
         roleSeat={state.hakemSeat as SeatIndex | -1}
         awaitingChoice={state.phase === 'declaringTrump'}
         maxFanCards={HOKM_HAND_SIZE}
+        turnFraction={turn.fraction}
         centerVariant={state.phase === 'playing' ? 'trick' : 'wide'}
         trumpSuit={trumpSuit}
         dealing={dealing}
