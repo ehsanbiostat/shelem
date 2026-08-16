@@ -145,6 +145,45 @@ describe('when the clock runs', () => {
     }
   });
 
+  it('restarts when the same seat is asked for a different thing', async () => {
+    // The Hâkem names trump and then leads to the first trick without the turn
+    // ever moving to anyone else. Guarding the pending timer on the seat alone
+    // meant the clock never restarted: they inherited whatever was left of the
+    // trump-call clock, and their opening lead was played for them almost at once.
+    // Shelem's declarer has the same shape — discard, then lead.
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const { room, clients } = await hokmTable();
+      clients[0].send('startGame');
+      await until(
+        () => room.state.phase === 'declaringTrump' || room.state.trumpSuit !== '',
+        'the deal',
+      );
+      if (room.state.phase !== 'declaringTrump') {
+        await colyseus.cleanup();
+        continue;
+      }
+
+      const hakem = room.state.hakemSeat;
+      const trumpCallLimit = room.state.turnLimitMs;
+      const trumpCallDeadline = room.state.turnEndsAt;
+      // Naming trump is a deliberate decision, so it runs long.
+      expect(trumpCallLimit).toBeGreaterThan(SHORT_LIMIT * 1000);
+
+      clients[hakem].send('declareTrump', { suit: 'spades' });
+      await until(() => room.state.phase === 'playing', 'play to begin');
+
+      // Same seat, still on turn, but owing a card now rather than a trump call.
+      expect(room.state.currentTurnSeat).toBe(hakem);
+      // A fresh card-play clock rather than the remains of the long one. Note the
+      // new deadline is *earlier* than the old, which is exactly why this has to
+      // assert on the limit: a card gets less time than a trump call.
+      expect(room.state.turnLimitMs).toBe(SHORT_LIMIT * 1000);
+      expect(room.state.turnEndsAt).not.toBe(trumpCallDeadline);
+      return;
+    }
+    throw new Error('never drew a human as Hâkem');
+  }, 60000);
+
   it('does not run at all when the table turned the clock off', async () => {
     const { room, clients } = await shelemTable({ turnLimitSeconds: 0 });
     clients[0].send('startGame');

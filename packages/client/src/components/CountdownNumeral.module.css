@@ -1,0 +1,42 @@
+/* The countdown's own layer, covering the whole felt.
+ *
+ * `pointer-events: none` is not the only thing keeping this from blocking play —
+ * Table.tsx mounts it directly after `.felt`, beneath every interactive layer in
+ * the stack (see Table.module.css: .center is 1, seats 2, the hand 3, the corner
+ * panels 4, and the bid grid's .centerWide 5). Either alone would be enough.
+ * Both, because this is the layer somebody will move later, and the failure mode
+ * is a player unable to click the bid button that would stop their own clock. */
+.stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Sized in `--u` rather than pixels, so it holds the same share of the table on a
+   phone as on a desktop — the same unit every card, fan and clearance uses.
+   Roughly a third of the felt's short side, which is big enough to catch the eye
+   without swallowing the trick pile it sits behind. */
+.numeral {
+  font-size: calc(var(--u) * 26);
+  font-weight: 800;
+  line-height: 1;
+  /* Wide tracking and tabular figures: leader numerals are drawn as single
+     characters with room around them, and tabular stops the numeral shifting
+     sideways as it changes width from 5 to 4 to 1. */
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(242, 234, 214, 0.16);
+  /* A soft edge so it reads as projected onto the felt rather than printed on it. */
+  text-shadow: 0 0 calc(var(--u) * 3) rgba(0, 0, 0, 0.35);
+  user-select: none;
+}
+
+/* The last two seconds warm towards the same red the seat ring uses, so the two
+   countdowns agree about when things are getting urgent. */
+.urgent {
+  color: rgba(217, 74, 74, 0.28);
+}

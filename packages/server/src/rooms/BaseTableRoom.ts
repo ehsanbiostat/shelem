@@ -146,15 +146,28 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
   }
 
   /**
-   * The seat with a pending turn-timer, so a burst of state changes can't queue
-   * the same one twice.
+   * Which *turn* has a timer pending, so a burst of state changes can't queue the
+   * same one twice.
    *
-   * A seat rather than a boolean, and that distinction is load-bearing: a plain
-   * flag also blocked the *next* seat from being scheduled, so a trick resolving
-   * while some earlier timer was still outstanding left the table frozen with a
-   * bot to play and nothing due to wake it.
+   * Seat, phase and hand together rather than just the seat, and every part of
+   * that has been paid for:
+   *
+   * - A plain boolean also blocked the *next* seat, so a trick resolving while an
+   *   earlier timer was outstanding left the table frozen with somebody to play
+   *   and nothing due to wake them.
+   * - A bare seat then blocked the same seat being asked for a *different* thing.
+   *   A Hâkem names trump and then leads to the first trick without the turn ever
+   *   moving; on the seat alone the clock never restarted, so they inherited
+   *   whatever was left of the trump-call clock and their opening lead was played
+   *   for them almost at once. Shelem's declarer has the same shape — discard the
+   *   widow, then lead.
    */
-  private turnPendingFor: Seat | null = null;
+  private turnPendingFor: string | null = null;
+
+  /** Identifies a turn: this seat, owing this phase's action, in this hand. */
+  private turnToken(seat: Seat): string {
+    return `${seat}:${this.state.phase}:${this.state.handNumber}`;
+  }
   /** The pending timer itself, so acting in time can cancel it rather than leaving
    * it to fire into a turn that has already been taken. */
   private turnTimer: Delayed | null = null;
@@ -201,13 +214,14 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
       return;
     }
 
-    if (this.turnPendingFor === seat) return;
+    const token = this.turnToken(seat);
+    if (this.turnPendingFor === token) return;
 
     this.clearTurnTimer();
 
     const phase = this.state.phase;
     const hand = this.state.handNumber;
-    this.turnPendingFor = seat;
+    this.turnPendingFor = token;
 
     let delay: number;
     if (isBot) {
@@ -224,7 +238,7 @@ export abstract class BaseTableRoom<TState extends BaseGameState> extends Room<T
 
     this.turnTimer = this.clock.setTimeout(() => {
       this.turnTimer = null;
-      if (this.turnPendingFor === seat) this.turnPendingFor = null;
+      if (this.turnPendingFor === token) this.turnPendingFor = null;
       // The table can move on underneath a pending timer — a hand ending, a
       // rematch, a reconnect — so nothing is assumed to still be true.
       if (this.state.phase !== phase || this.state.handNumber !== hand) return;

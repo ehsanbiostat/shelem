@@ -6,6 +6,7 @@ import { Seat } from './Seat.js';
 import { TableMetricsContext, useMeasureTableMetrics } from '../tableMetrics.js';
 import { screenSlotFor } from '../screenSlot.js';
 import { DealingOverlay, type DealBlock } from './DealingOverlay.js';
+import { CountdownNumeral } from './CountdownNumeral.js';
 import { WidowPile } from '../games/shelem/WidowPile.js';
 
 export interface TablePlayer {
@@ -36,6 +37,9 @@ export interface TableProps {
   /** How much of the current turn's clock is left, 1 down to 0, or -1 when no
    * clock is running. Drawn on whichever seat is being waited on. */
   turnFraction?: number;
+  /** The second of the closing countdown, 5 down to 1, or null. Only ever set for
+   * the player actually on the clock — see CountdownNumeral. */
+  countdownSecond?: number | null;
   center: ReactNode;
   /** How much of the felt `center` gets. `'trick'` (the default) keeps clear of
    * the opponents' fans, which is what the played-card pile needs. `'wide'`
@@ -86,6 +90,7 @@ export function Table({
   awaitingChoice,
   maxFanCards,
   turnFraction = -1,
+  countdownSecond = null,
   center,
   centerVariant = 'trick',
   bottomOverlay,
@@ -116,6 +121,10 @@ export function Table({
     <div ref={tableRef} className={styles.tableWrap} style={{ '--u': `${metrics.u}px` } as CSSProperties}>
       <TableMetricsContext.Provider value={metrics}>
         <div className={styles.felt} />
+
+        {/* Deliberately here and nowhere else: directly on top of the felt and
+            underneath every layer that can be clicked. */}
+        <CountdownNumeral second={countdownSecond} />
 
         {([0, 1, 2, 3] as SeatIndex[]).map((seat) => {
           const player = bySeat.get(seat);
