@@ -164,34 +164,37 @@ export class HokmRoom extends BaseTableRoom<HokmGameState> {
     this.state.currentTurnSeat = -1;
     this.state.hakemDraw.clear();
 
+    const lastIndex = draw.reveals.length - 1;
+
     draw.reveals.forEach((reveal, index) => {
       this.clock.setTimeout(() => {
         const card = new HakemReveal();
         card.seat = reveal.seat;
         card.suit = reveal.card.suit;
         card.rank = reveal.card.rank;
-        // Captured now, because the reseat below can move this player afterwards.
+        // Captured now, because the reseat below moves people afterwards.
         card.name = this.state.players[reveal.seat].name;
         this.state.hakemDraw.push(card);
+
+        // The rest of the ceremony is scheduled from *inside* the final reveal,
+        // rather than on its own timer alongside it.
+        //
+        // Ordering here has to be structural, not a matter of timing. When the
+        // reseat was a sibling timer it could fire in the same tick as this push
+        // and win, and the last Ace then recorded the name of whoever the swap had
+        // just moved into that seat — crediting the partner's Ace to the wrong
+        // player. Spacing the timers apart only hid that behind a wall-clock gap;
+        // chaining them means the reveal has provably landed first, at any pace.
+        if (index === lastIndex) {
+          // Still a beat before the chairs move, so the ceremony reads in order:
+          // cards turn up, the pairing is known, people move, deal.
+          this.clock.setTimeout(() => {
+            this.seatPartnerOpposite(draw.partnerSeat);
+            this.clock.setTimeout(() => this.dealHand(), HAKEM_SETTLE_MS);
+          }, HAKEM_REVEAL_MS);
+        }
       }, HAKEM_REVEAL_MS * (index + 1));
     });
-
-    // The chairs change once the cards have finished speaking, so the ceremony
-    // reads in order: cards turn up, the pairing is known, people move, deal.
-    //
-    // A full beat after the last reveal, not the same instant. Two timers due at
-    // the same millisecond have no guaranteed order, and when the reseat won that
-    // race the final Ace recorded the name of whoever the swap had *just* moved
-    // into that seat — crediting the partner's Ace to the wrong player. Leaving a
-    // beat removes the race, and reads better besides.
-    const lastRevealAt = HAKEM_REVEAL_MS * draw.reveals.length;
-    const reseatAt = lastRevealAt + HAKEM_REVEAL_MS;
-
-    this.clock.setTimeout(() => {
-      this.seatPartnerOpposite(draw.partnerSeat);
-    }, reseatAt);
-
-    this.clock.setTimeout(() => this.dealHand(), reseatAt + HAKEM_SETTLE_MS);
   }
 
   /**
